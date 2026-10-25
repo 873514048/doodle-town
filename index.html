@@ -1392,27 +1392,27 @@ function buildTools(board,o){
     if(h<0)h+=360;return[h,d?d/mx:0,mx];
   }
   var cwState={h:270,s:.5,v:.6},cwCb=null;
-  function cwPaint(){ // 按当前色相/饱和度摆指示点，刷新预览豆
+  function cwPaint(){ // 按当前色相/饱和度摆指示点，刷新预览豆（conic 色轮：0°=正上方顺时针）
     var w=$('cwWheel'),dot=$('cwDot');if(!w)return;
     var R=w.clientWidth/2,a=cwState.h*Math.PI/180;
     var hex=hsv2hex(cwState.h,cwState.s,cwState.v);
-    dot.style.left=(R+Math.cos(a)*cwState.s*R)+'px';
-    dot.style.top=(R+Math.sin(a)*cwState.s*R)+'px';
+    dot.style.left=(R+Math.sin(a)*cwState.s*R)+'px';
+    dot.style.top=(R-Math.cos(a)*cwState.s*R)+'px';
     dot.style.background=hex;
     $('cwPrev').style.background=hex;
   }
-  function cwPick(e){ // 点/拖色轮：角度→色相，离圆心距离→饱和度
+  function cwPick(e){ // 点/拖色轮：conic 角度→色相（上=0°顺时针），离圆心距离→饱和度
     var w=$('cwWheel'),r=w.getBoundingClientRect();
     var dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
     var d=Math.sqrt(dx*dx+dy*dy);
     cwState.s=Math.min(1,d/(r.width/2));
-    if(d>4){var h=Math.atan2(dy,dx)*180/Math.PI;if(h<0)h+=360;cwState.h=h}
+    if(d>4){var h=Math.atan2(dx,-dy)*180/Math.PI;if(h<0)h+=360;cwState.h=h}
     cwPaint();
   }
   function openColorWheel(hex,cb){ // 打开色轮：hex 当前色，确定后回调 cb(选中hex)
     cwCb=cb;
     var hv=hex2hsv(hex||'#7B5EA7');
-    cwState.h=hv[0];cwState.s=hv[1];cwState.v=hv[2]<.15?.6:hv[2];
+    cwState.h=hv[0];cwState.s=hv[1];cwState.v=hv[2]<.3?.65:hv[2]; // 深色（如黑豆）打开时明度提到 65%，避免选亮色画出来仍近黑
     $('cwBright').value=Math.round(cwState.v*100);
     $('cwMask').style.display='flex';
     cwPaint(); // 先显示再定位：隐藏时 clientWidth=0 会导致指示点错位
@@ -1434,13 +1434,13 @@ function buildTools(board,o){
     var list=onlyBlack?[['黑','#2B2B2B']]:PALETTE;
     list.forEach(function(pc,i){
       var d=document.createElement('button');d.className='swatch';d.style.background=pc[1];d.title=pc[0];
-      d.onclick=function(){board.setColor(pc[1]);board.setEraser(false);say(stateText());sync()};
+      d.onclick=function(){board.setColor(pc[1]);board.setTool('draw');board.setEraser(false);say(stateText());sync()};
       colors.appendChild(d);swEls.push({el:d,c:pc[1]});
     });
     if(!onlyBlack){ // 调色盘：彩虹豆打开圆圈色轮，自选颜色即时生效
       var pk=document.createElement('button');pk.className='swatch swatch-rainbow';pk.title='调色盘';
       pk.onclick=function(){openColorWheel(pk.dataset.c||board.getColor(),function(hex){
-        pk.dataset.c=hex;board.setColor(hex);board.setEraser(false);say(stateText());sync();
+        pk.dataset.c=hex;board.setColor(hex);board.setTool('draw');board.setEraser(false);say(stateText());sync();
       })};
       colors.appendChild(pk);swEls.push({el:pk,c:'__rainbow__'});
     }
