@@ -1166,11 +1166,13 @@ function makeBoard(canvas,hint){
     canvas.addEventListener(tn,function(ev){ev.preventDefault()},{passive:false});
   });
   return {
-    undo:function(){var st=undoStack.pop();if(!st){toast('没有可以撤销的笔画了');return}
-      if(st.fill){ // fill 撤销：整层快照回贴 + 从笔画记录里摘掉对应 fill
+    undo:function(){var st=undoStack.pop();if(!st){toast('没有可以撤销的操作了');return}
+      if(st.clearAll){ // 清空撤销：恢复清空前的全部层笔画（真「撤销上一步操作」）
+        layers.forEach(function(L,i){L.strokes=st.savedMap[i].slice();renderLayer(i)});
+        redoStack.push(st);
+      }else if(st.fill){ // fill 撤销：整层快照原尺寸回贴（禁缩放，DPR 下错位）+ 从笔画记录里摘掉对应 fill
         var c2=lctx[st.li];
-        c2.save();c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,layerCv[st.li].width,layerCv[st.li].height);c2.restore();
-        c2.drawImage(st.before,0,0,LW,LH);
+        c2.save();c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,layerCv[st.li].width,layerCv[st.li].height);c2.drawImage(st.before,0,0);c2.restore();
         var arr=layers[st.li].strokes;
         for(var q=arr.length-1;q>=0;q--)if(arr[q].fill&&arr[q].fillCv===st.after){arr.splice(q,1);break}
         redoStack.push(st);
@@ -1181,17 +1183,23 @@ function makeBoard(canvas,hint){
       }
       redraw();notify()},
     redo:function(){var st=redoStack.pop();if(!st){toast('没有可以重做的操作');return}
-      if(st.fill){
+      if(st.clearAll){ // 重做清空：再次清层并留存笔画供再撤销
+        st.savedMap=layers.map(function(L){return L.strokes.slice()});
+        layers.forEach(function(L,i){L.strokes=[];renderLayer(i)});
+      }else if(st.fill){
         var c2=lctx[st.li];
-        c2.save();c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,layerCv[st.li].width,layerCv[st.li].height);c2.restore();
-        c2.drawImage(st.after,0,0,LW,LH);
+        c2.save();c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,layerCv[st.li].width,layerCv[st.li].height);c2.drawImage(st.after,0,0);c2.restore();
         layers[st.li].strokes.push({fill:true,fillCv:st.after});
       }else{
         layers[st.li].strokes.push(st.s);
         renderStrokeOn(lctx[st.li],st.s,1);
       }
       undoStack.push(st);redraw();notify()},
-    clear:function(){layers.forEach(function(L,i){L.strokes=[];renderLayer(i)});undoStack=[];redoStack=[];redraw()},
+    clear:function(){ // 清空可撤销：留全层笔画快照，撤销即整体恢复
+      if(!strokeTotal())return;
+      var sm=layers.map(function(L){return L.strokes.slice()});
+      layers.forEach(function(L,i){L.strokes=[];renderLayer(i)});
+      undoStack.push({clearAll:true,savedMap:sm});redoStack=[];redraw();notify()},
     reset:function(){layers.forEach(function(L,i){L.strokes=[];renderLayer(i)});undoStack=[];redoStack=[];cur=null;redraw()},
     strokeCount:function(){return strokeTotal()},
     getStrokes:function(){ // 下游导出：可见层合并笔画序（fill 带贴图引用；真橡皮转白线兼容旧导出白底）
