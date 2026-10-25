@@ -329,18 +329,17 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   radial-gradient(ellipse 340px 200px at 84% 8%,rgba(242,227,176,.14),transparent 70%),
   radial-gradient(ellipse 480px 260px at 12% 96%,rgba(225,120,60,.10),transparent 72%),
   linear-gradient(#1D2433 0%,#2E3648 62%,#3A4358 100%)}
-.lt-item{position:relative;cursor:pointer;transition:transform .25s ease}
+.lt-item{position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .25s ease}
 .lt-item:hover{transform:translateY(-5px)}
-.lt-svg{width:100%;display:block;filter:drop-shadow(0 0 10px rgba(242,227,176,.30))}
-.lt-item.done .lt-svg{filter:drop-shadow(0 0 16px rgba(242,201,76,.5))}
+.lt-cord{width:4px;background:rgba(253,251,244,.85);border-radius:2px;flex:none}
+#ltRow .lt-item:nth-child(1) .lt-cord{transform:rotate(2.5deg)}
+#ltRow .lt-item:nth-child(3) .lt-cord{transform:rotate(-2.5deg)}
+.lt-svg{width:100%;display:block;filter:drop-shadow(0 0 12px rgba(242,227,176,.35))}
+.lt-item.done .lt-svg{filter:drop-shadow(0 0 18px rgba(242,201,76,.55))}
 .lt-item.done .lt-body{fill:url(#ltGG)}
-.lt-item.done .lt-tas{fill:#C9B978}
-.lt-txt{position:absolute;top:16%;left:15%;right:15%;bottom:23%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
-.lt-txt>span{background:rgba(253,251,242,.78);border-radius:9px;padding:2px 7px;max-width:100%;box-sizing:border-box}
-.lt-cat{font-size:11px;font-weight:800;color:#5E7268;letter-spacing:2px}
-.lt-riddle{font-size:12.5px;font-weight:800;color:#2B2B2B;text-align:center;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.lt-item.done .lt-riddle{color:#7A5A10}
-.lt-solo .lt-cat{font-size:15px;color:#5E7268}
+.lt-item.done .lt-seal{fill:#D9A94C}
+.lt-cap{margin-top:10px;background:#FDFBF4;color:#2B2B2B;border:2.5px solid #2B2B2B;border-radius:11px;padding:4px 18px;font-size:14px;font-weight:800;box-shadow:2px 3px 0 rgba(15,22,38,.5);white-space:nowrap}
+.lt-capsub{margin-top:7px;font-size:12px;color:#E3D9BE;font-weight:700;text-shadow:0 1px 0 rgba(20,24,33,.6)}
 .lt-fly{animation:ltFly 1.7s ease-in forwards!important}
 @keyframes ltFly{0%{transform:none;opacity:1}25%{transform:translateY(-14%) rotate(-4deg)}55%{transform:translateY(-42%) rotate(4deg)}100%{transform:translateY(-130%) rotate(-2deg);opacity:0}}
 .lt-spark{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle,#FFE9B0,rgba(255,214,140,0));pointer-events:none;animation:ltSpark 1.2s ease-out forwards}
@@ -738,64 +737,80 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       <!-- 灯谜会 · 夜间市集板块（独立于看图猜谜） -->
       <div id="tavLantern" class="colflow" style="gap:0" hidden="">
         <div class="draw-top lt-top" style="width:100%;justify-content:flex-start;gap:10px">
-          <button class="btn lt-back" id="ltBack">返回大厅 →</button>
           <h2 class="hw uw" style="font-size:20px;color:#F5E9C8">🏮 灯谜会 · 夜市</h2>
           <span class="sub small" style="color:#B9AE93">轻点灯笼看谜面 · 答对点亮一盏</span>
           <span class="sp"></span>
-          <span class="tag sketch-border small" style="background:#3A4358;color:#F5E9C8">点亮 <b id="ltCount">0</b> 盏</span>
+          <span class="tag sketch-border small" style="background:#FBEFD8;color:#2B2B2B">本轮点亮 <b id="ltRoundN">0</b> / 3</span>
         </div>
         <div class="lt-sky" style="flex:1;position:relative;min-height:0">
           <svg viewBox="0 0 128 56" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;opacity:.95">
             <defs>
               <radialGradient id="ltGR" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#FDFBF2"></stop><stop offset="55%" stop-color="#F1EEE0"></stop><stop offset="100%" stop-color="#D9E2DC"></stop></radialGradient>
               <radialGradient id="ltGG" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#FBF7E6"></stop><stop offset="60%" stop-color="#EFE7C8"></stop><stop offset="100%" stop-color="#D8CBA0"></stop></radialGradient>
+              <radialGradient id="ltGlow2" cx="50%" cy="45%" r="62%"><stop offset="0%" stop-color="#FFFDF4"></stop><stop offset="55%" stop-color="#F7F2E0"></stop><stop offset="100%" stop-color="#E9E6D2"></stop></radialGradient>
+              <radialGradient id="ltCore" cx="50%" cy="48%" r="60%"><stop offset="0%" stop-color="#FFF3C4" stop-opacity=".9"></stop><stop offset="100%" stop-color="#FFF3C4" stop-opacity="0"></stop></radialGradient>
             </defs>
             <path d="M112,6.5 a8.8,8.8 0 1,0 7.4,14 a7,7 0 1,1 -7.4,-14 Z" fill="#F2E3B0" stroke="#141821" stroke-width="1.7"></path>
             <path d="M101,2.5 l-4,-2 M102,20.5 l-4,2 M123,8.5 l4,-1.4" stroke="#F2E3B0" stroke-width="1.3" stroke-linecap="round" opacity=".6" fill="none"></path>
             <g fill="#F5E9C8" stroke="#141821" stroke-width=".5">
               <path d="M16,11 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"></path>
               <path d="M36,6 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"></path>
-              <path d="M56,15 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"></path>
-              <path d="M76,7 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"></path>
-              <path d="M92,21 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"></path>
               <path d="M8,26 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"></path>
+              <path d="M120,26 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"></path>
             </g>
-            <path d="M18,33 q-4.8,0 -4.8,-4.4 q0,-4.4 5.4,-4.4 q1.2,-4.4 6.4,-3.8 q5.2,-3.4 8.6,1 q5.4,-1 5.4,4.4 q0,4.6 -4.4,4.6 Z" fill="#39445C" stroke="#141821" stroke-width="1.4"></path>
-            <path d="M60,27 q-4,0 -4,-3.8 q0,-3.8 4.6,-3.8 q1,-3.8 5.4,-3.1 q4.4,-2.9 7.3,1 q4.6,-1 4.6,3.8 q0,3.9 -3.8,3.9 Z" fill="#39445C" stroke="#141821" stroke-width="1.3"></path>
-            <g stroke="#141821" stroke-width="1.5" fill="none" opacity=".85">
-              <path d="M14,56 C20,40 16,30 26,22 M14,56 C22,44 34,40 40,30"></path>
-              <path d="M114,56 C108,42 112,32 102,24 M114,56 C106,44 94,40 88,30"></path>
+            <!-- 云沉底角、梅枝收短：中央灯阵区不留装饰 -->
+            <g fill="#22304E" stroke="rgba(253,251,244,.5)" stroke-width="1.6" stroke-linejoin="round">
+              <path d="M4,45 q4,-5.5 10,-2.5 q3,-4 8.5,-1.5 q5.5,-1 7,3 q-13,2.5 -25.5,.5 Z" opacity=".95"></path>
+              <path d="M115,44 q3.5,-4.5 8.5,-2 q3,-3.5 7.5,-1 q4.5,-1 5.5,2.5 q-11,2 -21.5,.5 Z" opacity=".9"></path>
             </g>
-            <g fill="#E8927C" opacity=".8"><circle cx="26" cy="22" r="1.3"></circle><circle cx="23.5" cy="26.5" r="1"></circle><circle cx="40" cy="30" r="1.3"></circle><circle cx="102" cy="24" r="1.3"></circle><circle cx="99.5" cy="28.5" r="1"></circle><circle cx="88" cy="30" r="1.3"></circle></g>
+            <g fill="none" stroke="#141821" stroke-width="1.1" stroke-linecap="round">
+              <path d="M-1,10 C2,8 5,6 8,2"></path>
+              <path d="M4,7 C5,9 5,10.5 4.4,12" stroke-width=".9"></path>
+            </g>
+            <g fill="#E8927C" opacity=".8" stroke="#141821" stroke-width=".5">
+              <circle cx="8" cy="2.2" r="1.3"></circle><circle cx="4.2" cy="12" r="1.1"></circle>
+            </g>
             <path d="M0,48.5 q8,-4.5 16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 L128,56 L0,56 Z" fill="#14181F" stroke="#141821" stroke-width="1"></path>
             <g fill="#2A3140" stroke="#141821" stroke-width=".8">
               <circle cx="8" cy="49.5" r="1.4"></circle><circle cx="24" cy="49.5" r="1.4"></circle><circle cx="40" cy="49.5" r="1.4"></circle><circle cx="56" cy="49.5" r="1.4"></circle><circle cx="72" cy="49.5" r="1.4"></circle><circle cx="88" cy="49.5" r="1.4"></circle><circle cx="104" cy="49.5" r="1.4"></circle><circle cx="120" cy="49.5" r="1.4"></circle>
             </g>
           </svg>
           <div id="ltHome" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2vh,18px);padding:8px 14px">
-            <div id="ltRow" style="display:flex;gap:clamp(14px,4vw,54px);align-items:flex-start;justify-content:center;width:100%"><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">物谜</span><span class="lt-riddle">身穿绿衣裳，肚里水汪…</span></div></div><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">字谜</span><span class="lt-riddle">一口咬掉牛尾巴</span></div></div><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">字谜</span><span class="lt-riddle">山上有山</span></div></div></div>
-            <div style="display:flex;gap:12px;align-items:center;background:rgba(20,24,33,.55);border:2px solid #14181F;border-radius:12px;padding:6px 16px;flex-wrap:wrap;justify-content:center">
-              <span class="small" style="color:#F5E9C8;font-weight:700">本轮点亮 <b id="ltRoundN">0</b> / 3</span>
+            <div style="width:min(920px,88%)">
+              <svg viewBox="0 0 920 18" preserveAspectRatio="none" style="width:100%;height:15px;display:block" aria-hidden="true"><path d="M0,10 Q115,2 230,9 T460,9 T690,9 T920,8" fill="none" stroke="rgba(253,251,244,.85)" stroke-width="4" stroke-linecap="round"></path><circle cx="230" cy="9" r="4.5" fill="#FDFBF4" stroke="#2B2B2B" stroke-width="2"></circle><circle cx="460" cy="9" r="4.5" fill="#FDFBF4" stroke="#2B2B2B" stroke-width="2"></circle><circle cx="690" cy="9" r="4.5" fill="#FDFBF4" stroke="#2B2B2B" stroke-width="2"></circle></svg>
+              <div id="ltRow" style="display:flex;gap:clamp(20px,5vw,60px);align-items:flex-start;justify-content:center;width:100%;margin-top:-3px"><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">物谜</span><span class="lt-riddle">身穿绿衣裳，肚里水汪…</span></div></div><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">字谜</span><span class="lt-riddle">一口咬掉牛尾巴</span></div></div><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">字谜</span><span class="lt-riddle">山上有山</span></div></div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;background:rgba(20,24,33,.55);border:2px solid #14181F;border-radius:12px;padding:6px 14px;width:min(920px,88%);justify-content:space-between;flex-wrap:wrap">
+              <button class="btn lt-back" id="ltBack" style="font-size:13px;padding:5px 14px">返回大厅 →</button>
+              <span class="small" style="color:#B9AE93;font-weight:700">已点亮 <b id="ltCount">0</b> 盏 · 点亮两盏可换下一批</span>
               <button class="btn" id="ltNext" style="font-size:13px;padding:5px 14px;background:#FBEFD8">换一批 ↓</button>
             </div>
           </div>
           <div id="ltSolve" style="position:absolute;inset:0;display:flex;min-height:0" hidden="">
-            <div style="width:40%;display:flex;align-items:center;justify-content:center;padding:10px 6px 10px 14px;min-width:0">
-              <div id="ltBig" style="width:min(280px,86%)"><div class="lt-item lt-solo" style="width:100%"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">字谜</span></div></div></div>
+            <div style="flex:0 0 40%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:8px 4px 8px 12px;min-width:0">
+              <span class="lt-cord" style="height:24px"></span>
+              <div id="ltBig" style="width:min(300px,66%)"><div class="lt-item lt-solo" style="width:100%"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">字谜</span></div></div></div>
+              <span class="lt-cap" id="ltCap">字谜 · 第 1 盏</span>
+              <span class="lt-capsub">猜中即点亮 · 放飞庆祝</span>
             </div>
-            <div style="flex:1;display:flex;flex-direction:column;gap:10px;padding:12px 14px 12px 6px;min-width:0">
+            <div style="flex:1;display:flex;flex-direction:column;gap:12px;padding:12px 16px 12px 4px;min-width:0">
               <div style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0">
-                <div class="card sketch-border" style="padding:clamp(10px,2vh,18px) 16px;max-width:520px">
-                  <span class="stamp" id="ltCat2" style="font-size:12px">字谜</span>
-                  <div id="ltRiddle" style="font-size:clamp(15px,2.4vh,19px);font-weight:800;margin-top:8px;line-height:1.5">「 太阳西边下，月亮东边挂 」</div>
-                  <div id="ltFb" style="min-height:18px;font-weight:700;font-size:14px;margin-top:6px"></div>
+                <div style="background:#FDFBF4;color:#2B2B2B;border:3px solid #2B2B2B;border-radius:14px;box-shadow:3px 4px 0 rgba(15,22,38,.45);padding:clamp(12px,2.4vh,20px) 22px;max-width:560px">
+                  <div style="display:flex;align-items:center;gap:10px"><span class="stamp" id="ltCat2" style="font-size:12px">字谜</span><b style="font-size:14px">谜面</b></div>
+                  <div id="ltRiddle" style="font-size:clamp(16px,2.8vh,23px);font-weight:800;margin-top:12px;line-height:1.55;letter-spacing:1px">「 太阳西边下，月亮东边挂 」</div>
+                  <div id="ltFb" style="min-height:18px;font-weight:700;font-size:13.5px;margin-top:8px;color:#7A7365;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
                 </div>
               </div>
-              <div class="card sketch-border" style="padding:10px 14px;max-width:520px">
-                <div class="qrow" style="gap:8px">
-                  <input id="ltInput" class="qinput sketch-border" style="flex:1;min-width:0" placeholder="写出谜底…" maxlength="12">
+              <div style="background:#FDFBF4;color:#2B2B2B;border:3px solid #2B2B2B;border-radius:14px;box-shadow:3px 4px 0 rgba(15,22,38,.45);padding:12px 16px;max-width:560px">
+                <div class="qrow" style="gap:10px">
+                  <input id="ltInput" class="qinput" style="flex:1;min-width:0;border:3px solid #2B2B2B;border-radius:12px;padding:9px 13px;font-size:16px" placeholder="写下谜底…" maxlength="12">
                   <button class="mic-btn" data-voice="ltInput" title="语音输入" aria-label="语音输入"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
-                  <button class="btn big" id="ltSend" style="padding:8px 20px;font-size:15px">揭灯</button>
+                  <button class="btn big" id="ltSend" style="padding:9px 22px;font-size:15px">揭灯</button>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:11px;align-items:center">
+                  <button class="btn blu" id="ltHintBtn" style="flex:1;font-size:13.5px;padding:6px 4px;white-space:nowrap">💡 提示 -2</button>
+                  <button class="btn blu" id="ltGiveBtn" style="flex:1;font-size:13.5px;padding:6px 4px;white-space:nowrap">🤍 放弃 -5</button>
+                  <span class="small" style="color:#8A8378;font-weight:700;white-space:nowrap">答对 +8 · 全对放飞孔明灯</span>
                 </div>
               </div>
             </div>
@@ -3444,25 +3459,35 @@ var LANTERN_PACK=[
 var ltState={round:[],idx:-1,roundSolved:0,lit:0,raf:0,ac:null};
 function ltShow(id){['tavHome','tavPlay','tavCreate','tavLantern'].forEach(function(x){$(x).hidden=x!==id})}
 function ltShow2(id){['ltHome','ltSolve','ltSky'].forEach(function(x){$(x).hidden=(x!==id)})}
-function ltLampSVG(){ // 清雅竹骨纸灯：月白纸罩+淡青腰带+竹骨墨线+木盖流苏
-  return '<svg viewBox="0 0 150 168" class="lt-svg">'+
-    '<path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"/>'+
-    '<ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"/>'+
-    '<path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"/>'+
-    '<path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"/>'+
-    '<path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"/>'+
-    '<path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"/>'+
-    '<path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"/>'+
-    '<ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"/>'+
-    '<path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"/>'+
-    '<path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"/></svg>';
+function ltLampSVG(){ // 暖光竹骨纸灯：奶油纸罩+暖芯光晕+竹骨+双细箍+红「谜」印+金线木盖双穗
+  return '<svg viewBox="0 0 200 272" class="lt-svg">'+
+    '<path d="M100,0 L100,8" stroke="#2B2B2B" stroke-width="3" stroke-linecap="round"/>'+
+    '<rect x="78" y="8" width="44" height="15" rx="7" fill="#B98F5E" stroke="#2B2B2B" stroke-width="3.4"/>'+
+    '<line x1="80" y1="15.5" x2="120" y2="15.5" stroke="#D9A94C" stroke-width="2"/>'+
+    '<path class="lt-body" d="M100,22 C74,22 52,44 46,84 C40,128 52,178 76,202 C88,214 112,214 124,202 C148,178 160,128 154,84 C148,44 126,22 100,22 Z" fill="url(#ltGlow2)" stroke="#2B2B2B" stroke-width="5"/>'+
+    '<ellipse cx="100" cy="124" rx="50" ry="62" fill="url(#ltCore)"/>'+
+    '<g fill="none" stroke="rgba(43,43,43,.32)" stroke-width="2.2">'+
+    '<path d="M100,24 C82,64 74,150 84,206"/><path d="M100,24 C66,70 58,150 72,204"/><path d="M100,24 L100,210"/>'+
+    '<path d="M100,24 C118,64 126,150 116,206"/><path d="M100,24 C134,70 142,150 128,204"/></g>'+
+    '<path d="M54,70 Q100,84 146,70" fill="none" stroke="#9FBFB4" stroke-width="5" stroke-linecap="round"/>'+
+    '<path d="M50,164 Q100,178 150,164" fill="none" stroke="#9FBFB4" stroke-width="5" stroke-linecap="round"/>'+
+    '<g transform="rotate(-4 100 112)"><rect class="lt-seal" x="85" y="97" width="30" height="30" rx="5" fill="#C4473A" stroke="#7E2A22" stroke-width="2"/>'+
+    '<text x="100" y="121" text-anchor="middle" font-size="21" font-weight="800" fill="#FFF6E8" font-family="Kaiti SC,KaiTi,STKaiti,serif">谜</text></g>'+
+    '<ellipse cx="100" cy="216" rx="32" ry="10" fill="#B98F5E" stroke="#2B2B2B" stroke-width="3.4"/>'+
+    '<path d="M72,214 Q100,222 128,214" fill="none" stroke="#D9A94C" stroke-width="2"/>'+
+    '<path d="M90,226 C86,238 88,246 90,252" fill="none" stroke="#2B2B2B" stroke-width="2.4" stroke-linecap="round"/>'+
+    '<circle cx="90" cy="254" r="3" fill="#D9A94C" stroke="#2B2B2B" stroke-width="2"/>'+
+    '<path d="M86,258 Q90,274 94,258 Q92,254 90,258 Q88,254 86,258 Z" fill="#C4473A" stroke="#2B2B2B" stroke-width="2"/>'+
+    '<path d="M110,226 C114,238 112,246 110,252" fill="none" stroke="#2B2B2B" stroke-width="2.4" stroke-linecap="round"/>'+
+    '<circle cx="110" cy="254" r="3" fill="#D9A94C" stroke="#2B2B2B" stroke-width="2"/>'+
+    '<path d="M106,258 Q110,274 114,258 Q112,254 110,258 Q108,254 106,258 Z" fill="#C4473A" stroke="#2B2B2B" stroke-width="2"/></svg>';
 }
-function ltLampEl(it,i){
+function ltLampEl(it,i){ // 主页灯笼：不同长度灯绳营造错落感，灯面无文字
   var d=document.createElement('div');
   d.className='lt-item'+(it.solved?' done':'');
-  d.style.width='clamp(96px,22vw,160px)';
-  d.innerHTML=ltLampSVG()+
-    '<div class="lt-txt"><span class="lt-cat">'+it.p.cat+'</span><span class="lt-riddle">'+(it.solved?('谜底 · '+it.p.ans):(it.p.riddle.length>10?it.p.riddle.slice(0,10)+'…':it.p.riddle))+'</span></div>';
+  d.style.width='clamp(84px,20vw,150px)';
+  var cords=[50,78,44];
+  d.innerHTML='<span class="lt-cord" style="height:'+cords[i%3]+'px"></span>'+ltLampSVG();
   d.addEventListener('click',function(){ltPick(i)});
   return d;
 }
@@ -3489,8 +3514,8 @@ function ltPick(i){
   $('ltCat2').textContent=it.p.cat;
   $('ltRiddle').textContent='「 '+it.p.riddle+' 」';
   $('ltInput').value='';$('ltFb').textContent='';
-  $('ltBig').innerHTML='<div class="lt-item lt-solo" style="width:100%">'+ltLampSVG()+
-    '<div class="lt-txt"><span class="lt-cat">'+it.p.cat+'</span></div></div>';
+  $('ltCap').textContent=it.p.cat+' · 第 '+(i+1)+' 盏';
+  $('ltBig').innerHTML='<div class="lt-item lt-solo" style="width:100%">'+ltLampSVG()+'</div>';
   ltShow2('ltSolve');
   // 不自动聚焦：等玩家主动点击输入框再弹键盘
 }
@@ -3586,6 +3611,21 @@ $('ltInput').addEventListener('keydown',function(e){if(e.key==='Enter')ltAnswer(
 $('ltNext').addEventListener('click',function(){
   if(ltState.roundSolved>=2)ltNewRound();
   else toast('本轮至少点亮两盏，才能换下一批');
+});
+$('ltHintBtn').addEventListener('click',function(){ // 提示：扣 2 墨水，给字数与首字
+  var it=ltState.round[ltState.idx];if(!it||it.solved)return;
+  if(save.ink<2){toast('墨水不足 2 滴，答对谜题可赚墨水');return}
+  addInk(-2);
+  var a=it.p.ans;
+  var tip=(a.length>1)?('谜底共 '+a.length+' 个字，首字是「'+a[0]+'」'):('谜底只有 1 个字，'+(it.p.cat==='字谜'?'拆字想想':'猜猜日常东西'));
+  $('ltFb').innerHTML='<span class="accent">提示：'+tip+'</span>';
+});
+$('ltGiveBtn').addEventListener('click',function(){ // 放弃：扣 5 墨水，公布谜底回主页
+  var it=ltState.round[ltState.idx];if(!it||it.solved)return;
+  if(save.ink<5){toast('墨水不足 5 滴，答对谜题可赚墨水');return}
+  addInk(-5);
+  $('ltFb').innerHTML='<span class="blue">已放弃 · 谜底是「'+it.p.ans+'」</span>';
+  setTimeout(ltRenderHome,1400);
 });
 $('ltSkyBack').addEventListener('click',function(){
   if(ltState.raf){cancelAnimationFrame(ltState.raf);ltState.raf=0}
