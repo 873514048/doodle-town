@@ -261,7 +261,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   box-shadow:0 0 0 8px #FBF3E2,0 0 0 11px #2B2B2B;display:flex;flex-direction:column;align-items:center}
 .tav-rule{padding:4px 0 7px;text-align:center;color:#8a8378;flex:none;font-size:clamp(10px,1.3vh,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 10px}
 .tav-btop{padding-right:8px;position:relative}
-.draw-top.tav-btop{margin-top:-9px;align-items:center} /* 同元素选择器（tav-btop即draw-top）：整体上移补偿顶部padding，字牌/返回键与tag组同一水平线 */
+.draw-top.tav-btop{margin-top:-9px;padding-top:8px;padding-bottom:8px;align-items:center} /* 同元素选择器：上下对称padding撑高顶栏让墨线下移，内容仍居中 */
 .tav-homemain{flex-direction:column;gap:4px;border:3px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22)}
 #tavProps{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);display:flex;align-items:center;width:max-content} /* tav-btop已整体上移，此处无需再补偿 */
 .tav-cards{display:flex;gap:5px;align-items:center;flex:none}
