@@ -82,13 +82,13 @@ canvas{display:block}
 .draw-top h2,.scene-head h2{letter-spacing:3px}
 /* 多子视图场景：公共导航条隐藏，各子视图自带导航（绘画视图放右列，非绘画视图放顶部） */
 .nav-top{display:none}
-.draw-main{flex:1;display:flex;gap:14px;align-items:stretch;justify-content:center;min-height:0;
-  border:2.4px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22);padding:12px 14px}
+.draw-main{flex:1;display:flex;gap:9px;align-items:stretch;justify-content:center;min-height:0;
+  border:2.4px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22);padding:9px 11px}
 .vsep{width:0;align-self:stretch;border-left:2px dashed rgba(43,43,43,.25)}
 .canvas-wrap{flex:1 1 auto;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-/* 高度驱动 + aspect-ratio 保证正方形：整个左边都用来做画板（撑满内容区高度，不钳 640） */
+/* 长方形画板：铺满左列全部可用空间（内部 1024×768 4:3，轻微比例差由 wrap 裁切吸收） */
 /* 画框装裱：白衬边 + 外墨线 + 双层投影（涂鸦风 · 高级感） */
-.canvas-wrap canvas{display:block;height:100%;max-height:100%;width:auto;max-width:100%;aspect-ratio:1/1;
+.canvas-wrap canvas{display:block;height:100%;width:100%;max-width:100%;max-height:100%;
   background:#FFFFFF;border:2.4px solid #2B2B2B;border-radius:14px;box-shadow:0 3px 0 rgba(43,43,43,.3);margin:0 auto;touch-action:none;cursor:crosshair;
   box-shadow:0 0 0 7px #FFFFFF,0 0 0 8.6px rgba(43,43,43,.28),3px 10px 26px rgba(43,43,43,.15),0 2px 6px rgba(43,43,43,.08)}
 /* 游戏场景内压缩控制行上下边距：960×540 舞台画布高度 ≥260px */
@@ -99,8 +99,8 @@ canvas{display:block}
 /* 画室（广场）左右分栏通用类：左侧画板主体 + 右侧功能列（画室/失忆画室/投稿/你画我猜/画主角共用） */
 #scene-studio .draw-main,#scene-first .draw-main,#scene-guess .draw-main,#scene-tavern .draw-main{justify-content:flex-start}
 /* 右列：淡彩晨雾裸排（纸白透底 + 四角晕染），内容卡片伸缩铺满整列，无滑动条无留白 */
-.studio-side,.side-col{flex:0 0 322px;display:flex;flex-direction:column;gap:8px;justify-content:flex-start;min-width:0;min-height:0;overflow:hidden;
-  padding:10px 13px 12px;box-sizing:border-box}
+.studio-side,.side-col{flex:0 0 322px;display:flex;flex-direction:column;gap:6px;justify-content:flex-start;min-width:0;min-height:0;overflow:hidden;
+  padding:8px 6px;box-sizing:border-box}
 /* 卡片伸缩均分剩余高度，内容垂直居中 → 一屏铺满 */
 .studio-side .tool-card,.side-col .tool-card{flex:1 1 auto;justify-content:center}
 /* 引导页右列：不框起来，裸排在右侧（按键不做托盘卡片） */
@@ -131,19 +131,19 @@ canvas{display:block}
 .layer-th.hide .l-eye{background:rgba(43,43,43,.85)}
 .l-op{flex:0 0 auto;padding:5px 8px;font-size:13px;line-height:1}
 /* 图标工具按钮（淡彩晨雾工具牌）：图标在上 + 名字在下，一眼可辨 */
-.icobtn{width:auto;min-width:46px;height:auto;flex-direction:column;justify-content:center;gap:3px;padding:5px 6px 4px}
+.icobtn{width:auto;min-width:42px;height:auto;flex-direction:column;justify-content:center;gap:2px;padding:4px 5px 3px}
 .icobtn svg.i{width:17px;height:17px;margin:0}
 .icobtn span{font-size:11px;font-weight:700;line-height:1;letter-spacing:1px;margin:0}
 .ico-row{gap:6px}
 /* 右列内普通按钮紧凑化（类别/提交等），防内容溢出一屏 */
 .side-col .btn:not(.icobtn),.studio-side .btn:not(.icobtn){padding:4px 9px;font-size:12.5px;gap:4px}
 .side-col .btn:not(.icobtn) svg.i,.studio-side .btn:not(.icobtn) svg.i{width:14px;height:14px}
-.side-col .swatch,.studio-side .swatch{width:21px;height:21px}
+.side-col .swatch,.studio-side .swatch{width:20px;height:20px}
 /* 语音按钮：与同行输入框/按钮垂直居中，紧凑间距 */
 .qrow .mic-btn{align-self:center}
 .qrow{gap:8px}
 #scene-studio .canvas-wrap canvas{height:100%}
-.ctrl-row .btn,.tool-row .btn{font-family:inherit;font-size:14px;padding:7px 15px;cursor:pointer;background:linear-gradient(180deg,#FFFFFF,#F4F2E9);color:#2B2B2B;
+.ctrl-row .btn,.tool-row .btn{font-family:inherit;font-size:13px;padding:5px 11px;cursor:pointer;background:linear-gradient(180deg,#FFFFFF,#F4F2E9);color:#2B2B2B;
   border:1.8px solid #2B2B2B;border-radius:3px 11px 4px 12px / 11px 4px 12px 5px;transition:transform .08s,background .12s;
   box-shadow:0 2px 0 rgba(43,43,43,.75),inset 0 1px 0 rgba(255,255,255,.9)}
 .ctrl-row .btn:active,.tool-row .btn:active{transform:translateY(1.6px);box-shadow:0 .5px 0 rgba(43,43,43,.75)}
@@ -161,7 +161,7 @@ canvas{display:block}
 .swatch-rainbow{background:conic-gradient(#E14B3B,#F2B134,#4E9B5E,#3B6EA5,#7B5EA7,#E14B3B)}
 /* 淡彩晨雾分组：工具行之间以手绘虚线分隔（无框裸排） */
 .studio-side .tool-card>.tool-row+.tool-row,.side-col .tool-card>.tool-row+.tool-row{
-  border-top:1.4px dashed rgba(43,43,43,.35);padding-top:8px;margin-top:2px}
+  border-top:1.4px dashed rgba(43,43,43,.35);padding-top:5px;margin-top:1px}
 .status-line{font-size:14px;margin:6px 0;min-height:24px;text-align:center;color:rgba(43,43,43,.75);}
 /* 失忆画室 / AI 猜画倒计时：细进度条，剩余<30% 变番茄红 */
 .timebar i{background:#3B6EA5}
@@ -316,7 +316,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   <div class="scene" id="scene-first">
     <div class="scene-pad">
       <div class="draw-main">
-        <div class="canvas-wrap"><canvas id="firstCanvas" width="512" height="512"></canvas></div>
+        <div class="canvas-wrap"><canvas id="firstCanvas" width="1024" height="768"></canvas></div>
         <aside class="side-col">
           <div class="draw-top" style="flex-direction:column;align-items:flex-start;gap:2px">
             <h1 class="hw uw" style="font-size:28px">画出你自己吧！</h1>
@@ -354,7 +354,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   <div class="scene" id="scene-studio">
     <div class="scene-pad">
       <div class="draw-main">
-        <div class="canvas-wrap"><canvas id="studioCanvas" width="512" height="512"></canvas></div>
+        <div class="canvas-wrap"><canvas id="studioCanvas" width="1024" height="768"></canvas></div>
         <aside class="studio-side">
           <div class="draw-top" style="flex-wrap:wrap">
             <button class="btn blu back-btn">返回 →</button>
@@ -403,7 +403,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 
       <div id="memDraw" hidden class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="memCanvas" width="512" height="512"></canvas></div>
+          <div class="canvas-wrap"><canvas id="memCanvas" width="1024" height="768"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn">返回 →</button>
@@ -450,7 +450,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         <div id="jdArea">
           <div class="jd-left">
             <div class="paper-panel sketch-border" style="flex:1;display:flex;padding:8px;min-height:0">
-              <canvas id="jdCanvas" width="512" height="512"></canvas>
+              <canvas id="jdCanvas" width="1024" height="768"></canvas>
             </div>
             <span class="small">这幅画的是什么？</span>
           </div>
@@ -525,7 +525,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       <div id="tavPlay" hidden class="draw-stage">
         <div class="draw-main" style="justify-content:flex-start">
           <div class="canvas-wrap">
-            <canvas id="tavCanvas" width="512" height="512"></canvas>
+            <canvas id="tavCanvas" width="1024" height="768"></canvas>
           </div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:6px">
@@ -561,7 +561,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       <!-- 我来出题：类别与答案卡 / 画布 / 工具条 / 提交 -->
       <div id="tavCreate" hidden class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="ctCanvas" width="512" height="512"></canvas></div>
+          <div class="canvas-wrap"><canvas id="ctCanvas" width="1024" height="768"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn" id="ctBack">返回 →</button>
@@ -648,7 +648,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       </div>
       <div id="gvDraw" hidden class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="gvCanvas" width="512" height="512"></canvas></div>
+          <div class="canvas-wrap"><canvas id="gvCanvas" width="1024" height="768"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn">返回 →</button>
