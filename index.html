@@ -263,7 +263,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 .tav-rule{padding:4px 0 7px;text-align:center;color:#8a8378;flex:none;font-size:clamp(10px,1.3vh,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 10px}
 .tav-btop{padding-right:8px;position:relative}
 .tav-homemain{flex-direction:column;gap:4px;border:3px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22)}
-#tavProps{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;width:max-content}
+#tavProps{position:absolute;left:50%;top:0;bottom:0;margin-top:-9px;transform:translateX(-50%);display:flex;align-items:center;width:max-content}
 .tav-cards{display:flex;gap:5px;align-items:center;flex:none}
 .tav-cards b{display:inline-block;background:#fff;border:2.5px solid #2B2B2B;border-radius:9px;padding:2px 7px;font-size:17px;font-weight:800;line-height:1.35;box-shadow:2px 2px 0 rgba(43,43,43,.18)}
 .tav-cards b:nth-child(4n+1){transform:rotate(-4deg)}
@@ -279,7 +279,8 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   .tav-btop .sub{display:none}
   .tav-cards b{font-size:13px;padding:1px 5px;border-radius:7px}
   #tavProps .tag{padding:2px 5px;font-size:10px}
-  #tavProps{max-width:60vw}
+  #tavProps{max-width:72vw}
+  .tav-frame .small{font-size:8.5px}
 }
 /* ── A 版答题 · 老墨的吧台（左画右答）── */
 .apw{flex:1;display:flex;gap:clamp(10px,1.4vw,16px);min-height:0;padding:6px 2px 2px}
@@ -603,8 +604,8 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <div class="prop-row" id="tavProps" style="flex:none"></div>
         </div>
         <div style="flex:1;display:flex;align-items:stretch;min-height:0;gap:6px;padding:2px 8px 0">
-          <div style="width:clamp(78px,12vw,140px);flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0">
-            <svg viewBox="0 0 330 440" style="width:82%;max-height:34vh;flex:none">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+            <svg viewBox="0 0 330 440" style="width:auto;max-width:min(120px,80%);max-height:34vh;flex:none">
               <defs>
                 <linearGradient id="kvRobe" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#566884"/><stop offset="100%" stop-color="#3D4D66"/></linearGradient>
                 <radialGradient id="kvSkin" cx="50%" cy="40%" r="70%"><stop offset="0%" stop-color="#FDF3E0"/><stop offset="100%" stop-color="#F1DDC0"/></radialGradient>
@@ -641,15 +642,15 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <div class="tav-rope" style="height:clamp(22px,6vh,84px)"></div>
             <div class="tav-frame" style="width:auto;max-width:92%;padding:clamp(8px,1.4vw,14px) clamp(18px,3vw,34px);transform:rotate(-.6deg);justify-content:center">
               <canvas id="tavPreview" width="640" height="480" style="width:auto;height:auto;max-width:min(480px,58vw);max-height:max(140px,40vh);border:none;border-radius:6px;background:#fff"></canvas>
-              <div class="small" style="margin-top:6px;font-weight:800;font-size:clamp(10px,1.3vw,13px)">今日一幅 · 每日轮换 · 镇民投稿精选</div>
-              <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(9px,1.2vw,12px)"></div>
+              <div class="small" style="margin-top:6px;font-weight:800;font-size:clamp(9px,1.3vw,13px);white-space:nowrap;overflow:hidden;max-width:100%">今日一幅 · 每日轮换 · 镇民投稿精选</div>
+              <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(9px,1.2vw,12px);white-space:nowrap;overflow:hidden;max-width:100%"></div>
             </div>
           </div>
-          <div style="width:clamp(118px,16vw,200px);flex:none;display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,1.4vh,14px);min-width:0">
-            <button class="btn big" id="tavStart" style="width:100%;font-size:clamp(13px,1.7vw,17px);padding:clamp(7px,1.2vh,11px) 10px">开始今日特调</button>
-            <button class="btn" id="tavLanternBtn" style="width:100%;background:#FBEFD8;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">🏮 灯谜会</button>
-            <button class="btn blu" id="tavCreateBtn" style="width:100%;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">我来出题</button>
-            <button class="btn grn" id="tavReviewBtn" style="width:100%;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">审核台</button>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,1.4vh,14px)">
+            <button class="btn big" id="tavStart" style="width:min(200px,100%);font-size:clamp(13px,1.7vw,17px);padding:clamp(7px,1.2vh,11px) 10px">开始今日特调</button>
+            <button class="btn" id="tavLanternBtn" style="width:min(200px,100%);background:#FBEFD8;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">🏮 灯谜会</button>
+            <button class="btn blu" id="tavCreateBtn" style="width:min(200px,100%);font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">我来出题</button>
+            <button class="btn grn" id="tavReviewBtn" style="width:min(200px,100%);font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">审核台</button>
           </div>
         </div>
         <div class="tav-rule small">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1 分 = 1 墨水</div>
