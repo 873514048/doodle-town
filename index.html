@@ -262,7 +262,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   box-shadow:0 0 0 8px #FBF3E2,0 0 0 11px #2B2B2B;display:flex;flex-direction:column;align-items:center}
 .tav-rule{padding:4px 0 7px;text-align:center;color:#8a8378;flex:none;font-size:clamp(10px,1.3vh,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 10px}
 .tav-btop{padding-right:8px;position:relative}
-.tav-homemain .tav-btop .draw-top{margin-top:-4px;align-items:center} /* 补偿画框内边距，让字牌/返回键在顶栏视觉居中 */
+.tav-homemain .tav-btop .draw-top{margin-top:-9px;align-items:center} /* 与tag组同值补偿，字牌/返回键/鲜花鸡蛋同一水平线居中 */
 .tav-homemain{flex-direction:column;gap:4px;border:3px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22)}
 #tavProps{position:absolute;left:50%;top:0;bottom:0;margin-top:-9px;transform:translateX(-50%);display:flex;align-items:center;width:max-content}
 .tav-cards{display:flex;gap:5px;align-items:center;flex:none}
@@ -638,13 +638,15 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             </svg>
             <b style="font-size:clamp(12px,1.5vw,15px)">掌柜 · 老墨</b>
           </div>
-          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0">
-            <div class="tav-rope" style="flex:1 1 0;min-height:12px"></div>
-            <div class="tav-frame" style="width:min(100%,calc(46vh*1.4));max-width:96%;aspect-ratio:1.4;padding:clamp(8px,1.4vw,14px) clamp(18px,3vw,34px);transform:rotate(-.6deg);justify-content:center;flex:none">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0">
+            <div class="tav-rope" style="flex:none;height:clamp(20px,4vh,44px)"></div>
+            <div class="tav-frame" style="width:min(100%,calc(52vh*1.5));max-width:96%;aspect-ratio:1.5;padding:clamp(8px,1.4vw,14px) clamp(18px,3vw,34px);transform:rotate(-.6deg);justify-content:center;flex:none">
               <canvas id="tavPreview" width="640" height="480" style="flex:1;min-height:0;width:auto;max-width:100%;object-fit:contain;border:none;border-radius:6px;background:#fff"></canvas>
               <div class="small" style="margin-top:6px;font-weight:800;font-size:clamp(9px,1.3vw,13px);white-space:nowrap;overflow:hidden;max-width:100%">今日一幅 · 每日轮换 · 镇民投稿精选</div>
               <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(9px,1.2vw,12px);white-space:nowrap;overflow:hidden;max-width:100%"></div>
             </div>
+            <div class="tav-rule small" style="margin-top:6px;max-width:96%">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1 分 = 1 墨水</div>
+            <div style="flex:1 1 0;min-height:0"></div>
           </div>
           <div id="tavColR" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,1.4vh,14px)">
             <button class="btn big" id="tavStart" style="width:min(200px,100%);font-size:clamp(13px,1.7vw,17px);padding:clamp(7px,1.2vh,11px) 10px">开始今日特调</button>
@@ -653,7 +655,6 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <button class="btn grn" id="tavReviewBtn" style="width:min(200px,100%);font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">审核台</button>
           </div>
         </div>
-        <div class="tav-rule small">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1 分 = 1 墨水</div>
         </div>
       </div>
 
@@ -3379,46 +3380,9 @@ function registerTavernPack(pack){
   return true;
 }
 TAVERN_PACKS.forEach(function(p){tav.official=tav.official.concat(resolvePack(p))});
-// —— 大厅手动调位面板（URL 加 ?dbg=1 打开，拖滑杆实时调整；调好后「复制参数」发给 AI 固化）——
-var TAV_DBG={colW:140,keeperW:120,frameVH:46,frameMax:96,frameRatio:1.4,ropeMin:12,btnW:200,topShift:-4};
-function tavDbgApply(){
-  var cl=$('tavColL');if(cl)cl.style.width=TAV_DBG.colW+'px';
-  var ks=$('tavKeeperSvg');if(ks)ks.style.maxWidth=TAV_DBG.keeperW+'px';
-  var fr=document.querySelector('.tav-frame');
-  if(fr){fr.style.width='min(100%,'+(TAV_DBG.frameVH*TAV_DBG.frameRatio)+'vh)';fr.style.maxWidth=TAV_DBG.frameMax+'%';fr.style.aspectRatio=TAV_DBG.frameRatio}
-  var rp=document.querySelector('.tav-rope');if(rp)rp.style.minHeight=TAV_DBG.ropeMin+'px';
-  var cr=$('tavColR');if(cr){var bs=cr.querySelectorAll('button');for(var i=0;i<bs.length;i++)bs[i].style.width='min('+TAV_DBG.btnW+'px,100%)'}
-  var dt=document.querySelector('.tav-btop .draw-top');if(dt)dt.style.marginTop=TAV_DBG.topShift+'px';
-}
-function tavDebugPanel(){
-  if($('tavDbg'))return;
-  try{var s=localStorage.getItem('tavDbg');if(s){var o=JSON.parse(s);for(var k in o)TAV_DBG[k]=o[k]}}catch(e){}
-  var d=document.createElement('div');d.id='tavDbg';
-  d.style.cssText='position:fixed;right:8px;bottom:8px;z-index:9999;background:#fff;border:2.5px solid #2B2B2B;border-radius:12px;padding:8px 10px;font:11px/1.6 sans-serif;color:#2B2B2B;width:196px;box-shadow:3px 4px 0 rgba(43,43,43,.25)';
-  var rows=[['colW','左列宽',60,240],['keeperW','老墨大小',40,200],['frameVH','画框高vh',20,70],['frameMax','画框宽%',60,100],['frameRatio','画框比例',100,200],['ropeMin','挂绳最短',0,120],['btnW','按钮宽',100,300],['topShift','顶栏补偿',-12,8]];
-  var html='<b style="display:block;text-align:center;margin-bottom:3px">手动调位（大厅）</b>';
-  rows.forEach(function(r){
-    html+='<div style="display:flex;align-items:center;gap:5px;margin:2px 0"><span style="flex:none;width:54px">'+r[1]+'</span><input type="range" min="'+r[2]+'" max="'+r[3]+'" step="1" data-k="'+r[0]+'" value="'+TAV_DBG[r[0]]+'" style="flex:1"><b data-v="'+r[0]+'" style="width:32px;text-align:right;font-size:10px">'+TAV_DBG[r[0]]+'</b></div>';
-  });
-  html+='<div style="display:flex;gap:5px;margin-top:6px"><button id="tavDbgSave" style="flex:1;border:2px solid #2B2B2B;border-radius:8px;background:#EAF6F1;padding:3px 0;font-weight:700">保存</button><button id="tavDbgCopy" style="flex:1;border:2px solid #2B2B2B;border-radius:8px;background:#FBEFD8;padding:3px 0;font-weight:700">复制参数</button><button id="tavDbgClose" style="flex:none;border:2px solid #2B2B2B;border-radius:8px;background:#fff;padding:3px 8px">✕</button></div>';
-  d.innerHTML=html;document.body.appendChild(d);
-  var sls=d.querySelectorAll('input[type=range]');
-  for(var i=0;i<sls.length;i++)(function(sl){
-    sl.oninput=function(){TAV_DBG[sl.dataset.k]=+sl.value;var v=d.querySelector('[data-v="'+sl.dataset.k+'"]');if(v)v.textContent=sl.value;tavDbgApply()};
-  })(sls[i]);
-  $('tavDbgSave').onclick=function(){try{localStorage.setItem('tavDbg',JSON.stringify(TAV_DBG));toast('已保存，本机刷新仍生效')}catch(e){}};
-  $('tavDbgCopy').onclick=function(){
-    var txt=JSON.stringify(TAV_DBG);
-    try{navigator.clipboard.writeText(txt);toast('已复制，把它发给 AI 固化')}
-    catch(e){var t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('已复制，把它发给 AI 固化')}catch(e2){window.prompt('长按复制参数',txt)}t.remove()}
-  };
-  $('tavDbgClose').onclick=function(){d.remove()};
-  tavDbgApply();
-}
 function enterTavern(){
   showScene('scene-tavern');
   renderProps();
-  if(location.search.indexOf('dbg=1')>=0)tavDebugPanel();else{try{if(localStorage.getItem('tavDbg'))tavDbgApply()}catch(e){}}
   $('tavHome').hidden=false;$('tavPlay').hidden=true;$('tavCreate').hidden=true;$('tavLantern').hidden=true;
   $('tavScore').textContent='0';$('tavCombo').textContent='0';
   var poolN=tav.official.length+save.approvedQs.length;
