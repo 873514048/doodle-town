@@ -289,7 +289,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 .apw-right .card:nth-child(1){flex:1.5 1 0}
 .apw-right .card:nth-child(2),.apw-right .card:nth-child(3){flex:1 1 0}
 .apw-au{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
-.apw-left .draw-top{padding-right:92px}
+/* 返回键已入流（与得分方块对称），无需右侧让位 */
 /* ── 答题页 UI 对齐设计稿：直边墨框体系 ── */
 #scene-tavern .btn.blu{background:#EAF2FA;color:#2B2B2B;border:2.6px solid #2B2B2B;border-radius:12px;box-shadow:2px 3px 0 rgba(43,43,43,.2)}
 #scene-tavern .btn.blu:hover{background:#DCE9F5;color:#2B2B2B}
@@ -316,7 +316,8 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   .apw .qinput{font-size:14px;padding:9px 10px}
   #tavSend{padding:9px 12px;font-size:14px}
   #tavLove .lvbtn{font-size:12px;padding:4px 8px}
-  .apw-left .draw-top{padding-right:95px}
+  #tavFb{font-size:10px}
+  .apw-left .draw-top{padding-right:0}
 }
 /* ── 灯谜会 · 夜间市集（独立板块）── */
 .lt-top{background:#2A3140;border-bottom:3px solid #14181F;border-radius:14px 14px 0 0;flex:none}
@@ -657,13 +658,13 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       <div id="tavPlay" hidden class="apw">
         <div class="apw-left">
           <div class="draw-top" style="gap:8px;flex-wrap:nowrap;min-width:0">
-            <button class="btn blu back-btn" style="font-size:13px;padding:5px 12px">返回 →</button>
             <span class="stamp" id="tavCat" style="background:#F2C94C">成语</span>
             <b id="tavTitle" style="font-size:15px;white-space:nowrap">第 1/5 题</b>
             <span class="apw-au" id="tavAuthor" style="font-size:13px;font-weight:700;white-space:nowrap"></span>
             <span class="sp"></span>
             <span class="tag" style="white-space:nowrap">得分 <b id="tavScore">0</b></span>
             <span class="tag apw-cb" style="white-space:nowrap">连击 <b id="tavCombo">0</b></span>
+            <button class="btn blu back-btn" style="position:static;font-size:15px;font-weight:700;padding:6px 14px;border-radius:10px;box-shadow:none;white-space:nowrap">返回 →</button>
           </div>
           <div class="apw-frame"><canvas id="tavCanvas" width="1024" height="768"></canvas></div>
         </div>
@@ -677,7 +678,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <button class="mic-btn" data-voice="tavInput" title="语音输入" aria-label="语音输入"></button>
               <button class="btn" id="tavSend" style="flex:none;padding:9px 18px;font-size:16px">提交</button>
             </div>
-            <div id="tavFb" style="min-height:18px;font-weight:700;font-size:13px;margin-top:6px"></div>
+            <div id="tavFb" style="min-height:18px;font-weight:700;font-size:13px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
           </div>
           <div class="card">
             <div style="display:flex;gap:10px;align-items:center">
@@ -3656,7 +3657,7 @@ function tavRight(q){
   var pts=10+(tav.combo-1)*2;tav.score+=pts;
   $('tavScore').textContent=tav.score;$('tavCombo').textContent=tav.combo;
   $('tavFb').innerHTML='<span class="blue">答对啦！+'+pts+' 分'+(tav.combo>1?'（连对 x'+tav.combo+'）':'')+'</span>'+
-    (q.egg?'<br><span class="small">'+q.egg+'</span>':'');
+    (q.egg?'<span class="small"> · '+q.egg+'</span>':'');
   $('tavInput').disabled=true;
   toast('答对！+10 起，连对每击 +2',1400);
   setTimeout(function(){if(curScene==='scene-tavern')tavNext()},1200);
@@ -3671,7 +3672,7 @@ function tavHint(){
   var q=tav.qs[tav.idx];
   tav.hintUsed=true;tav.score-=2;
   $('tavHintBtn').disabled=true;
-  $('tavFb').innerHTML='<span class="blue">提示（-2 分）：'+(q.hint||('首字「'+q.ans.charAt(0)+'」'))+'</span>';
+  $('tavFb').innerHTML='<span class="blue">'+(q.hint||('首字「'+q.ans.charAt(0)+'」'))+'</span>';
 }
 function tavTimeout(){
   if(tav.locked)return;
@@ -3688,7 +3689,7 @@ function tavGive(){
 function tavReveal(prefix){
   var q=tav.qs[tav.idx];
   $('tavFb').innerHTML='<span class="accent">'+prefix+' · 答案是「'+q.ans+'」</span>'+
-    (q.player?'<br><span class="small">玩家出品 · '+q.author+'</span>':'');
+    (q.player?'<span class="small"> · '+q.author+'出品</span>':'');
   $('tavInput').disabled=true;
   setTimeout(function(){if(curScene==='scene-tavern')tavNext()},1600);
 }
