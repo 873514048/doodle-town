@@ -254,6 +254,35 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 .qinput:focus{border-bottom-color:#C9A86A;box-shadow:0 3px 8px -3px rgba(201,168,106,.35)}
 .qinput::placeholder{font-weight:400;opacity:.5}
 .lovebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* ── 酒馆 B 版（谜题墙上挂）：顶栏 / 麻绳吊画框 / 底部规则行 ── */
+.tav-btop{border-bottom:3px solid #2B2B2B;background:#FBF3E2;border-radius:14px 14px 0 0;flex:none}
+.tav-rope{width:4px;height:32px;background:#2B2B2B;margin:0 auto;transform:rotate(3deg);transform-origin:top;flex:none}
+.tav-frame{border:4px solid #2B2B2B;border-radius:12px;background:#fff;
+  box-shadow:0 0 0 8px #FBF3E2,0 0 0 11px #2B2B2B;display:flex;flex-direction:column;align-items:center}
+.tav-playframe{flex:none;width:min(60%,760px);min-height:0;max-height:100%;margin:0 auto}
+.tav-playframe .canvas-wrap{flex:1;min-height:0;width:100%}
+.tav-playframe .canvas-wrap canvas{width:100%;height:100%;object-fit:contain;background:#fff}
+.tav-rule{padding:5px 0 9px;text-align:center;color:#8a8378;flex:none}
+/* ── 灯谜会 · 夜间市集（独立板块）── */
+.lt-top{background:#2A3140;border-bottom:3px solid #14181F;border-radius:14px 14px 0 0;flex:none}
+.lt-back{background:#3A4358;color:#F5E9C8}
+.lt-sky{background:linear-gradient(#1D2433 0%,#2E3648 62%,#3A4358 100%)}
+.lt-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;animation:ltSwing 3.2s ease-in-out infinite;transform-origin:top center}
+@keyframes ltSwing{0%,100%{transform:rotate(-2.2deg)}50%{transform:rotate(2.2deg)}}
+.lt-string{width:2.5px;height:16px;background:#5A5245}
+.lt-lamp{width:148px;min-height:88px;padding:10px 12px;border-radius:46%/38%;
+  background:radial-gradient(ellipse at 50% 38%,#E85D4A 0%,#C43A2B 68%,#9E2C20 100%);
+  border:3px solid #7E241B;box-shadow:0 0 22px rgba(242,164,60,.30),inset 0 0 14px rgba(0,0,0,.22);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative;transition:box-shadow .3s}
+.lt-lamp::before,.lt-lamp::after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:56%;height:5px;background:#8C2A1F;border:1.5px solid #6B1E15}
+.lt-lamp::before{top:-5px}.lt-lamp::after{bottom:-5px}
+.lt-cat{font-size:11px;font-weight:800;color:#F5D9A8;letter-spacing:2px}
+.lt-riddle{font-size:13px;font-weight:800;color:#FBEFD8;text-align:center;line-height:1.35}
+.lt-item:hover .lt-lamp{box-shadow:0 0 30px rgba(242,164,60,.5),inset 0 0 14px rgba(0,0,0,.22)}
+.lt-item.done{animation:none}
+.lt-item.done .lt-lamp{background:radial-gradient(ellipse at 50% 38%,#F5D968 0%,#E9B824 66%,#C99516 100%);border-color:#A87A10;box-shadow:0 0 34px rgba(242,201,76,.6),inset 0 0 12px rgba(255,255,255,.28)}
+.lt-item.done .lt-riddle{color:#5A4208}
+.lt-panel{flex:none;background:#FBF3E2;border-top:3px solid #14181F;padding:12px 22px 14px;box-shadow:0 -6px 18px rgba(0,0,0,.25)}
 .lvbtn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#FBF9F4;
   border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;z-index:1}
 .lvbtn svg{width:18px;height:18px}
@@ -502,71 +531,68 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         <span class="sp"></span>
       </div>
 
-      <!-- 酒馆大厅：左·今日特调黑板 / 右·掌柜与入口 -->
-      <div id="tavHome" class="colflow" style="align-items:center;justify-content:center;gap:14px">
-        <div class="draw-top" style="width:100%;justify-content:flex-start;flex-wrap:wrap">
+      <!-- 酒馆大厅（B 版·谜题墙上挂）：顶栏 / 中央吊挂画框 / 左掌柜 / 右入口 -->
+      <div id="tavHome" class="colflow" style="align-items:stretch;justify-content:flex-start;gap:0">
+        <div class="draw-top tav-btop" style="width:100%;justify-content:flex-start">
           <button class="btn blu back-btn">返回 →</button>
-          <h2 class="hw uw" style="font-size:22px">猜谜酒馆</h2>
+          <h2 class="hw uw" style="font-size:21px;letter-spacing:3px">猜 谜 酒 馆</h2>
           <span class="sub small">掌柜老墨的手绘谜题 · 看图作答</span>
           <span class="sp"></span>
           <div class="prop-row" id="tavProps"></div>
         </div>
-        <div style="display:flex;gap:18px;align-items:stretch">
-          <div class="blackboard sketch-border" data-ink="#FBF9F4" style="width:250px;padding:16px 18px">
-            <div style="text-align:center;letter-spacing:4px">── 今日特调 ──</div>
-            <div class="row2" id="tavBoardLine" style="margin-top:10px">看老墨的涂鸦动画，<br>在输入框里写下答案！</div>
-            <div class="row2" style="margin-top:10px;padding-top:8px;border-top:1.5px dashed rgba(251,249,244,.3)">答对 +10 · 连对每击 +2<br>提示 -2 · 放弃 -5 · 1分=1墨水</div>
-            <div class="row2" id="tavFlowLine" style="color:#F2C4BC;margin-top:8px"></div>
+        <div style="flex:1;display:flex;align-items:stretch;min-height:0;gap:8px">
+          <div style="width:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;flex:none">
+            <svg width="118" height="140" viewBox="0 0 120 150" style="flex:none"><g stroke="#2B2B2B" stroke-width="3.5" fill="#FBF3E2" stroke-linecap="round"><circle cx="60" cy="58" r="34"/><path d="M34,40 l-8,-18 17,6 z M86,40 l8,-18 -17,6 z"/><circle cx="48" cy="54" r="9" fill="#fff"/><circle cx="72" cy="54" r="9" fill="#fff"/><circle cx="48" cy="54" r="3.4" fill="#2B2B2B" stroke="none"/><circle cx="72" cy="54" r="3.4" fill="#2B2B2B" stroke="none"/><path d="M52,68 q8,8 16,0" fill="none"/><ellipse cx="60" cy="116" rx="38" ry="26"/><path d="M30,110 q-16,-8 -12,-26" fill="none"/></g></svg>
+            <b style="font-size:15px">掌柜 · 老墨</b>
+            <div id="tavBoardLine" class="small" style="text-align:center;font-size:12px">看老墨的涂鸦动画，<br>在输入框里写下答案！</div>
           </div>
-          <div class="paper-panel sketch-border" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px 22px">
-            <b>掌柜 · 老墨</b>
-            <canvas id="tavKeeper" width="200" height="120"></canvas>
-            <div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
-              <button class="btn big" id="tavStart">开始今日特调</button>
-              <div style="display:flex;gap:8px">
-                <button class="btn blu" id="tavCreateBtn" style="flex:1;white-space:nowrap;padding-left:8px;padding-right:8px">我来出题</button>
-                <button class="btn blu" id="tavReviewBtn" style="flex:1;white-space:nowrap">审核台</button>
-              </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;padding-top:6px">
+            <div class="tav-rope"></div>
+            <div class="tav-frame" style="padding:12px 16px">
+              <canvas id="tavKeeper" width="200" height="120" style="width:min(320px,52vw)"></canvas>
+              <div class="small" style="margin-top:8px;font-weight:700">今日一幅 · 每日轮换 · 镇民投稿精选</div>
+              <div id="tavFlowLine" class="small" style="margin-top:3px;color:#C4473A;font-size:12px"></div>
             </div>
+          </div>
+          <div style="width:220px;display:flex;flex-direction:column;justify-content:center;gap:12px;flex:none;padding:0 10px">
+            <button class="btn big" id="tavStart" style="width:100%">开始今日特调</button>
+            <button class="btn" id="tavLanternBtn" style="width:100%;background:#FBEFD8">🏮 灯谜会 · 夜市</button>
+            <button class="btn blu" id="tavCreateBtn" style="width:100%">我来出题</button>
+            <button class="btn grn" id="tavReviewBtn" style="width:100%">审核台</button>
           </div>
         </div>
-        <span class="small">题库含官方题与镇民投稿 · 每日 5 题按日期轮换</span>
+        <div class="tav-rule small">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1分=1墨水 · 题库含官方题与镇民投稿，每日 5 题按日期轮换</div>
       </div>
 
-      <!-- 答题：题目区（左图） / 答题区 + 互动区（右列） -->
-      <div id="tavPlay" hidden class="draw-stage">
-        <div class="draw-main" style="justify-content:flex-start">
-          <div class="canvas-wrap">
-            <canvas id="tavCanvas" width="1024" height="768"></canvas>
+      <!-- 答题（B 版）：顶部状态栏 / 中央吊挂画框谜题 / 右上互动角 / 底部通栏输入 -->
+      <div id="tavPlay" hidden class="colflow" style="gap:0">
+        <div class="draw-top tav-btop" style="width:100%;justify-content:flex-start;gap:8px">
+          <button class="btn blu back-btn">返回 →</button>
+          <span class="stamp" id="tavCat">成语</span>
+          <b id="tavTitle" style="font-size:14px">第 1/5 题</b>
+          <span class="small" id="tavAuthor" style="font-size:11px"></span>
+          <div class="bar sketch-border" style="flex:1;min-width:80px;margin:0 12px"><i id="tavBar"></i></div>
+          <span class="tag sketch-border small">得分 <b id="tavScore">0</b></span>
+          <span class="tag sketch-border small">连击 <b id="tavCombo">0</b></span>
+        </div>
+        <div style="flex:1;position:relative;min-height:0">
+          <div class="tav-rope" style="height:34px"></div>
+          <div class="tav-frame tav-playframe">
+            <div class="canvas-wrap" style="flex:1;min-height:0;width:100%"><canvas id="tavCanvas" width="1024" height="768"></canvas></div>
           </div>
-          <aside class="side-col">
-            <div class="draw-top" style="flex-wrap:wrap;gap:6px">
-              <button class="btn blu back-btn">返回 →</button>
-              <span class="stamp" id="tavCat">成语</span>
-              <b id="tavTitle" style="font-size:14px">第 1/5 题</b>
-              <span class="small" id="tavAuthor" style="font-size:11px"></span>
-              <span class="tag sketch-border small" style="margin-left:auto">得分 <b id="tavScore">0</b></span>
-              <span class="tag sketch-border small">连击 <b id="tavCombo">0</b></span>
+          <div style="position:absolute;right:14px;top:44px;display:flex;flex-direction:column;gap:10px;align-items:flex-end">
+            <button class="btn blu sketch-border" id="tavHintBtn" style="font-size:14px;padding:7px 16px">提示(-2)</button>
+            <button class="btn blu sketch-border" id="tavGiveBtn" style="font-size:14px;padding:7px 16px">放弃(-5)</button>
+            <div id="tavLove" class="lovebar" style="flex-direction:column;align-items:flex-end"></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:12px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 22px">
+            <div class="qrow" style="width:min(860px,96%)">
+              <input id="tavInput" class="qinput sketch-border" style="flex:1;min-width:0" placeholder="看涂鸦，输入你的答案…" maxlength="24">
+              <button class="mic-btn" data-voice="tavInput" title="语音输入" aria-label="语音输入"></button>
+              <button class="btn big" id="tavSend" style="padding:10px 26px">提交</button>
             </div>
-            <div class="tool-card">
-              <span class="tool-label">答题区 · 看涂鸦写答案</span>
-              <div class="bar sketch-border"><i id="tavBar"></i></div>
-              <div class="qrow">
-                <input id="tavInput" class="qinput sketch-border" style="flex:1" placeholder="看涂鸦，输入你的答案…" maxlength="24">
-                <button class="mic-btn" data-voice="tavInput" title="语音输入" aria-label="语音输入"></button>
-                <button class="btn sketch-border" id="tavSend">提交</button>
-              </div>
-              <div id="tavFb" style="min-height:18px;font-weight:700;font-size:14px"></div>
-            </div>
-            <div class="tool-card">
-              <span class="tool-label">卡壳与互动</span>
-              <div class="qrow" style="flex-wrap:wrap">
-                <button class="btn blu sketch-border" id="tavHintBtn">提示(-2)</button>
-                <button class="btn blu sketch-border" id="tavGiveBtn">放弃(-5)</button>
-              </div>
-              <div id="tavLove" class="lovebar"></div>
-            </div>
-          </aside>
+            <div id="tavFb" style="min-height:18px;font-weight:700;font-size:14px;text-align:center"></div>
+          </div>
         </div>
       </div>
 
@@ -607,6 +633,41 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <div class="status-line" id="ctStatus" style="min-height:16px">画 2~4 个涂鸦素材暗示答案</div>
             <div style="flex:0 0 auto"><button class="btn big" id="ctSubmit" style="width:100%;padding-top:7px;padding-bottom:7px">提交投稿</button></div>
           </aside>
+        </div>
+      </div>
+
+      <!-- 灯谜会 · 夜间市集板块（独立于看图猜谜） -->
+      <div id="tavLantern" hidden class="colflow" style="gap:0">
+        <div class="draw-top lt-top" style="width:100%;justify-content:flex-start;gap:10px">
+          <button class="btn lt-back" id="ltBack">返回大厅 →</button>
+          <h2 class="hw uw" style="font-size:20px;color:#F5E9C8">🏮 灯谜会 · 夜市</h2>
+          <span class="sub small" style="color:#B9AE93">轻点灯笼看谜面 · 答对点亮一盏</span>
+          <span class="sp"></span>
+          <span class="tag sketch-border small" style="background:#3A4358;color:#F5E9C8">点亮 <b id="ltCount">0</b> 盏</span>
+        </div>
+        <div class="lt-sky" style="flex:1;position:relative;min-height:0">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;opacity:.9">
+            <circle cx="85" cy="14" r="7" fill="#F2E3B0" opacity=".92"/>
+            <circle cx="82.5" cy="12" r="6.2" fill="#1D2433" opacity=".85"/>
+            <g fill="#F5E9C8">
+              <circle cx="10" cy="12" r=".5"/><circle cx="22" cy="22" r=".4"/><circle cx="35" cy="9" r=".5"/><circle cx="48" cy="18" r=".4"/><circle cx="60" cy="8" r=".5"/><circle cx="70" cy="24" r=".4"/><circle cx="16" cy="34" r=".4"/><circle cx="42" cy="30" r=".45"/><circle cx="55" cy="38" r=".4"/><circle cx="8" cy="48" r=".4"/><circle cx="28" cy="44" r=".4"/>
+            </g>
+            <path d="M0,86 L8,80 L16,86 L24,80 L32,86 L40,80 L48,86 L56,80 L64,86 L72,80 L80,86 L88,80 L96,86 L100,82 L100,100 L0,100 Z" fill="#14181F" opacity=".9"/>
+          </svg>
+          <div id="ltGrid" style="position:absolute;inset:14px 10px 12px;display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:8px 6px"></div>
+        </div>
+        <div id="ltPanel" hidden class="lt-panel">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <span class="stamp" id="ltCat2">字谜</span>
+            <b id="ltRiddle" style="font-size:16px;flex:1;min-width:140px">「 」</b>
+            <button class="btn blu sketch-border" id="ltSkip" style="font-size:13px;padding:6px 14px">换一盏</button>
+          </div>
+          <div class="qrow" style="margin-top:9px">
+            <input id="ltInput" class="qinput sketch-border" style="flex:1;min-width:0" placeholder="写出谜底…" maxlength="12">
+            <button class="mic-btn" data-voice="ltInput" title="语音输入" aria-label="语音输入"></button>
+            <button class="btn big" id="ltSend" style="padding:9px 24px">揭灯</button>
+          </div>
+          <div id="ltFb" style="min-height:17px;font-weight:700;font-size:14px;text-align:center;margin-top:4px"></div>
         </div>
       </div>
     </div>
@@ -3198,12 +3259,12 @@ function enterTavern(){
   showScene('scene-tavern');
   drawTavernKeeper();
   renderProps();
-  $('tavHome').hidden=false;$('tavPlay').hidden=true;$('tavCreate').hidden=true;
+  $('tavHome').hidden=false;$('tavPlay').hidden=true;$('tavCreate').hidden=true;$('tavLantern').hidden=true;
   $('tavScore').textContent='0';$('tavCombo').textContent='0';
   var poolN=tav.official.length+save.approvedQs.length;
   $('tavBoardLine').innerHTML='题库 '+poolN+' 题 · 今日 5 题轮换<br>在输入框写下答案，回车提交';
   $('tavFlowLine').textContent=save.tavFlow>0?('酒馆今日流水：'+save.tavFlow+' 朵鲜花，老墨笑开了花'):'给谜题图送花，老墨记在流水账上';
-  var c=$('tavCanvas').getContext('2d');c.fillStyle='#FFFFFF';c.fillRect(0,0,512,512);
+  var c=$('tavCanvas').getContext('2d');c.fillStyle='#FFFFFF';c.fillRect(0,0,1024,768);
   c.fillStyle='rgba(43,43,43,.5)';c.font='16px sans-serif';c.textAlign='center';
   c.fillText('老墨的谜题马上开始……',256,250);c.textAlign='left';
   $('tavLove').innerHTML='';
@@ -3229,13 +3290,81 @@ function playerQToPuzzle(q){
     hint:q.hint||'',egg:'玩家出品，必属精品',strokes:q.strokes||[],
     author:q.author||('镇民'+(q.id||'')),pid:q.id,player:true};
 }
+/* ── 灯谜会 · 夜间市集板块：文字谜面独立题库，答对点亮灯笼并 +8 墨水 ── */
+var LANTERN_PACK=[
+  {cat:'字谜',riddle:'一口咬掉牛尾巴',ans:'告'},
+  {cat:'字谜',riddle:'山上有山',ans:'出'},
+  {cat:'字谜',riddle:'太阳西边下，月亮东边挂',ans:'明'},
+  {cat:'字谜',riddle:'牛过独木桥',ans:'生'},
+  {cat:'字谜',riddle:'十五天',ans:'胖'},
+  {cat:'字谜',riddle:'半个人',ans:'伴'},
+  {cat:'物谜',riddle:'千条线，万条线，掉到水里看不见',ans:'雨'},
+  {cat:'物谜',riddle:'麻屋子，红帐子，里面住着白胖子',ans:'花生'},
+  {cat:'物谜',riddle:'一个小姑娘，坐在水中央，身穿粉红袄',ans:'荷花'},
+  {cat:'物谜',riddle:'有时落在山腰，有时挂在树梢，有时像圆盘，有时像镰刀',ans:'月亮'},
+  {cat:'物谜',riddle:'五个兄弟，住在一起，名字不同，高矮不齐',ans:'手指'},
+  {cat:'物谜',riddle:'身穿绿衣裳，肚里水汪汪，生的子儿多，个个黑脸膛',ans:'西瓜'}
+];
+var ltState={pack:[],open:-1,done:0};
+function ltShow(id){['tavHome','tavPlay','tavCreate','tavLantern'].forEach(function(x){$(x).hidden=x!==id})}
+function openLantern(){
+  ltState.pack=shuffle(LANTERN_PACK.slice()).map(function(p){p.solved=false;p.accept=[p.ans];return p});
+  ltState.open=-1;ltState.done=0;
+  $('ltCount').textContent='0';
+  var g=$('ltGrid');g.innerHTML='';
+  ltState.pack.forEach(function(p,i){
+    var d=document.createElement('div');d.className='lt-item';
+    d.style.animationDelay=(i*0.21)+'s';
+    d.innerHTML='<div class="lt-string"></div><div class="lt-lamp"><span class="lt-cat">'+p.cat+'</span><span class="lt-riddle">'+p.riddle+'</span></div>';
+    d.addEventListener('click',function(){ltPick(i)});
+    g.appendChild(d);
+  });
+  $('ltPanel').hidden=true;
+}
+function ltPick(i){
+  var p=ltState.pack[i];if(!p)return;
+  if(p.solved){toast('这盏灯已经点亮啦');return}
+  ltState.open=i;
+  $('ltCat2').textContent=p.cat;
+  $('ltRiddle').textContent='「 '+p.riddle+' 」';
+  $('ltInput').value='';$('ltFb').textContent='';
+  $('ltPanel').hidden=false;
+  setTimeout(function(){try{$('ltInput').focus()}catch(e){}},80);
+}
+function ltLight(i,ans){ // 点亮：灯笼换金底显示谜底
+  var d=$('ltGrid').children[i];if(!d)return;
+  d.classList.add('done');
+  d.querySelector('.lt-riddle').textContent='谜底：'+ans;
+  ltState.done++;$('ltCount').textContent=String(ltState.done);
+}
+function ltAnswer(){
+  var p=ltState.pack[ltState.open];if(!p||p.solved)return;
+  var txt=($('ltInput').value||'').replace(/[\s。，,.、!！?？~～·]/g,'');
+  if(!txt)return;
+  var ok=p.accept.some(function(a){a=a.replace(/[\s。，,.]/g,'');return txt===a||txt.indexOf(a)>=0||a.indexOf(txt)>=0});
+  if(ok){
+    p.solved=true;ltLight(ltState.open,p.ans);
+    addInk(8);
+    $('ltFb').innerHTML='<span class="blue">猜中啦！点亮一盏，+8 墨水</span>';
+    setTimeout(function(){if(ltState.pack[ltState.open]&&ltState.pack[ltState.open].solved)$('ltPanel').hidden=true},1100);
+  }else{
+    $('ltFb').innerHTML='<span class="accent">不对哦，再想想（或点「换一盏」）</span>';
+  }
+}
+$('ltSend').addEventListener('click',ltAnswer);
+$('ltInput').addEventListener('keydown',function(e){if(e.key==='Enter')ltAnswer()});
+$('ltSkip').addEventListener('click',function(){$('ltPanel').hidden=true;ltState.open=-1});
+$('tavLanternBtn').addEventListener('click',function(){
+  ltShow('tavLantern');openLantern(); // 灯谜会与看图猜谜同级子视图
+});
+$('ltBack').addEventListener('click',function(){$('ltPanel').hidden=true;ltShow('tavHome')});
 $('tavStart').addEventListener('click',function(){
   var pool=tav.official.concat(save.approvedQs.map(playerQToPuzzle));
   if(!pool.length){toast('题库是空的，先去出题或等官方题包',1800);return}
   var rng=mulberry32(hashStr(todayStr()+'tavern2'));
   tav.qs=shuffle(pool,rng).slice(0,5);
   tav.idx=0;tav.score=0;tav.combo=0;tav.best=0;tav.correctN=0;tav.arts=[];
-  $('tavHome').hidden=true;$('tavPlay').hidden=false;$('tavCreate').hidden=true;
+  $('tavHome').hidden=true;$('tavPlay').hidden=false;$('tavCreate').hidden=true;$('tavLantern').hidden=true;
   reframe();
   tavPlayQ();
 });
@@ -3251,7 +3380,7 @@ function tavPlayQ(){
   var inp=$('tavInput');inp.value='';inp.disabled=false;
   makeLoveBar($('tavLove'),q.pid?('q:'+q.pid):('tav:'+normAns(q.ans)),
     {by:q.player?'player':'npc',name:q.ans,author:q.author});
-  var c=$('tavCanvas').getContext('2d');c.fillStyle='#FFFFFF';c.fillRect(0,0,512,512);
+  var c=$('tavCanvas').getContext('2d');c.fillStyle='#FFFFFF';c.fillRect(0,0,1024,768);
   if(tav.cancel)tav.cancel();
   tav.cancel=replayStrokes($('tavCanvas'),q.strokes,2500,function(){});
   var left=30;clearInterval(tav.timer);
@@ -3363,7 +3492,7 @@ var ctState={cat:''};
   });
 })();
 $('tavCreateBtn').addEventListener('click',function(){
-  $('tavHome').hidden=true;$('tavPlay').hidden=true;$('tavCreate').hidden=false;
+  $('tavHome').hidden=true;$('tavPlay').hidden=true;$('tavCreate').hidden=false;$('tavLantern').hidden=true;
   ctBoard.reset();ctState.cat='';
   $('ctAns').value='';$('ctHint').value='';$('ctCustomCat').value='';$('ctCustomCat').hidden=true;
   if(voiceSt.ctCustomCat&&voiceSt.ctCustomCat.btn)voiceSt.ctCustomCat.btn.hidden=true;
@@ -3371,7 +3500,7 @@ $('tavCreateBtn').addEventListener('click',function(){
   reframe();
 });
 $('ctBack').addEventListener('click',function(){
-  $('tavCreate').hidden=true;$('tavHome').hidden=false;
+  $('tavCreate').hidden=true;$('tavHome').hidden=false;$('tavLantern').hidden=true;
 });
 $('ctSubmit').addEventListener('click',function(){
   var cat=ctState.cat;
@@ -3390,7 +3519,7 @@ $('ctSubmit').addEventListener('click',function(){
     date:todayStr(),state:'pending',reason:'',rewarded:false};
   save.pendingQs.unshift(q);persist();
   toast('投稿成功！等待审核，通过后 +20 墨水',2200);
-  $('tavCreate').hidden=true;$('tavHome').hidden=false;
+  $('tavCreate').hidden=true;$('tavHome').hidden=false;$('tavLantern').hidden=true;
 });
 /* ── 审核台（模拟后台，策划演示用） ── */
 function showReview(){
