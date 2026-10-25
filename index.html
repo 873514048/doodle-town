@@ -899,6 +899,9 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a
 /* 按笔刷类型渲染一段笔画（S=缩放，upto=只画前 n 个点，供逐笔回放）；brush 缺省按普通笔，兼容旧存档 */
 function renderStrokeOn(c,s,S,upto){
   S=S||1;
+  if(s&&s.fill){ // 填色贴图：物理尺寸原样贴回（图层重放必须还原填色，否则撤销笔画会连带丢填色）
+    c.save();c.setTransform(1,0,0,1,0,0);c.drawImage(s.fillCv,0,0);c.restore();return;
+  }
   var pts=s.pts||s,brush=(s.pts?s.brush:'normal')||'normal';
   if(brush==='water')brush='acrylic'; // 旧存档归一化：水彩笔刷已替换为丙烯
   var n=Math.min(pts.length,upto||pts.length);
