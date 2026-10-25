@@ -262,7 +262,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 .tav-playframe{flex:none;width:min(60%,760px);min-height:0;max-height:100%;margin:0 auto}
 .tav-playframe .canvas-wrap{flex:1;min-height:0;width:100%}
 .tav-playframe .canvas-wrap canvas{width:100%;height:100%;object-fit:contain;background:#fff}
-.tav-rule{padding:5px 0 9px;text-align:center;color:#8a8378;flex:none}
+.tav-rule{padding:4px 0 7px;text-align:center;color:#8a8378;flex:none;font-size:clamp(10px,1.3vh,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 10px}
 /* ── 灯谜会 · 夜间市集（独立板块）── */
 .lt-top{background:#2A3140;border-bottom:3px solid #14181F;border-radius:14px 14px 0 0;flex:none}
 .lt-back{background:#3A4358;color:#F5E9C8}
@@ -270,17 +270,22 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   radial-gradient(ellipse 340px 200px at 84% 8%,rgba(242,227,176,.14),transparent 70%),
   radial-gradient(ellipse 480px 260px at 12% 96%,rgba(225,120,60,.10),transparent 72%),
   linear-gradient(#1D2433 0%,#2E3648 62%,#3A4358 100%)}
-.lt-item{position:relative;width:150px;flex:none;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .25s ease}
+.lt-item{position:relative;cursor:pointer;transition:transform .25s ease}
 .lt-item:hover{transform:translateY(-5px)}
-.lt-svg{width:100%;display:block;filter:drop-shadow(0 0 13px rgba(242,164,60,.32))}
-.lt-item.done .lt-svg{filter:drop-shadow(0 0 22px rgba(242,201,76,.6))}
+.lt-svg{width:100%;display:block;filter:drop-shadow(0 0 10px rgba(242,227,176,.30))}
+.lt-item.done .lt-svg{filter:drop-shadow(0 0 16px rgba(242,201,76,.5))}
 .lt-item.done .lt-body{fill:url(#ltGG)}
-.lt-item.done .lt-tas{fill:#E9B824}
-.lt-txt{position:absolute;top:30px;left:12px;right:12px;bottom:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;pointer-events:none}
-.lt-cat{font-size:11px;font-weight:800;color:#F5D9A8;letter-spacing:2px}
-.lt-riddle{font-size:12.5px;font-weight:800;color:#FBEFD8;text-align:center;line-height:1.32}
-.lt-item.done .lt-riddle{color:#5A4208}
-.lt-panel{flex:none;background:#FBF3E2;border-top:3px solid #14181F;padding:12px 22px 14px;box-shadow:0 -6px 18px rgba(0,0,0,.25)}
+.lt-item.done .lt-tas{fill:#C9B978}
+.lt-txt{position:absolute;top:16%;left:15%;right:15%;bottom:23%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
+.lt-txt>span{background:rgba(253,251,242,.78);border-radius:9px;padding:2px 7px;max-width:100%;box-sizing:border-box}
+.lt-cat{font-size:11px;font-weight:800;color:#5E7268;letter-spacing:2px}
+.lt-riddle{font-size:12.5px;font-weight:800;color:#2B2B2B;text-align:center;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lt-item.done .lt-riddle{color:#7A5A10}
+.lt-solo .lt-cat{font-size:15px;color:#5E7268}
+.lt-fly{animation:ltFly 1.7s ease-in forwards!important}
+@keyframes ltFly{0%{transform:none;opacity:1}25%{transform:translateY(-14%) rotate(-4deg)}55%{transform:translateY(-42%) rotate(4deg)}100%{transform:translateY(-130%) rotate(-2deg);opacity:0}}
+.lt-spark{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle,#FFE9B0,rgba(255,214,140,0));pointer-events:none;animation:ltSpark 1.2s ease-out forwards}
+@keyframes ltSpark{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-100px) scale(.4);opacity:0}}
 .lvbtn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#FBF9F4;
   border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;z-index:1}
 .lvbtn svg{width:18px;height:18px}
@@ -538,24 +543,24 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <span class="sp"></span>
           <div class="prop-row" id="tavProps"></div>
         </div>
-        <div style="flex:1;position:relative;min-height:0">
-          <div class="tav-rope" style="height:92px"></div>
-          <div class="tav-frame" style="width:min(560px,64%);padding:14px 16px;transform:rotate(-.6deg);margin:0 auto">
-            <canvas id="tavPreview" width="640" height="480" style="width:90%;border:2.5px solid #2B2B2B;border-radius:8px;background:#fff"></canvas>
-            <div class="small" style="margin-top:10px;font-weight:800;font-size:14px">今日一幅 · 每日轮换 · 镇民投稿精选</div>
-            <div id="tavFlowLine" class="small" style="margin-top:3px;color:#C4473A;font-size:12px"></div>
+        <div style="flex:1;display:flex;align-items:stretch;min-height:0;gap:6px;padding:2px 8px 0">
+          <div style="width:clamp(78px,12vw,140px);flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0">
+            <svg viewBox="0 0 120 150" style="width:88%;max-height:34vh;flex:none"><g stroke="#2B2B2B" stroke-width="3.5" fill="#FBF3E2" stroke-linecap="round"><circle cx="60" cy="58" r="34"/><path d="M34,40 l-8,-18 17,6 z M86,40 l8,-18 -17,6 z"/><circle cx="48" cy="54" r="9" fill="#fff"/><circle cx="72" cy="54" r="9" fill="#fff"/><circle cx="48" cy="54" r="3.4" fill="#2B2B2B" stroke="none"/><circle cx="72" cy="54" r="3.4" fill="#2B2B2B" stroke="none"/><path d="M52,68 q8,8 16,0" fill="none"/><ellipse cx="60" cy="116" rx="38" ry="26"/><path d="M30,110 q-16,-8 -12,-26" fill="none"/></g></svg>
+            <b style="font-size:clamp(12px,1.5vw,15px)">掌柜 · 老墨</b>
           </div>
-          <div style="position:absolute;left:30px;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:5px;width:150px">
-            <svg width="118" height="142" viewBox="0 0 120 150" style="flex:none"><g stroke="#2B2B2B" stroke-width="3.5" fill="#FBF3E2" stroke-linecap="round"><circle cx="60" cy="58" r="34"/><path d="M34,40 l-8,-18 17,6 z M86,40 l8,-18 -17,6 z"/><circle cx="48" cy="54" r="9" fill="#fff"/><circle cx="72" cy="54" r="9" fill="#fff"/><circle cx="48" cy="54" r="3.4" fill="#2B2B2B" stroke="none"/><circle cx="72" cy="54" r="3.4" fill="#2B2B2B" stroke="none"/><path d="M52,68 q8,8 16,0" fill="none"/><ellipse cx="60" cy="116" rx="38" ry="26"/><path d="M30,110 q-16,-8 -12,-26" fill="none"/></g></svg>
-            <b style="font-size:15px">掌柜 · 老墨</b>
-            <canvas id="tavKeeper" width="200" height="120" style="width:150px"></canvas>
-            <div id="tavBoardLine" class="small" style="text-align:center;font-size:11px">看老墨的涂鸦动画，<br>在输入框里写下答案！</div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0">
+            <div class="tav-rope" style="height:clamp(22px,6vh,84px)"></div>
+            <div class="tav-frame" style="width:min(540px,92%);padding:clamp(8px,1.4vw,14px) clamp(10px,1.6vw,16px);transform:rotate(-.6deg)">
+              <canvas id="tavPreview" width="640" height="480" style="max-width:92%;max-height:34vh;height:auto;border:2.5px solid #2B2B2B;border-radius:8px;background:#fff"></canvas>
+              <div class="small" style="margin-top:6px;font-weight:800;font-size:clamp(11px,1.5vw,14px)">今日一幅 · 每日轮换 · 镇民投稿精选</div>
+              <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(10px,1.3vw,12px)"></div>
+            </div>
           </div>
-          <div style="position:absolute;right:30px;bottom:56px;width:210px;display:flex;flex-direction:column;gap:14px">
-            <button class="btn big" id="tavStart" style="width:100%">开始今日特调</button>
-            <button class="btn" id="tavLanternBtn" style="width:100%;background:#FBEFD8">🏮 灯谜会 · 夜市</button>
-            <button class="btn blu" id="tavCreateBtn" style="width:100%">我来出题</button>
-            <button class="btn grn" id="tavReviewBtn" style="width:100%">审核台</button>
+          <div style="width:clamp(118px,16vw,200px);flex:none;display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,1.4vh,14px);min-width:0">
+            <button class="btn big" id="tavStart" style="width:100%;font-size:clamp(13px,1.7vw,17px);padding:clamp(7px,1.2vh,11px) 10px">开始今日特调</button>
+            <button class="btn" id="tavLanternBtn" style="width:100%;background:#FBEFD8;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">🏮 灯谜会</button>
+            <button class="btn blu" id="tavCreateBtn" style="width:100%;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">我来出题</button>
+            <button class="btn grn" id="tavReviewBtn" style="width:100%;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">审核台</button>
           </div>
         </div>
         <div class="tav-rule small">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1分=1墨水 · 题库含官方题与镇民投稿，每日 5 题按日期轮换</div>
@@ -645,43 +650,66 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         <div class="lt-sky" style="flex:1;position:relative;min-height:0">
           <svg viewBox="0 0 128 56" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;opacity:.95">
             <defs>
-              <radialGradient id="ltGR" cx="38%" cy="32%" r="78%"><stop offset="0%" stop-color="#E85D4A"/><stop offset="58%" stop-color="#C43A2B"/><stop offset="100%" stop-color="#96291D"/></radialGradient>
-              <radialGradient id="ltGG" cx="38%" cy="32%" r="78%"><stop offset="0%" stop-color="#F7DF74"/><stop offset="58%" stop-color="#E9B824"/><stop offset="100%" stop-color="#C08A10"/></radialGradient>
+              <radialGradient id="ltGR" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#FDFBF2"/><stop offset="55%" stop-color="#F1EEE0"/><stop offset="100%" stop-color="#D9E2DC"/></radialGradient>
+              <radialGradient id="ltGG" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#FBF7E6"/><stop offset="60%" stop-color="#EFE7C8"/><stop offset="100%" stop-color="#D8CBA0"/></radialGradient>
             </defs>
-            <path d="M113,7 a8.5,8.5 0 1,0 7,13.5 a6.8,6.8 0 1,1 -7,-13.5 Z" fill="#F2E3B0" stroke="#141821" stroke-width="1.6"/>
-            <path d="M103,3 l-3.4,-1.6 M104,20 l-3.4,1.8 M122,9 l3.2,-1.2" stroke="#F2E3B0" stroke-width="1.2" stroke-linecap="round" opacity=".65" fill="none"/>
+            <path d="M112,6.5 a8.8,8.8 0 1,0 7.4,14 a7,7 0 1,1 -7.4,-14 Z" fill="#F2E3B0" stroke="#141821" stroke-width="1.7"/>
+            <path d="M101,2.5 l-4,-2 M102,20.5 l-4,2 M123,8.5 l4,-1.4" stroke="#F2E3B0" stroke-width="1.3" stroke-linecap="round" opacity=".6" fill="none"/>
             <g fill="#F5E9C8" stroke="#141821" stroke-width=".5">
-              <path d="M18,10 l.9,2.4 2.4,.9 -2.4,.9 -.9,2.4 -.9,-2.4 -2.4,-.9 2.4,-.9 Z"/>
-              <path d="M38,6 l.8,2.1 2.1,.8 -2.1,.8 -.8,2.1 -.8,-2.1 -2.1,-.8 2.1,-.8 Z"/>
-              <path d="M58,14 l.9,2.4 2.4,.9 -2.4,.9 -.9,2.4 -.9,-2.4 -2.4,-.9 2.4,-.9 Z"/>
-              <path d="M78,7 l.8,2.1 2.1,.8 -2.1,.8 -.8,2.1 -.8,-2.1 -2.1,-.8 2.1,-.8 Z"/>
-              <path d="M94,20 l.9,2.4 2.4,.9 -2.4,.9 -.9,2.4 -.9,-2.4 -2.4,-.9 2.4,-.9 Z"/>
-              <path d="M8,24 l.8,2.1 2.1,.8 -2.1,.8 -.8,2.1 -.8,-2.1 -2.1,-.8 2.1,-.8 Z"/>
+              <path d="M16,11 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"/>
+              <path d="M36,6 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"/>
+              <path d="M56,15 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"/>
+              <path d="M76,7 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"/>
+              <path d="M92,21 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"/>
+              <path d="M8,26 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"/>
             </g>
-            <path d="M20,32 q-4.5,0 -4.5,-4.2 q0,-4.2 5.2,-4.2 q1.2,-4.2 6.2,-3.6 q5,-3.2 8.2,1 q5.2,-1 5.2,4.2 q0,4.4 -4.2,4.4 Z" fill="#39445C" stroke="#141821" stroke-width="1.3"/>
-            <path d="M62,26 q-3.8,0 -3.8,-3.6 q0,-3.6 4.4,-3.6 q1,-3.6 5.2,-3 q4.2,-2.7 7,0.9 q4.4,-0.9 4.4,3.6 q0,3.7 -3.6,3.7 Z" fill="#39445C" stroke="#141821" stroke-width="1.2"/>
-            <line x1="100" y1="47" x2="100" y2="27" stroke="#141821" stroke-width="1.8"/>
-            <path d="M100,27.5 h13.5 l-3.2,6.5 3.2,6.5 h-13.5 Z" fill="#C43A2B" stroke="#141821" stroke-width="1.5"/>
-            <text x="105" y="38.5" font-size="7.5" fill="#FBEFD8" font-family="Kaiti SC,KaiTi,serif" font-weight="bold">谜</text>
-            <path d="M0,47.5 q8,-4.5 16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 L128,56 L0,56 Z" fill="#14181F" stroke="#141821" stroke-width="1"/>
+            <path d="M18,33 q-4.8,0 -4.8,-4.4 q0,-4.4 5.4,-4.4 q1.2,-4.4 6.4,-3.8 q5.2,-3.4 8.6,1 q5.4,-1 5.4,4.4 q0,4.6 -4.4,4.6 Z" fill="#39445C" stroke="#141821" stroke-width="1.4"/>
+            <path d="M60,27 q-4,0 -4,-3.8 q0,-3.8 4.6,-3.8 q1,-3.8 5.4,-3.1 q4.4,-2.9 7.3,1 q4.6,-1 4.6,3.8 q0,3.9 -3.8,3.9 Z" fill="#39445C" stroke="#141821" stroke-width="1.3"/>
+            <g stroke="#141821" stroke-width="1.5" fill="none" opacity=".85">
+              <path d="M14,56 C20,40 16,30 26,22 M14,56 C22,44 34,40 40,30"/>
+              <path d="M114,56 C108,42 112,32 102,24 M114,56 C106,44 94,40 88,30"/>
+            </g>
+            <g fill="#E8927C" opacity=".8"><circle cx="26" cy="22" r="1.3"/><circle cx="23.5" cy="26.5" r="1"/><circle cx="40" cy="30" r="1.3"/><circle cx="102" cy="24" r="1.3"/><circle cx="99.5" cy="28.5" r="1"/><circle cx="88" cy="30" r="1.3"/></g>
+            <path d="M0,48.5 q8,-4.5 16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 L128,56 L0,56 Z" fill="#14181F" stroke="#141821" stroke-width="1"/>
             <g fill="#2A3140" stroke="#141821" stroke-width=".8">
-              <circle cx="8" cy="48.5" r="1.4"/><circle cx="24" cy="48.5" r="1.4"/><circle cx="40" cy="48.5" r="1.4"/><circle cx="56" cy="48.5" r="1.4"/><circle cx="72" cy="48.5" r="1.4"/><circle cx="88" cy="48.5" r="1.4"/><circle cx="104" cy="48.5" r="1.4"/><circle cx="120" cy="48.5" r="1.4"/>
+              <circle cx="8" cy="49.5" r="1.4"/><circle cx="24" cy="49.5" r="1.4"/><circle cx="40" cy="49.5" r="1.4"/><circle cx="56" cy="49.5" r="1.4"/><circle cx="72" cy="49.5" r="1.4"/><circle cx="88" cy="49.5" r="1.4"/><circle cx="104" cy="49.5" r="1.4"/><circle cx="120" cy="49.5" r="1.4"/>
             </g>
           </svg>
-          <div id="ltGrid" style="position:absolute;inset:12px 10px 18px;display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:22px 18px"></div>
-        </div>
-        <div id="ltPanel" hidden class="lt-panel">
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <span class="stamp" id="ltCat2">字谜</span>
-            <b id="ltRiddle" style="font-size:16px;flex:1;min-width:140px">「 」</b>
-            <button class="btn blu sketch-border" id="ltSkip" style="font-size:13px;padding:6px 14px">换一盏</button>
+          <div id="ltHome" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2vh,18px);padding:8px 14px">
+            <div id="ltRow" style="display:flex;gap:clamp(14px,4vw,54px);align-items:flex-start;justify-content:center;width:100%"></div>
+            <div style="display:flex;gap:12px;align-items:center;background:rgba(20,24,33,.55);border:2px solid #14181F;border-radius:12px;padding:6px 16px;flex-wrap:wrap;justify-content:center">
+              <span class="small" style="color:#F5E9C8;font-weight:700">本轮点亮 <b id="ltRoundN">0</b> / 3</span>
+              <button class="btn" id="ltNext" style="font-size:13px;padding:5px 14px;background:#FBEFD8">换一批 ↓</button>
+            </div>
           </div>
-          <div class="qrow" style="margin-top:9px">
-            <input id="ltInput" class="qinput sketch-border" style="flex:1;min-width:0" placeholder="写出谜底…" maxlength="12">
-            <button class="mic-btn" data-voice="ltInput" title="语音输入" aria-label="语音输入"></button>
-            <button class="btn big" id="ltSend" style="padding:9px 24px">揭灯</button>
+          <div id="ltSolve" hidden style="position:absolute;inset:0;display:flex;min-height:0">
+            <div style="width:40%;display:flex;align-items:center;justify-content:center;padding:10px 6px 10px 14px;min-width:0">
+              <div id="ltBig" style="width:min(280px,86%)"></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:10px;padding:12px 14px 12px 6px;min-width:0">
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0">
+                <div class="card sketch-border" style="padding:clamp(10px,2vh,18px) 16px;max-width:520px">
+                  <span class="stamp" id="ltCat2" style="font-size:12px">字谜</span>
+                  <div id="ltRiddle" style="font-size:clamp(15px,2.4vh,19px);font-weight:800;margin-top:8px;line-height:1.5">「 」</div>
+                  <div id="ltFb" style="min-height:18px;font-weight:700;font-size:14px;margin-top:6px"></div>
+                </div>
+              </div>
+              <div class="card sketch-border" style="padding:10px 14px;max-width:520px">
+                <div class="qrow" style="gap:8px">
+                  <input id="ltInput" class="qinput sketch-border" style="flex:1;min-width:0" placeholder="写出谜底…" maxlength="12">
+                  <button class="mic-btn" data-voice="ltInput" title="语音输入" aria-label="语音输入"></button>
+                  <button class="btn big" id="ltSend" style="padding:8px 20px;font-size:15px">揭灯</button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div id="ltFb" style="min-height:17px;font-weight:700;font-size:14px;text-align:center;margin-top:4px"></div>
+          <div id="ltSky" hidden style="position:absolute;inset:0">
+            <canvas id="ltSkyCv" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+            <div style="position:absolute;left:0;right:0;top:12%;text-align:center;pointer-events:none">
+              <b style="font-size:clamp(16px,3vh,22px);color:#F5E9C8;text-shadow:0 2px 8px rgba(0,0,0,.6)">本轮全对 · 满天孔明灯为你放飞</b>
+            </div>
+            <button class="btn big" id="ltSkyBack" hidden style="position:absolute;left:50%;transform:translateX(-50%);bottom:8%">继续夜游 →</button>
+          </div>
         </div>
       </div>
     </div>
@@ -3271,12 +3299,11 @@ function registerTavernPack(pack){
 TAVERN_PACKS.forEach(function(p){tav.official=tav.official.concat(resolvePack(p))});
 function enterTavern(){
   showScene('scene-tavern');
-  drawTavernKeeper();
   renderProps();
   $('tavHome').hidden=false;$('tavPlay').hidden=true;$('tavCreate').hidden=true;$('tavLantern').hidden=true;
   $('tavScore').textContent='0';$('tavCombo').textContent='0';
   var poolN=tav.official.length+save.approvedQs.length;
-  $('tavBoardLine').innerHTML='题库 '+poolN+' 题 · 今日 5 题轮换<br>在输入框写下答案，回车提交';
+  var bl=$('tavBoardLine');if(bl)bl.innerHTML='题库 '+poolN+' 题 · 今日 5 题轮换<br>在输入框写下答案，回车提交';
   $('tavFlowLine').textContent=save.tavFlow>0?('酒馆今日流水：'+save.tavFlow+' 朵鲜花，老墨笑开了花'):'给谜题图送花，老墨记在流水账上';
   // 大厅画框：渲染今日第一题的涂鸦预览（与开始特调同一日期种子，所见即首题）
   var pv=$('tavPreview');
@@ -3333,69 +3360,160 @@ var LANTERN_PACK=[
   {cat:'物谜',riddle:'五个兄弟，住在一起，名字不同，高矮不齐',ans:'手指'},
   {cat:'物谜',riddle:'身穿绿衣裳，肚里水汪汪，生的子儿多，个个黑脸膛',ans:'西瓜'}
 ];
-var ltState={pack:[],open:-1,done:0};
+var ltState={round:[],idx:-1,roundSolved:0,lit:0,raf:0,ac:null};
 function ltShow(id){['tavHome','tavPlay','tavCreate','tavLantern'].forEach(function(x){$(x).hidden=x!==id})}
+function ltShow2(id){['ltHome','ltSolve','ltSky'].forEach(function(x){$(x).hidden=(x!==id)})}
+function ltLampSVG(){ // 清雅竹骨纸灯：月白纸罩+淡青腰带+竹骨墨线+木盖流苏
+  return '<svg viewBox="0 0 150 168" class="lt-svg">'+
+    '<path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"/>'+
+    '<ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"/>'+
+    '<path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"/>'+
+    '<path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"/>'+
+    '<path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"/>'+
+    '<path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"/>'+
+    '<path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+    '<ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"/>'+
+    '<path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"/>'+
+    '<path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"/></svg>';
+}
+function ltLampEl(it,i){
+  var d=document.createElement('div');
+  d.className='lt-item'+(it.solved?' done':'');
+  d.style.width='clamp(96px,22vw,160px)';
+  d.innerHTML=ltLampSVG()+
+    '<div class="lt-txt"><span class="lt-cat">'+it.p.cat+'</span><span class="lt-riddle">'+(it.solved?('谜底 · '+it.p.ans):(it.p.riddle.length>10?it.p.riddle.slice(0,10)+'…':it.p.riddle))+'</span></div>';
+  d.addEventListener('click',function(){ltPick(i)});
+  return d;
+}
+function ltNewRound(){
+  var pool=shuffle(LANTERN_PACK.slice(),mulberry32(Date.now()%2147483647)).slice(0,3);
+  ltState.round=pool.map(function(p){return{p:p,solved:false}});
+  ltState.roundSolved=0;
+  ltRenderHome();
+}
+function ltRenderHome(){
+  $('ltRoundN').textContent=String(ltState.roundSolved);
+  var r=$('ltRow');r.innerHTML='';
+  ltState.round.forEach(function(it,i){r.appendChild(ltLampEl(it,i))});
+  ltShow2('ltHome');
+}
 function openLantern(){
-  ltState.pack=shuffle(LANTERN_PACK.slice()).map(function(p){p.solved=false;p.accept=[p.ans];return p});
-  ltState.open=-1;ltState.done=0;
-  $('ltCount').textContent='0';
-  var g=$('ltGrid');g.innerHTML='';
-  ltState.pack.forEach(function(p,i){
-    var d=document.createElement('div');d.className='lt-item';
-    d.style.animationDelay=(i*0.21)+'s';
-    d.innerHTML='<svg class="lt-svg" viewBox="0 0 140 118">'+
-      '<path d="M70,3 q3,4 0,9" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"/>'+
-      '<rect x="56" y="12" width="28" height="7" rx="3" fill="#E9C24A" stroke="#2B2B2B" stroke-width="2"/>'+
-      '<path class="lt-body" d="M70,19 C99,19 120,36 120,58 C120,80 99,94 70,94 C41,94 20,80 20,58 C20,36 41,19 70,19 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"/>'+
-      '<path d="M50,25 C39,42 39,72 50,91" stroke="rgba(0,0,0,.15)" stroke-width="2.5" fill="none"/>'+
-      '<path d="M90,25 C101,42 101,72 90,91" stroke="rgba(0,0,0,.15)" stroke-width="2.5" fill="none"/>'+
-      '<path d="M33,42 q-5,11 -3,24" stroke="rgba(255,238,200,.5)" stroke-width="4" fill="none" stroke-linecap="round"/>'+
-      '<rect x="58" y="92" width="24" height="6" rx="3" fill="#E9C24A" stroke="#2B2B2B" stroke-width="2"/>'+
-      '<path d="M70,98 v5" stroke="#2B2B2B" stroke-width="2"/>'+
-      '<path class="lt-tas" d="M63,103 h14 l-2.5,10 h-9 Z" fill="#E14B3B" stroke="#2B2B2B" stroke-width="1.8"/></svg>'+
-      '<div class="lt-txt"><span class="lt-cat">'+p.cat+'</span><span class="lt-riddle">'+p.riddle+'</span></div>';
-    d.addEventListener('click',function(){ltPick(i)});
-    g.appendChild(d);
-  });
-  $('ltPanel').hidden=true;
+  ltState.lit=0;$('ltCount').textContent='0';
+  ltNewRound();
 }
 function ltPick(i){
-  var p=ltState.pack[i];if(!p)return;
-  if(p.solved){toast('这盏灯已经点亮啦');return}
-  ltState.open=i;
-  $('ltCat2').textContent=p.cat;
-  $('ltRiddle').textContent='「 '+p.riddle+' 」';
+  var it=ltState.round[i];if(!it)return;
+  if(it.solved){toast('这盏灯已经点亮啦');return}
+  ltState.idx=i;
+  $('ltCat2').textContent=it.p.cat;
+  $('ltRiddle').textContent='「 '+it.p.riddle+' 」';
   $('ltInput').value='';$('ltFb').textContent='';
-  $('ltPanel').hidden=false;
+  $('ltBig').innerHTML='<div class="lt-item lt-solo" style="width:100%">'+ltLampSVG()+
+    '<div class="lt-txt"><span class="lt-cat">'+it.p.cat+'</span></div></div>';
+  ltShow2('ltSolve');
   setTimeout(function(){try{$('ltInput').focus()}catch(e){}},80);
 }
-function ltLight(i,ans){ // 点亮：灯笼换金底显示谜底
-  var d=$('ltGrid').children[i];if(!d)return;
-  d.classList.add('done');
-  d.querySelector('.lt-riddle').textContent='谜底：'+ans;
-  ltState.done++;$('ltCount').textContent=String(ltState.done);
+function ltChime(){ // 答对音效：三音上行风铃 + 上滑滑音
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    if(!ltState.ac)ltState.ac=new AC();
+    var ac=ltState.ac,t=ac.currentTime;
+    [[659,0],[880,.13],[1319,.26]].forEach(function(n){
+      var o=ac.createOscillator(),g=ac.createGain();
+      o.type='sine';o.frequency.value=n[0];
+      g.gain.setValueAtTime(.0001,t+n[1]);
+      g.gain.exponentialRampToValueAtTime(.2,t+n[1]+.02);
+      g.gain.exponentialRampToValueAtTime(.0001,t+n[1]+.55);
+      o.connect(g);g.connect(ac.destination);o.start(t+n[1]);o.stop(t+n[1]+.6);
+    });
+    var o2=ac.createOscillator(),g2=ac.createGain();
+    o2.type='sine';o2.frequency.setValueAtTime(420,t+.3);
+    o2.frequency.exponentialRampToValueAtTime(1180,t+.95);
+    g2.gain.setValueAtTime(.0001,t+.3);
+    g2.gain.exponentialRampToValueAtTime(.12,t+.38);
+    g2.gain.exponentialRampToValueAtTime(.0001,t+1.1);
+    o2.connect(g2);g2.connect(ac.destination);o2.start(t+.3);o2.stop(t+1.15);
+  }catch(e){}
+}
+function ltFlyThen(cb){ // 左侧大灯放飞庆祝：上升摇摆 + 光点粒子
+  var item=$('ltBig').querySelector('.lt-item');
+  if(!item){cb();return}
+  item.classList.add('lt-fly');
+  for(var i=0;i<7;i++){
+    var s=document.createElement('span');s.className='lt-spark';
+    s.style.left=(20+Math.random()*60)+'%';
+    s.style.top=(30+Math.random()*45)+'%';
+    s.style.animationDelay=(Math.random()*.5)+'s';
+    item.appendChild(s);
+  }
+  setTimeout(cb,1750);
 }
 function ltAnswer(){
-  var p=ltState.pack[ltState.open];if(!p||p.solved)return;
+  var it=ltState.round[ltState.idx];if(!it||it.solved)return;
   var txt=($('ltInput').value||'').replace(/[\s。，,.、!！?？~～·]/g,'');
   if(!txt)return;
-  var ok=p.accept.some(function(a){a=a.replace(/[\s。，,.]/g,'');return txt===a||txt.indexOf(a)>=0||a.indexOf(txt)>=0});
+  var acc=(it.p.accept&&it.p.accept.length)?it.p.accept:[it.p.ans];
+  var ok=acc.some(function(a){a=a.replace(/[\s。，,.]/g,'');return txt===a||txt.indexOf(a)>=0||a.indexOf(txt)>=0});
   if(ok){
-    p.solved=true;ltLight(ltState.open,p.ans);
-    addInk(8);
-    $('ltFb').innerHTML='<span class="blue">猜中啦！点亮一盏，+8 墨水</span>';
-    setTimeout(function(){if(ltState.pack[ltState.open]&&ltState.pack[ltState.open].solved)$('ltPanel').hidden=true},1100);
+    it.solved=true;ltState.roundSolved++;ltState.lit++;
+    $('ltCount').textContent=String(ltState.lit);
+    addInk(8);ltChime();
+    $('ltFb').innerHTML='<span class="blue">猜中啦！+8 墨水，灯要放飞了…</span>';
+    setTimeout(function(){
+      ltFlyThen(function(){
+        if(ltState.roundSolved===3)ltSkyShow();
+        else ltRenderHome();
+      });
+    },700);
   }else{
-    $('ltFb').innerHTML='<span class="accent">不对哦，再想想（或点「换一盏」）</span>';
+    $('ltFb').innerHTML='<span class="accent">不对哦，再想想～</span>';
   }
+}
+function ltSkyShow(){ // 满天孔明灯放飞动画
+  ltShow2('ltSky');
+  $('ltSkyBack').hidden=true;
+  var cv=$('ltSkyCv');
+  cv.width=cv.clientWidth||960;cv.height=cv.clientHeight||560;
+  var c=cv.getContext('2d'),W=cv.width,H=cv.height;
+  var lamps=[];
+  for(var i=0;i<34;i++)lamps.push({x:Math.random()*W,y:H*.72+Math.random()*H*.42,v:.35+Math.random()*.75,s:5+Math.random()*8,ph:Math.random()*6.3});
+  var t0=performance.now();
+  if(ltState.raf)cancelAnimationFrame(ltState.raf);
+  function frame(t){
+    c.clearRect(0,0,W,H);
+    for(var j=0;j<lamps.length;j++){
+      var L=lamps[j];
+      L.y-=L.v*(1+Math.sin(t/900+L.ph)*.3);
+      if(L.y<-30)L.y=H+20;
+      var x=L.x+Math.sin(t/700+L.ph)*7;
+      var g=c.createRadialGradient(x,L.y,1,x,L.y,L.s*3);
+      g.addColorStop(0,'rgba(255,214,140,.85)');g.addColorStop(1,'rgba(255,180,90,0)');
+      c.fillStyle=g;c.beginPath();c.arc(x,L.y,L.s*3,0,7);c.fill();
+      c.fillStyle='#F2C48C';c.beginPath();
+      c.moveTo(x,L.y-L.s);c.quadraticCurveTo(x+L.s*.85,L.y-L.s*.35,x+L.s*.62,L.y+L.s*.5);
+      c.quadraticCurveTo(x,L.y+L.s*1.12,x-L.s*.62,L.y+L.s*.5);
+      c.quadraticCurveTo(x-L.s*.85,L.y-L.s*.35,x,L.y-L.s);c.fill();
+      c.fillStyle='rgba(255,244,214,.95)';c.fillRect(x-1.5,L.y+L.s*.72,3,2.6);
+    }
+    ltState.raf=requestAnimationFrame(frame);
+  }
+  ltState.raf=requestAnimationFrame(frame);
+  setTimeout(function(){$('ltSkyBack').hidden=false},3400);
 }
 $('ltSend').addEventListener('click',ltAnswer);
 $('ltInput').addEventListener('keydown',function(e){if(e.key==='Enter')ltAnswer()});
-$('ltSkip').addEventListener('click',function(){$('ltPanel').hidden=true;ltState.open=-1});
+$('ltNext').addEventListener('click',function(){
+  if(ltState.roundSolved>=2)ltNewRound();
+  else toast('本轮至少点亮两盏，才能换下一批');
+});
+$('ltSkyBack').addEventListener('click',function(){
+  if(ltState.raf){cancelAnimationFrame(ltState.raf);ltState.raf=0}
+  ltNewRound();
+});
 $('tavLanternBtn').addEventListener('click',function(){
   ltShow('tavLantern');openLantern(); // 灯谜会与看图猜谜同级子视图
 });
-$('ltBack').addEventListener('click',function(){$('ltPanel').hidden=true;ltShow('tavHome')});
+$('ltBack').addEventListener('click',function(){ltShow('tavHome')});
 $('tavStart').addEventListener('click',function(){
   var pool=tav.official.concat(save.approvedQs.map(playerQToPuzzle));
   if(!pool.length){toast('题库是空的，先去出题或等官方题包',1800);return}
