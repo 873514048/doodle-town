@@ -417,7 +417,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   <div class="scene" id="scene-first">
     <div class="scene-pad">
       <div class="draw-main">
-        <div class="canvas-wrap"><canvas id="firstCanvas" width="2048" height="1536" style="touch-action: none; user-select: none;"></canvas></div>
+        <div class="canvas-wrap"><canvas id="firstCanvas" width="4096" height="3072" style="touch-action: none; user-select: none;"></canvas></div>
         <aside class="side-col">
           <div class="draw-top" style="flex-direction:column;align-items:flex-start;gap:2px">
             <h1 class="hw uw" style="font-size:28px">画出你自己吧！</h1>
@@ -455,7 +455,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   <div class="scene" id="scene-studio">
     <div class="scene-pad">
       <div class="draw-main">
-        <div class="canvas-wrap"><canvas id="studioCanvas" width="2048" height="1536" style="touch-action: none; user-select: none;"></canvas></div>
+        <div class="canvas-wrap"><canvas id="studioCanvas" width="4096" height="3072" style="touch-action: none; user-select: none;"></canvas></div>
         <aside class="studio-side">
           <div class="draw-top" style="flex-wrap:wrap">
             <button class="btn blu back-btn">返回 →</button>
@@ -504,7 +504,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 
       <div id="memDraw" hidden="" class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="memCanvas" width="2048" height="1536" style="touch-action: none; user-select: none;"></canvas></div>
+          <div class="canvas-wrap"><canvas id="memCanvas" width="4096" height="3072" style="touch-action: none; user-select: none;"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn">返回 →</button>
@@ -603,7 +603,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <div class="prop-row" id="tavProps" style="flex:none"><span class="tag" style="padding:3px 12px;font-size:13px"><svg width="16" height="16" style="vertical-align:-3px" viewBox="0 0 20 20"><g stroke="#2B2B2B" stroke-width="1.4" fill="#E087A6"><circle cx="10" cy="5.4" r="3"></circle><circle cx="14.3" cy="8.5" r="3"></circle><circle cx="12.7" cy="13.6" r="3"></circle><circle cx="7.3" cy="13.6" r="3"></circle><circle cx="5.7" cy="8.5" r="3"></circle></g><circle cx="10" cy="10" r="2.2" fill="#E9B824" stroke="#2B2B2B" stroke-width="1.2"></circle></svg><b>2</b></span><span class="tag" style="padding:3px 12px;font-size:13px;margin-left:8px"><svg width="16" height="16" style="vertical-align:-3px" viewBox="0 0 20 20"><path d="M10 2 C13.6 2 15.6 8 15.6 12 C15.6 15.6 13 17.6 10 17.6 C7 17.6 4.4 15.6 4.4 12 C4.4 8 6.4 2 10 2 Z" fill="#FBF3E2" stroke="#2B2B2B" stroke-width="1.6"></path><path d="M7 12 q3 2.4 6 0" fill="none" stroke="#2B2B2B" stroke-width="1.2"></path></svg><b>2</b></span><button class="tag" id="adBtn" style="padding:3px 10px;font-size:12px;margin-left:8px;cursor:pointer">看广告 +3/+3</button><button class="tag" id="claimBtn" style="padding:3px 10px;font-size:12px;cursor:pointer">每日领取 +2/+2</button></div>
         </div>
         <div style="flex:1;display:flex;align-items:stretch;min-height:0;gap:clamp(8px,2vw,16px);padding:2px 8px 0">
-          <div id="tavColL" style="flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0">
+          <div id="tavColL" style="flex:none;width:clamp(78px,12vw,140px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0">
             <svg id="tavKeeperSvg" viewBox="0 0 330 440" style="width:auto;max-width:min(120px,80%);max-height:34vh;flex:none">
               <defs>
                 <linearGradient id="kvRobe" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#566884"></stop><stop offset="100%" stop-color="#3D4D66"></stop></linearGradient>
@@ -637,15 +637,15 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             </svg>
             <b style="font-size:clamp(12px,1.5vw,15px)">掌柜 · 老墨</b>
           </div>
-          <div style="flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0">
-            <div class="tav-frame" style="position:relative;width:min(100%,calc(52vh*1.5));max-width:92%;aspect-ratio:1.5;padding:clamp(8px,1.4vw,14px) clamp(18px,3vw,34px);transform:rotate(-.6deg);justify-content:center;flex:none">
+          <div style="flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;padding-left:min(28px,4vw)">
+            <div class="tav-frame" style="position:relative;width:min(100%,calc(48vh*1.5));max-width:96%;aspect-ratio:1.5;padding:clamp(8px,1.4vw,14px) clamp(18px,3vw,34px);transform:rotate(-.6deg);justify-content:center;flex:none">
               <canvas id="tavPreview" width="640" height="480" style="flex:1;min-height:0;width:auto;max-width:100%;object-fit:contain;border:none;border-radius:6px;background:#fff"></canvas>
               <div class="small" style="margin-top:6px;font-weight:800;font-size:clamp(9px,1.3vw,13px);white-space:nowrap;overflow:hidden;max-width:100%">今日一幅 · 每日轮换 · 镇民投稿精选</div>
-              <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(9px,1.2vw,12px);white-space:nowrap;overflow:hidden;max-width:100%">给谜题图送花，老墨记在流水账上</div>
+              <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(9px,1.2vw,12px);white-space:nowrap;overflow:hidden;max-width:100%">酒馆今日流水：1 朵鲜花，老墨笑开了花</div>
               <div class="tav-rule small" style="position:absolute;top:100%;left:50%;transform:translateX(-50%) rotate(.6deg);margin-top:18px;max-width:min(96vw,420px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1 分 = 1 墨水</div>
             </div>
           </div>
-          <div id="tavColR" style="flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 1.4vh, 14px);">
+          <div id="tavColR" style="flex:none;width:min(200px,45vw);min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,1.4vh,14px)">
             <button class="btn big" id="tavStart" style="width:min(200px,100%);font-size:clamp(13px,1.7vw,17px);padding:clamp(7px,1.2vh,11px) 10px">开始今日特调</button>
             <button class="btn" id="tavLanternBtn" style="width:min(200px,100%);background:#FBEFD8;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">🏮 灯谜会</button>
             <button class="btn blu" id="tavCreateBtn" style="width:min(200px,100%);font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">我来出题</button>
@@ -659,8 +659,8 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       <div id="tavPlay" class="apw">
         <div class="apw-left">
           <div class="draw-top" style="gap:8px;flex-wrap:nowrap;min-width:0">
-            <span class="stamp" id="tavCat" style="background:#F2C94C">歇后语</span>
-            <b id="tavTitle" style="font-size:15px;white-space:nowrap">第 2/5 题</b>
+            <span class="stamp" id="tavCat" style="background:#F2C94C">热梗</span>
+            <b id="tavTitle" style="font-size:15px;white-space:nowrap">第 3/5 题</b>
             <span class="apw-au" id="tavAuthor" style="font-size:13px;font-weight:700;white-space:nowrap">老墨出品 · 老墨</span>
             <span class="sp"></span>
             <span class="tag" style="white-space:nowrap">得分 <b id="tavScore">0</b></span>
@@ -672,7 +672,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         <div class="apw-right">
           <div class="card">
             <b style="font-size:17px">看涂鸦，写下答案</b>
-            <div class="bar" style="margin:8px 0"><i id="tavBar" style="width: 72%;"></i></div>
+            <div class="bar" style="margin:8px 0"><i id="tavBar" style="width: 18.3333%;"></i></div>
             <div class="qrow" style="gap:8px">
               <input id="tavInput" class="qinput" style="flex:1;min-width:0" placeholder="输入你的答案…" maxlength="24">
               <button class="mic-btn" data-voice="tavInput" title="语音输入" aria-label="语音输入"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
@@ -689,7 +689,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           </div>
           <div class="card">
             <b class="apw-h2" style="font-size:15px">为这幅涂鸦捧个场</b>
-            <div id="tavLove" class="lovebar" style="margin-top:8px"><button class="lvbtn" data-lv="f"><svg viewBox="0 0 20 20"><g stroke="#2B2B2B" stroke-width="1.4" fill="#E087A6"><circle cx="10" cy="5.4" r="3"></circle><circle cx="14.3" cy="8.5" r="3"></circle><circle cx="12.7" cy="13.6" r="3"></circle><circle cx="7.3" cy="13.6" r="3"></circle><circle cx="5.7" cy="8.5" r="3"></circle></g><circle cx="10" cy="10" r="2.2" fill="#E9B824" stroke="#2B2B2B" stroke-width="1.2"></circle></svg>鲜花 <b>1</b></button><button class="lvbtn" data-lv="e"><svg viewBox="0 0 20 20"><path d="M10 2 C13.6 2 15.6 8 15.6 12 C15.6 15.6 13 17.6 10 17.6 C7 17.6 4.4 15.6 4.4 12 C4.4 8 6.4 2 10 2 Z" fill="#FBF3E2" stroke="#2B2B2B" stroke-width="1.6"></path><path d="M7 12 q3 2.4 6 0" fill="none" stroke="#2B2B2B" stroke-width="1.2"></path></svg>砸蛋 <b>1</b></button></div>
+            <div id="tavLove" class="lovebar" style="margin-top:8px"><button class="lvbtn" data-lv="f"><svg viewBox="0 0 20 20"><g stroke="#2B2B2B" stroke-width="1.4" fill="#E087A6"><circle cx="10" cy="5.4" r="3"></circle><circle cx="14.3" cy="8.5" r="3"></circle><circle cx="12.7" cy="13.6" r="3"></circle><circle cx="7.3" cy="13.6" r="3"></circle><circle cx="5.7" cy="8.5" r="3"></circle></g><circle cx="10" cy="10" r="2.2" fill="#E9B824" stroke="#2B2B2B" stroke-width="1.2"></circle></svg>鲜花 <b>0</b></button><button class="lvbtn" data-lv="e"><svg viewBox="0 0 20 20"><path d="M10 2 C13.6 2 15.6 8 15.6 12 C15.6 15.6 13 17.6 10 17.6 C7 17.6 4.4 15.6 4.4 12 C4.4 8 6.4 2 10 2 Z" fill="#FBF3E2" stroke="#2B2B2B" stroke-width="1.6"></path><path d="M7 12 q3 2.4 6 0" fill="none" stroke="#2B2B2B" stroke-width="1.2"></path></svg>砸蛋 <b>0</b></button></div>
           </div>
         </div>
       </div>
@@ -697,7 +697,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       <!-- 我来出题：类别与答案卡 / 画布 / 工具条 / 提交 -->
       <div id="tavCreate" hidden="" class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="ctCanvas" width="2048" height="1536" style="touch-action: none; user-select: none;"></canvas></div>
+          <div class="canvas-wrap"><canvas id="ctCanvas" width="4096" height="3072" style="touch-action: none; user-select: none;"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn" id="ctBack">返回 →</button>
@@ -707,7 +707,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <div class="tool-card">
               <span class="tool-label">类别</span>
               <div class="tool-row">
-                <span id="ctCats" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">成语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歇后语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歌名</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">古诗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">热梗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">台词</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">自定义</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">成语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歇后语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歌名</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">古诗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">热梗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">台词</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">自定义</button></span>
+                <span id="ctCats" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">成语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歇后语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歌名</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">古诗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">热梗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">台词</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">自定义</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">成语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歇后语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歌名</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">古诗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">热梗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">台词</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">自定义</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">成语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歇后语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歌名</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">古诗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">热梗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">台词</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">自定义</button></span>
                 <input id="ctCustomCat" class="qinput sketch-border" style="flex:0 0 92px;padding:5px 8px;font-size:13px" placeholder="自定义标签" maxlength="6" hidden="">
                 <button class="mic-btn" data-voice="ctCustomCat" title="语音输入" aria-label="语音输入" hidden=""><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
               </div>
@@ -859,7 +859,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       </div>
       <div id="gvDraw" hidden="" class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="gvCanvas" width="2048" height="1536" style="touch-action: none; user-select: none;"></canvas></div>
+          <div class="canvas-wrap"><canvas id="gvCanvas" width="4096" height="3072" style="touch-action: none; user-select: none;"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn">返回 →</button>
@@ -4260,6 +4260,7 @@ applyOrient();
 showScene(save.seen?'scene-plaza':'scene-first');
 reframe();
 </script>
+
 
 
 
