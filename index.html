@@ -102,6 +102,10 @@ canvas{display:block}
   box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -3px 8px rgba(120,90,40,.14),3px 8px 22px rgba(43,43,43,.13)}
 /* 卡片伸缩均分剩余高度，内容垂直居中 → 一屏铺满 */
 .studio-side .tool-card,.side-col .tool-card{flex:1 1 auto;justify-content:center}
+/* 引导页右列：不框起来，裸排在右侧（按键不做托盘卡片） */
+#scene-first .side-col{background:none;border:none;box-shadow:none;padding:0;overflow:visible;gap:14px}
+#scene-first .tool-card{background:none;border:none;box-shadow:none;padding:0;gap:8px}
+#scene-first .tool-card::before,#scene-first .tool-card::after{display:none}
 .studio-side .ctrl-row,.side-col .ctrl-row{justify-content:flex-start;margin:0}
 .studio-side .status-line,.side-col .status-line{margin:0;text-align:left;min-height:20px}
 /* 语音按钮：与同行输入框/按钮垂直居中，紧凑间距 */
@@ -282,10 +286,6 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <div class="draw-top" style="flex-direction:column;align-items:flex-start;gap:2px">
             <h1 class="hw uw" style="font-size:28px">画出你自己吧！</h1>
             <span class="sub small" style="font-size:12px">这只小家伙将替你在涂鸦小镇生活</span>
-          </div>
-          <div class="preview-col" style="flex:none;align-self:center">
-            <div class="mini-frame"><canvas id="firstPreview" width="150" height="150"></canvas></div>
-            <span class="small" style="text-align:center">主角预览<br>（Q弹ing）</span>
           </div>
           <div class="ctrl-row" id="ftColors"></div>
           <div class="ctrl-row" id="ftTools"></div>
@@ -1215,7 +1215,6 @@ function showScene(id){
   $(id).classList.add('on');curScene=id;
   requestAnimationFrame(function(){wobbleAll($(id))});
   if(id==='scene-plaza')startPlaza();
-  if(id==='scene-first')startFirstPreview();
 }
 function goPlaza(){closeModal();persist();showScene('scene-plaza')}
 function reframe(){requestAnimationFrame(function(){wobbleAll(document)})}
@@ -1225,25 +1224,6 @@ document.querySelectorAll('.back-btn').forEach(function(b){b.addEventListener('c
 var firstBoard=makeBoard($('firstCanvas'),'在这里画你的主角…');
 buildTools(firstBoard,{tools:$('ftTools'),colors:$('ftColors'),status:'ftStatus'});
 var avatarImg=new Image();
-var firstRaf=0;
-function startFirstPreview(){
-  cancelAnimationFrame(firstRaf);
-  var cv=$('firstPreview'),c=cv.getContext('2d');
-  function loop(t){
-    if(curScene!=='scene-first')return;
-    c.clearRect(0,0,150,150);
-    var sq=0.92+0.08*(1+Math.sin(t/450));      // 挤压拉伸 scaleY 0.92~1.08
-    var bob=Math.sin(t/500)*4;                  // 上下浮动
-    c.save();c.translate(75,80+bob);c.scale(2-sq,sq);
-    c.strokeStyle=INK;c.lineWidth=2;
-    wCircle(c,0,-6,52,11,'#FFFFFF',2.5);
-    c.save();c.beginPath();c.arc(0,-6,47,0,Math.PI*2);c.clip();
-    c.drawImage($('firstCanvas'),-47,-53,94,94);c.restore();
-    c.restore();
-    firstRaf=requestAnimationFrame(loop);
-  }
-  firstRaf=requestAnimationFrame(loop);
-}
 /* 完成按钮永远有可见响应；空画布 → 手绘toast提示 */
 $('firstDone').addEventListener('click',function(){
   var btn=$('firstDone');
