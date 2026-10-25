@@ -22,8 +22,7 @@
 html,body{width:100%;height:100%;overflow:hidden}
 body{
   font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#2B2B2B;user-select:none;
-  background-color:#FDFCF8;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M0 27.5H28' stroke='%23B9CFE3' stroke-width='1' opacity='.42'/%3E%3Cpath d='M27.5 0V28' stroke='%23DEDED6' stroke-width='1' opacity='.28'/%3E%3C/svg%3E");
+  background-color:#FDFBF4;
 }
 /* 全屏：铺满整个视口（dvh 兜底刘海屏），不再 16:9 letterbox */
 #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
@@ -77,16 +76,20 @@ canvas{display:block}
 .draw-stage{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
 .draw-top{display:flex;align-items:center;gap:12px;flex:0 0 auto;position:relative;z-index:4}
 .draw-top .sp{flex:1}
+/* 返回键：统一悬浮屏幕右上角，文字仅「返回 →」 */
+.back-btn{position:absolute;right:12px;top:12px;margin:0;z-index:6;padding:4px 12px;font-size:13px}
+.draw-top{padding-right:78px}
 .draw-top h2,.scene-head h2{letter-spacing:3px}
 /* 多子视图场景：公共导航条隐藏，各子视图自带导航（绘画视图放右列，非绘画视图放顶部） */
 .nav-top{display:none}
-.draw-main{flex:1;display:flex;gap:18px;align-items:stretch;justify-content:center;min-height:0}
+.draw-main{flex:1;display:flex;gap:14px;align-items:stretch;justify-content:center;min-height:0;
+  border:2.4px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22);padding:12px 14px}
 .vsep{width:0;align-self:stretch;border-left:2px dashed rgba(43,43,43,.25)}
 .canvas-wrap{flex:1 1 auto;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 /* 高度驱动 + aspect-ratio 保证正方形：整个左边都用来做画板（撑满内容区高度，不钳 640） */
 /* 画框装裱：白衬边 + 外墨线 + 双层投影（涂鸦风 · 高级感） */
 .canvas-wrap canvas{display:block;height:100%;max-height:100%;width:auto;max-width:100%;aspect-ratio:1/1;
-  background:#FFFFFF;border:1.5px solid rgba(43,43,43,.62);margin:0 auto;touch-action:none;cursor:crosshair;
+  background:#FFFFFF;border:2.4px solid #2B2B2B;border-radius:14px;box-shadow:0 3px 0 rgba(43,43,43,.3);margin:0 auto;touch-action:none;cursor:crosshair;
   box-shadow:0 0 0 7px #FFFFFF,0 0 0 8.6px rgba(43,43,43,.28),3px 10px 26px rgba(43,43,43,.15),0 2px 6px rgba(43,43,43,.08)}
 /* 游戏场景内压缩控制行上下边距：960×540 舞台画布高度 ≥260px */
 .scene-pad .ctrl-row{margin:2px 0}
@@ -156,12 +159,6 @@ canvas{display:block}
 .swatch.active{outline:2.5px solid #E14B3B;outline-offset:2px;}
 /* 调色盘豆：彩虹渐变，点击唤起系统取色器 */
 .swatch-rainbow{background:conic-gradient(#E14B3B,#F2B134,#4E9B5E,#3B6EA5,#7B5EA7,#E14B3B)}
-/* 淡彩晨雾：场景四角极淡水彩晕染（纯装饰，不拦截交互） */
-.scene-pad::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:-1;
-  background:radial-gradient(340px 240px at 6% 4%,rgba(160,200,225,.18),transparent 70%),
-             radial-gradient(380px 260px at 97% 96%,rgba(240,196,150,.16),transparent 70%),
-             radial-gradient(300px 220px at 4% 94%,rgba(170,210,170,.15),transparent 70%),
-             radial-gradient(280px 200px at 96% 3%,rgba(230,170,160,.12),transparent 70%)}
 /* 淡彩晨雾分组：工具行之间以手绘虚线分隔（无框裸排） */
 .studio-side .tool-card>.tool-row+.tool-row,.side-col .tool-card>.tool-row+.tool-row{
   border-top:1.4px dashed rgba(43,43,43,.35);padding-top:8px;margin-top:2px}
@@ -300,8 +297,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 /* 旋转遮罩 */
 #rotateMask{position:fixed;inset:0;z-index:999;display:none;flex-direction:column;
   align-items:center;justify-content:center;gap:16px;font-size:22px;font-weight:800;
-  background-color:#FDFCF8;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M0 27.5H28' stroke='%23B9CFE3' stroke-width='1' opacity='.42'/%3E%3C/svg%3E")}
+  background-color:#FDFBF4}
 #rotateMask svg{animation:rot 2.2s ease-in-out infinite}
 @keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
 @media (orientation:portrait){#rotateMask{display:flex}#stage{display:none}}
@@ -361,7 +357,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         <div class="canvas-wrap"><canvas id="studioCanvas" width="512" height="512"></canvas></div>
         <aside class="studio-side">
           <div class="draw-top" style="flex-wrap:wrap">
-            <button class="btn blu back-btn">← 返回广场</button>
+            <button class="btn blu back-btn">返回 →</button>
             <h2 class="hw uw" id="studioTitle" style="font-size:20px">小镇画室</h2>
           </div>
           <div class="status-line" id="stStatus"></div>
@@ -382,7 +378,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   <div class="scene" id="scene-memory">
     <div class="scene-pad">
       <div class="draw-top nav-top">
-        <button class="btn blu back-btn">← 返回广场</button>
+        <button class="btn blu back-btn">返回 →</button>
         <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
         <span class="sub small">3 秒速画 · 凭记忆灵魂鉴定</span>
         <span class="sp"></span>
@@ -390,7 +386,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 
       <div id="memIntro" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
         <div class="draw-top" style="width:100%;justify-content:flex-start">
-          <button class="btn blu back-btn">← 返回广场</button>
+          <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
           <span class="sp"></span>
         </div>
@@ -410,7 +406,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <div class="canvas-wrap"><canvas id="memCanvas" width="512" height="512"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
-              <button class="btn blu back-btn">← 返回广场</button>
+              <button class="btn blu back-btn">返回 →</button>
               <b id="memWord" class="hw" style="font-size:20px">请画：？</b>
               <span class="small" id="memIdx"></span>
               <div class="bar sketch-border timebar" style="flex:1 1 100%"><i id="memBar"></i></div>
@@ -431,7 +427,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 
       <div id="memDry" hidden class="colflow" style="align-items:center;justify-content:center;gap:14px">
         <div class="draw-top" style="width:100%;justify-content:flex-start">
-          <button class="btn blu back-btn">← 返回广场</button>
+          <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
           <span class="sp"></span>
         </div>
@@ -446,7 +442,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 
       <div id="memJudge" hidden class="colflow">
         <div class="draw-top" style="justify-content:flex-start">
-          <button class="btn blu back-btn">← 返回广场</button>
+          <button class="btn blu back-btn">返回 →</button>
           <b id="jdIdx">鉴定 1/5</b>
           <div class="bar sketch-border" style="flex:1"><i id="jdBar"></i></div>
           <b id="jdTime">15.0s</b>
@@ -468,7 +464,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 
       <div id="memResult" hidden class="colflow" style="gap:10px;align-items:center;justify-content:center">
         <div class="draw-top" style="width:100%;justify-content:flex-start">
-          <button class="btn blu back-btn">← 返回广场</button>
+          <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
           <span class="sp"></span>
         </div>
@@ -478,7 +474,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <button class="btn" id="resSubmit">投稿最灵魂作品 (+20墨水)</button>
           <button class="btn blu" id="resCard">生成残局挑战卡</button>
           <button class="btn blu" id="resAgain">再来一局</button>
-          <button class="btn back-btn">返回广场</button>
+          <button class="btn back-btn">返回 →</button>
         </div>
       </div>
     </div>
@@ -488,7 +484,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   <div class="scene" id="scene-tavern">
     <div class="scene-pad">
       <div class="draw-top nav-top">
-        <button class="btn blu back-btn">← 返回广场</button>
+        <button class="btn blu back-btn">返回 →</button>
         <h2 class="hw uw" style="font-size:22px">猜谜酒馆</h2>
         <span class="sub small">掌柜老墨的手绘谜题 · 看图作答</span>
         <span class="sp"></span>
@@ -497,7 +493,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       <!-- 酒馆大厅：左·今日特调黑板 / 右·掌柜与入口 -->
       <div id="tavHome" class="colflow" style="align-items:center;justify-content:center;gap:14px">
         <div class="draw-top" style="width:100%;justify-content:flex-start;flex-wrap:wrap">
-          <button class="btn blu back-btn">← 返回广场</button>
+          <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">猜谜酒馆</h2>
           <span class="sub small">掌柜老墨的手绘谜题 · 看图作答</span>
           <span class="sp"></span>
@@ -533,7 +529,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           </div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:6px">
-              <button class="btn blu back-btn">← 返回广场</button>
+              <button class="btn blu back-btn">返回 →</button>
               <span class="stamp" id="tavCat">成语</span>
               <b id="tavTitle" style="font-size:14px">第 1/5 题</b>
               <span class="small" id="tavAuthor" style="font-size:11px"></span>
@@ -568,7 +564,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <div class="canvas-wrap"><canvas id="ctCanvas" width="512" height="512"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
-              <button class="btn blu" id="ctBack">← 酒馆大厅</button>
+              <button class="btn blu back-btn" id="ctBack">返回 →</button>
               <h2 class="hw" style="font-size:18px">我来出题 · 投稿</h2>
               <span class="sp"></span>
             </div>
@@ -608,14 +604,14 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   <div class="scene" id="scene-guess">
     <div class="scene-pad">
       <div class="draw-top nav-top">
-        <button class="btn blu back-btn">← 返回广场</button>
+        <button class="btn blu back-btn">返回 →</button>
         <h2 class="hw uw" style="font-size:22px">你画我猜馆</h2>
         <span class="sp"></span>
         <span class="tag sketch-border">画技分 <b id="gvSkill">0</b>/100</span>
       </div>
       <div id="gvIntro" style="flex:1;display:flex;flex-direction:column;gap:16px;min-height:0">
         <div class="draw-top" style="flex-wrap:wrap">
-          <button class="btn blu back-btn">← 返回广场</button>
+          <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">你画我猜馆</h2>
           <span class="sp"></span>
           <span class="tag sketch-border">画技分 <b>0</b>/100</span>
@@ -639,7 +635,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       </div>
       <div id="gvPick" hidden style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
         <div class="draw-top" style="width:100%;justify-content:flex-start">
-          <button class="btn blu back-btn">← 返回广场</button>
+          <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">你画我猜馆</h2>
           <span class="sp"></span>
         </div>
@@ -655,7 +651,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <div class="canvas-wrap"><canvas id="gvCanvas" width="512" height="512"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
-              <button class="btn blu back-btn">← 返回广场</button>
+              <button class="btn blu back-btn">返回 →</button>
               <b class="hw" id="gvWord" style="font-size:20px">请画：？</b>
               <span class="small" style="flex-basis:100%">20 秒内画出它，这是你的展示舞台</span>
               <div class="bar sketch-border timebar" style="flex:1 1 100%"><i id="gvBar"></i></div>
@@ -1058,7 +1054,11 @@ function makeBoard(canvas,hint){
     layers.push({strokes:[],visible:true});layerCv.push(cv);lctx.push(c2);
   }
   mkLayer();mkLayer(); // 默认两层：底层铺色 / 上层线稿
-  function pos(e){return mapClient(canvas,e.clientX,e.clientY)}
+  var cr=null; // 绘制中缓存的画布矩形：pointermove 不再每次强制排版（断触修复①）
+  function pos(e){
+    if(!cr)cr=canvas.getBoundingClientRect();
+    return mapRect(cr,canvas,e.clientX,e.clientY);
+  }
   function strokeTotal(){var t=0;layers.forEach(function(L){t+=L.strokes.length});return t}
   function renderLayer(i){ // 全量重放第 i 层（undo 后调用）
     var c2=lctx[i];
@@ -1139,6 +1139,7 @@ function makeBoard(canvas,hint){
   }
   canvas.addEventListener('pointerdown',function(e){
     e.preventDefault();
+    cr=canvas.getBoundingClientRect(); // 起笔时刷新缓存矩形
     try{canvas.setPointerCapture(e.pointerId)}catch(err){}
     var p=pos(e);
     if(toolMode==='fill'){doFill(p);return}
@@ -1160,7 +1161,10 @@ function makeBoard(canvas,hint){
   }
   canvas.addEventListener('pointerup',up);
   canvas.addEventListener('pointercancel',up);
-  canvas.addEventListener('lostpointercapture',up); // 捕获丢失也算一笔结束
+  window.addEventListener('pointerup',up); // 兜底：capture 失败手指抬起也能收笔（up 防重入）
+  ['touchstart','touchmove','touchend'].forEach(function(tn){ // 微信 WebView 手势兜底：阻止浏览器接管触发 pointercancel 导致断触
+    canvas.addEventListener(tn,function(ev){ev.preventDefault()},{passive:false});
+  });
   return {
     undo:function(){var st=undoStack.pop();if(!st){toast('没有可以撤销的笔画了');return}
       if(st.fill){ // fill 撤销：整层快照回贴 + 从笔画记录里摘掉对应 fill
@@ -1315,10 +1319,21 @@ function buildTools(board,o){
     if(!actions)ACT_DEFS.forEach(function(d){r2.appendChild(icoBtn(d))});
     if(!sizes){var w0=document.createElement('div');w0.className='size-slider';tools.appendChild(w0);mkSlider(w0)}
   }
-  function mkSlider(wrap){ // 专业粗细滑杆（触屏横向拖动）
+  function mkSlider(wrap){ // 粗细滑杆：点按轨道直达该 px + 按住拖动微调（原生 range 移动端点按不改值，故自行换算）
     var rng=document.createElement('input');rng.type='range';rng.min='2';rng.max='22';rng.step='1';rng.value=board.getSize();
     var lab=document.createElement('span');lab.className='ss-val';
     rng.oninput=function(){board.setSize(+rng.value);say(stateText());sync()};
+    function pick(e){
+      var r=rng.getBoundingClientRect();
+      var t=(e.clientX-r.left)/r.width;t=Math.max(0,Math.min(1,t));
+      var v=Math.round(2+t*(22-2));
+      if(v!==+rng.value){rng.value=v;board.setSize(v);say(stateText());sync()}
+    }
+    var drag=false;
+    rng.addEventListener('pointerdown',function(e){drag=true;try{rng.setPointerCapture(e.pointerId)}catch(err){}pick(e);e.preventDefault()});
+    rng.addEventListener('pointermove',function(e){if(drag)pick(e)});
+    rng.addEventListener('pointerup',function(){drag=false});
+    rng.addEventListener('pointercancel',function(){drag=false});
     wrap.appendChild(rng);wrap.appendChild(lab);
     rngEl=rng;labEl=lab;
   }
@@ -3623,13 +3638,15 @@ runCv.addEventListener('pointerdown',function(){if(curScene==='scene-run')runJum
 /* ============ 强制横屏 / 方向检测（手机竖屏锁定兜底） ============ */
 function isForceLand(){return document.body.classList.contains('force-land')}
 /* 统一指针坐标映射：正常模式直映；force-land(rotate 90°) 用转置映射（返回逻辑坐标，_lw/_lh 优先） */
-function mapClient(canvas,clientX,clientY){
-  var r=canvas.getBoundingClientRect();
+function mapRect(r,canvas,clientX,clientY){ // 支持传入缓存的 rect：绘制中避免高频 getBoundingClientRect 强制排版
   var lw=canvas._lw||canvas.width,lh=canvas._lh||canvas.height;
   if(isForceLand()){
     return {x:(clientY-r.top)*(lw/r.height),y:(r.right-clientX)*(lh/r.width)};
   }
   return {x:(clientX-r.left)*(lw/r.width),y:(clientY-r.top)*(lh/r.height)};
+}
+function mapClient(canvas,clientX,clientY){
+  return mapRect(canvas.getBoundingClientRect(),canvas,clientX,clientY);
 }
 function applyOrient(){
   var st=$('stage'),mask=$('rotateMask');
