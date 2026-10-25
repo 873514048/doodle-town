@@ -657,7 +657,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 
       <!-- 答题（A 版·老墨的吧台）：左画右答 -->
       <div id="tavPlay" class="apw">
-        <div class="apw-left">
+        <div class="apw-left" style="position:relative">
           <div class="draw-top" style="gap:8px;flex-wrap:nowrap;min-width:0">
             <span class="stamp" id="tavCat" style="background:#F2C94C">热梗</span>
             <b id="tavTitle" style="font-size:15px;white-space:nowrap">第 3/5 题</b>
@@ -665,9 +665,10 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <span class="sp"></span>
             <span class="tag" style="white-space:nowrap">得分 <b id="tavScore">0</b></span>
             <span class="tag apw-cb" style="white-space:nowrap">连击 <b id="tavCombo">0</b></span>
-            <button class="btn blu back-btn" style="position:static;font-size:15px;font-weight:700;padding:6px 14px;border-radius:10px;box-shadow:none;white-space:nowrap">返回 →</button>
+            <span style="flex:none;width:80px"></span>
           </div>
           <div class="apw-frame"><canvas id="tavCanvas" width="1024" height="768"></canvas></div>
+          <button class="btn blu back-btn" style="position:absolute;right:0;top:-2px;font-size:15px;font-weight:700;padding:6px 14px;border-radius:10px;box-shadow:none;white-space:nowrap">返回 →</button>
         </div>
         <div class="apw-right">
           <div class="card">
