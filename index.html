@@ -1,0 +1,3437 @@
+<!--
+  《涂鸦小镇》Doodle Town —— 素描本随手涂鸦风 · 横屏 H5 玩法原型（微信小游戏玩法原型）
+  ─────────────────────────── 微信小游戏适配说明 ───────────────────────────
+  本文件为浏览器 file:// 直开原型。迁移到微信小游戏（project.config.json 已配 compileType:"game"）时：
+  1) 入口：微信小游戏以 game.js 为唯一入口；把本文件 <script> 内全部逻辑平移进 game.js。
+  2) Canvas 创建：所有 DOM canvas 替换为 wx.createCanvas()；画板保持"固定内部分辨率512×512、
+     按比例缩放显示"，坐标换算 x=(touch.clientX-rect.left)*(canvas.width/rect.width) 的等价逻辑。
+  3) 输入：pointerdown/move/up 替换为 wx.onTouchStart / wx.onTouchMove / wx.onTouchEnd。
+  4) 存储：localStorage 替换为 wx.setStorageSync / wx.getStorageSync（key: doodle_town_save_v2）。
+  5) 玩法状态机、数值与存档结构无需改动。
+  ─ v3 深度改版：绘画 UI 重设计 / 广场彩色化 / 失忆画室3秒 / 酒馆猜谜+题包接口+出题投稿+花蛋 /
+    AI 猜画（本地引擎，正式版接入多模态大模型） ─
+  ─────────────────────────────────────────────────────────────────────────
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>涂鸦小镇 Doodle Town</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden}
+body{
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#2B2B2B;user-select:none;
+  background-color:#FBF9F4;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M0 27.5H28' stroke='%23B9CFE3' stroke-width='1' opacity='.42'/%3E%3Cpath d='M27.5 0V28' stroke='%23DEDED6' stroke-width='1' opacity='.28'/%3E%3C/svg%3E");
+}
+/* 全屏：铺满整个视口（dvh 兜底刘海屏），不再 16:9 letterbox */
+#stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:100vw;height:100vh;height:100dvh;overflow:hidden}
+.scene{position:absolute;inset:0;display:none}
+.scene.on{display:block}
+canvas{display:block}
+
+/* 手绘框基础：SVG 抖动套框（JS 自动生成） */
+.sketch-border{position:relative;background:#FBF9F4}
+.wob-svg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:3}
+
+/* 手写感字体 + 波浪下划线 */
+.hw{font-family:"Yuanti SC","YouYuan","Kaiti SC","STKaiti","KaiTi","PingFang SC",sans-serif;letter-spacing:2px}
+.uw{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='7'%3E%3Cpath d='M0 4.5 Q4 1.2 8 4.5 T16 4.5' stroke='%23E14B3B' fill='none' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x left bottom/16px 7px;padding-bottom:9px}
+
+/* 按钮 */
+.btn{position:relative;display:inline-block;background:#FBF9F4;color:#2B2B2B;border:none;
+  padding:9px 20px;font-family:inherit;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;z-index:1}
+.btn:hover{background:#E14B3B;color:#FBF9F4}
+.btn.blu:hover{background:#3B6EA5;color:#FBF9F4}
+.btn:active{transform:translateY(1px) rotate(-.6deg)}
+.btn.sel{background:#3B6EA5;color:#FBF9F4}
+.btn.big{font-size:18px;padding:12px 30px}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px) rotate(-1deg)}75%{transform:translateX(6px) rotate(1deg)}}
+.shk{animation:shk .32s}
+
+/* 通用布局 */
+.scene-pad{position:absolute;inset:0;padding:12px 22px 14px;display:flex;flex-direction:column;gap:8px}
+.scene-head{display:flex;align-items:center;gap:14px;flex:0 0 auto;position:relative;z-index:4}
+.scene-head h2{font-size:21px;position:relative;display:inline-block}
+.scene-head .sp{flex:1}
+.paper-panel{position:relative;background:#FBF9F4;padding:14px 18px}
+.hatch{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='7'%3E%3Cpath d='M-1 8 L8 -1 M0 9 L9 0 M-2 7 L7 -2' stroke='%232B2B2B' stroke-width='1' opacity='.14'/%3E%3C/svg%3E")}
+.tape{position:absolute;width:92px;height:24px;background:rgba(222,206,160,.55);
+  border-left:2px dashed rgba(43,43,43,.22);border-right:2px dashed rgba(43,43,43,.22);
+  transform:rotate(-5deg);z-index:6;pointer-events:none}
+.tape.r{transform:rotate(4deg)}
+.bar{position:relative;height:12px;background:#FBF9F4}
+.bar i{position:absolute;left:1px;top:1px;bottom:1px;background:#E14B3B;width:100%;transition:width .1s linear}
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.opt{padding:10px 8px;font-size:16px}
+.small{font-size:12px;opacity:.75}
+.accent{color:#E14B3B}
+.blue{color:#3B6EA5}
+[hidden]{display:none !important}
+.colflow{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0}
+
+/* ── 绘画版块：方案文档演示①极简风（白底细墨线画布 + 文字工具行 + 色板 + 状态行） ── */
+.draw-stage{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+.draw-top{display:flex;align-items:center;gap:12px;flex:0 0 auto;position:relative;z-index:4}
+.draw-top .sp{flex:1}
+.draw-top h2,.scene-head h2{letter-spacing:3px}
+/* 多子视图场景：公共导航条隐藏，各子视图自带导航（绘画视图放右列，非绘画视图放顶部） */
+.nav-top{display:none}
+.draw-main{flex:1;display:flex;gap:18px;align-items:stretch;justify-content:center;min-height:0}
+.vsep{width:0;align-self:stretch;border-left:2px dashed rgba(43,43,43,.25)}
+.canvas-wrap{flex:1 1 auto;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* 高度驱动 + aspect-ratio 保证正方形：整个左边都用来做画板（撑满内容区高度，不钳 640） */
+/* 画框装裱：白衬边 + 外墨线 + 双层投影（涂鸦风 · 高级感） */
+.canvas-wrap canvas{display:block;height:100%;max-height:100%;width:auto;max-width:100%;aspect-ratio:1/1;
+  background:#FFFFFF;border:1.5px solid rgba(43,43,43,.62);margin:0 auto;touch-action:none;cursor:crosshair;
+  box-shadow:0 0 0 7px #FFFFFF,0 0 0 8.6px rgba(43,43,43,.28),3px 10px 26px rgba(43,43,43,.15),0 2px 6px rgba(43,43,43,.08)}
+/* 游戏场景内压缩控制行上下边距：960×540 舞台画布高度 ≥260px */
+.scene-pad .ctrl-row{margin:2px 0}
+.scene-pad .status-line{margin:2px 0}
+/* 演示①样式（照抄文档；.btn 规则限定在 .ctrl-row 内，避免影响广场/酒馆等其它游戏按钮） */
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;justify-content:center;}
+/* 画室（广场）左右分栏通用类：左侧画板主体 + 右侧功能列（画室/失忆画室/投稿/你画我猜/画主角共用） */
+#scene-studio .draw-main,#scene-first .draw-main,#scene-guess .draw-main,#scene-tavern .draw-main{justify-content:flex-start}
+/* 右列：画具托盘质感（木板底 + 虚线内框），内容卡片伸缩铺满整列，无滑动条无留白 */
+.studio-side,.side-col{flex:0 0 322px;display:flex;flex-direction:column;gap:8px;justify-content:flex-start;min-width:0;min-height:0;overflow:hidden;
+  padding:10px 13px 12px;box-sizing:border-box;
+  background:linear-gradient(174deg,#F6EDD9 0%,#EFE3C8 55%,#E8D9B8 100%);
+  border:2px solid rgba(43,43,43,.55);border-radius:8px 20px 10px 18px/18px 10px 20px 8px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -3px 8px rgba(120,90,40,.14),3px 8px 22px rgba(43,43,43,.13)}
+/* 卡片伸缩均分剩余高度，内容垂直居中 → 一屏铺满 */
+.studio-side .tool-card,.side-col .tool-card{flex:1 1 auto;justify-content:center}
+.studio-side .ctrl-row,.side-col .ctrl-row{justify-content:flex-start;margin:0}
+.studio-side .status-line,.side-col .status-line{margin:0;text-align:left;min-height:20px}
+/* 语音按钮：与同行输入框/按钮垂直居中，紧凑间距 */
+.qrow .mic-btn{align-self:center}
+.qrow{gap:8px}
+#scene-studio .canvas-wrap canvas{height:100%}
+.ctrl-row .btn,.tool-row .btn{font-family:inherit;font-size:14px;padding:7px 15px;cursor:pointer;background:linear-gradient(180deg,#FFFDF8,#F3ECDC);color:#2B2B2B;
+  border:1.8px solid #2B2B2B;border-radius:3px 11px 4px 12px / 11px 4px 12px 5px;transition:transform .08s,background .12s;
+  box-shadow:0 2px 0 rgba(43,43,43,.75),inset 0 1px 0 rgba(255,255,255,.9)}
+.ctrl-row .btn:active,.tool-row .btn:active{transform:translateY(1.6px);box-shadow:0 .5px 0 rgba(43,43,43,.75)}
+.ctrl-row .btn:hover,.tool-row .btn:hover{background:#E14B3B;color:#FBF9F4;transform:rotate(-1.4deg) scale(1.04);}
+.ctrl-row .btn.blue:hover,.tool-row .btn.blue:hover{background:#3B6EA5;}
+.ctrl-row .btn.active,.tool-row .btn.active{background:linear-gradient(180deg,#3a3a3a,#232323);color:#FBF9F4;box-shadow:inset 0 2px 4px rgba(0,0,0,.5),0 1px 0 rgba(43,43,43,.4)}
+.ctrl-row .btn:disabled,.tool-row .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+/* 色板：颜料豆质感（径向高光 + 厚墨边） */
+.swatch{width:29px;height:29px;border:2px solid #2B2B2B;border-radius:50% 44% 56% 47%;cursor:pointer;flex:none;padding:0;
+  box-shadow:inset -2px -3px 5px rgba(0,0,0,.22),inset 2px 3px 4px rgba(255,255,255,.5),0 2px 3px rgba(43,43,43,.25);
+  transition:transform .1s}
+.swatch:hover{transform:scale(1.12) rotate(-6deg)}
+.swatch.active{outline:2.5px solid #E14B3B;outline-offset:2px;}
+.status-line{font-size:14px;margin:6px 0;min-height:24px;text-align:center;color:rgba(43,43,43,.75);}
+/* 失忆画室 / AI 猜画倒计时：细进度条，剩余<30% 变番茄红 */
+.timebar i{background:#3B6EA5}
+.timebar.hot i{background:#E14B3B}
+.mini-frame{position:relative;background:#FFFFFF;padding:7px;transform:rotate(-1.4deg);box-shadow:2px 5px 12px rgba(43,43,43,.16)}
+.mini-frame canvas{display:block}
+
+/* ── 场景精致化：统一间距 / 圆角 / 细墨线分组变量（画室 · 失忆画室 · 酒馆共用） ── */
+.scene-pad{--gap-s:7px;--gap-m:12px;--gap-l:18px;--ink-soft:rgba(43,43,43,.22);--ink-line:rgba(43,43,43,.72)}
+/* 工具卡片：白瓷釉面 + 手绘描边 + 内阴影层次（钉在木托盘上的小瓷片） */
+.tool-card{position:relative;background:linear-gradient(172deg,#FFFEFB 0%,#FBF7EC 60%,#F4ECD9 100%);padding:10px 14px 12px;
+  display:flex;flex-direction:column;gap:9px;border-radius:6px 15px 8px 14px/14px 8px 15px 6px;
+  border:1.6px solid rgba(43,43,43,.5);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.95),inset 0 -2px 4px rgba(160,130,80,.10),0 3px 9px rgba(43,43,43,.10)}
+/* 卡片左上角图钉（手绘小圆点，像钉在托盘上） */
+.tool-card::before{content:'';position:absolute;left:8px;top:-5px;width:10px;height:10px;border-radius:50% 46% 54% 48%;
+  background:radial-gradient(circle at 34% 30%,#E8B04B,#C07F2A 72%);box-shadow:0 1px 2px rgba(43,43,43,.35),inset 0 -1px 2px rgba(120,70,10,.5)}
+.tool-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:3px;
+  color:rgba(43,43,43,.58);line-height:1}
+.tool-label::before{content:'';width:5px;height:5px;background:#C9A86A;flex:none;
+  border-radius:48% 52% 44% 56%/56% 44% 52% 48%;box-shadow:0 0 0 1.4px rgba(201,168,106,.28)}
+.tool-label::after{content:'';flex:1;border-top:1.6px dashed var(--ink-soft)}
+.tool-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;min-height:28px}
+.tool-strip{display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;justify-content:center}
+.tool-strip>.tool-card{flex:0 1 auto;min-width:0}
+/* 统一手绘线性图标（细墨线描边，随文字颜色 currentColor） */
+svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stroke:currentColor;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* 语音输入按钮（统一手绘风：圆胖墨线轮廓，识别中番茄红呼吸态） */
+.mic-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;flex:none;padding:0;background:#FBF9F4;cursor:pointer;z-index:1;
+  border:1.7px solid #2B2B2B;border-radius:48% 52% 46% 54%/52% 46% 54% 48%;transition:background .12s}
+.mic-btn .i{margin:0;width:18px;height:18px;vertical-align:0}
+.mic-btn:hover{background:#F2EDDF}
+.mic-btn:active{transform:scale(.92)}
+.mic-btn.rec{background:#E14B3B;border-color:#E14B3B;animation:micPulse 1.15s ease-in-out infinite}
+.mic-btn.rec .i{stroke:#FBF9F4}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(225,75,59,.32);transform:scale(1)}
+  50%{box-shadow:0 0 0 7px rgba(225,75,59,0);transform:scale(1.05)}}
+/* 酒馆分区标题（题目区 / 答题区 / 互动区共用） */
+.zone-tag{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;
+  letter-spacing:2px;color:rgba(43,43,43,.6);line-height:1}
+.zone-tag::before{content:'';width:7px;height:7px;background:#E14B3B;
+  border-radius:46% 54% 50% 50%/52% 48% 54% 46%}
+
+/* 首次进入 */
+#scene-first .scene-pad{align-items:stretch;gap:6px}
+.preview-col{display:flex;flex-direction:column;align-items:center;gap:8px;justify-content:center;flex:0 0 168px}
+
+/* 广场 HUD */
+#plazaCanvas,#runCanvas{position:absolute;inset:0;width:100%;height:100%}
+.hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:flex-start;
+  padding:10px 14px;pointer-events:none;z-index:10;gap:10px}
+.tag{position:relative;background:#FBF9F4;padding:6px 14px;font-weight:700;font-size:15px;white-space:nowrap}
+#hiBtn{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:12;display:none;font-size:16px}
+#plazaHint{position:absolute;right:16px;bottom:16px;z-index:10;pointer-events:none;font-size:12px;opacity:.7}
+
+/* 失忆画室 */
+#dryWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0}
+#dryLane{position:relative;width:86%;height:130px}
+#dryLane .th{position:absolute;top:14px;width:96px;height:96px;background:#fff}
+#dryLane .th canvas{width:100%;height:100%}
+#dryMachine{position:absolute;left:50%;top:0;transform:translateX(-50%);width:130px;height:130px;
+  display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
+#jdArea{flex:1;display:flex;gap:18px;min-height:0;align-items:stretch}
+.jd-left{flex:0 0 34%;display:flex;flex-direction:column;gap:8px;min-height:0}
+.jd-left canvas{flex:1;min-height:0;width:100%;background:#fff}
+.jd-right{flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center;min-width:0}
+#jdFb{font-size:18px;font-weight:800;min-height:24px}
+#resList{max-height:170px;overflow:auto;line-height:1.9;text-align:left}
+
+/* 猜谜酒馆 */
+.stamp{display:inline-block;padding:4px 12px;border:2.6px solid #E14B3B;color:#E14B3B;font-weight:800;
+  font-size:15px;letter-spacing:3px;background:rgba(225,75,59,.05);white-space:nowrap;
+  border-radius:46% 54% 48% 52%/52% 48% 55% 45%;transform:rotate(-7deg)}
+.blackboard{background:#2B2B2B;color:#FBF9F4;padding:14px 16px;font-weight:700;transform:rotate(-1.4deg)}
+.blackboard .row2{font-size:13px;opacity:.85;margin-top:6px}
+.qrow{display:flex;gap:10px;align-items:center}
+.qinput{flex:1;background:#FFFFFF;border:none;border-bottom:2px solid rgba(43,43,43,.34);padding:11px 13px;font-family:inherit;font-size:16px;font-weight:700;outline:none;min-width:0;transition:border-color .15s,box-shadow .15s}
+.qinput:focus{border-bottom-color:#C9A86A;box-shadow:0 3px 8px -3px rgba(201,168,106,.35)}
+.qinput::placeholder{font-weight:400;opacity:.5}
+.lovebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lvbtn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#FBF9F4;
+  border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;z-index:1}
+.lvbtn svg{width:18px;height:18px}
+.lvbtn:hover{background:#F2EDDF}
+.lvbtn:active{transform:scale(.94)}
+.lvbtn b{min-width:16px;text-align:left}
+.prop-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:700;font-size:13px}
+.badge{display:inline-block;padding:2px 9px;border:1.7px solid #2B2B2B;border-radius:40% 60% 55% 45%/55% 45% 60% 40%;
+  font-size:12px;font-weight:800;white-space:nowrap}
+.badge.ok{color:#3B6EA5;border-color:#3B6EA5}
+.badge.no{color:#E14B3B;border-color:#E14B3B}
+.badge.pd{opacity:.65}
+.rv-item{display:flex;gap:12px;align-items:center;padding:8px 4px;border-bottom:2px dashed rgba(43,43,43,.18)}
+.rv-item img{width:74px;height:74px;background:#fff;border:2px solid #2B2B2B}
+
+/* 你画我猜馆 · AI */
+.tiers{display:flex;gap:16px;justify-content:center;flex:1;align-items:stretch;min-height:0}
+.tier{flex:1;max-width:270px;display:flex;flex-direction:column;gap:8px;padding:16px;align-items:center;text-align:center;justify-content:center}
+.tier h4{font-size:17px}
+#aiWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:0}
+#aiBrain{width:110px;height:110px;animation:brainPulse 1.1s ease-in-out infinite}
+@keyframes brainPulse{0%,100%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.07) rotate(2deg)}}
+#aiBubbles{display:flex;flex-direction:column;gap:8px;align-items:center;min-height:96px;justify-content:flex-start}
+.ai-bubble{position:relative;background:#FBF9F4;padding:8px 18px;font-weight:700;font-size:15px;
+  opacity:0;transform:translateY(10px) rotate(-1.5deg);transition:all .38s ease;max-width:70%}
+.ai-bubble.on{opacity:1;transform:translateY(0) rotate(-1.5deg)}
+#aiBarWrap{width:46%}
+
+/* 跑酷 */
+#runHearts{font-size:22px;letter-spacing:4px;color:#E14B3B}
+#runHearts .off{color:#C9C4B8}
+#runStats{font-weight:800;font-size:16px}
+#runHint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:10;pointer-events:none;font-size:13px;opacity:.75}
+
+/* toast / modal */
+#toast{position:absolute;left:50%;top:7%;transform:translateX(-50%) rotate(-1deg);
+  padding:10px 24px;font-weight:800;font-size:15px;opacity:0;transition:opacity .18s,top .18s;z-index:200;pointer-events:none;max-width:72%}
+#toast.show{opacity:1;top:10%}
+#modalRoot{position:absolute;inset:0;display:none;z-index:100;background:rgba(43,43,43,.28);align-items:center;justify-content:center}
+#modalRoot.on{display:flex}
+.modal{position:relative;max-width:76%;max-height:88%;overflow:auto;padding:24px 30px 20px;transform:rotate(-.4deg)}
+.modal h3{font-size:21px;margin-bottom:10px;position:relative;display:inline-block}
+.modal .mbtns{display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+.modal p{line-height:1.7}
+.share-card{display:flex;gap:16px;align-items:center;justify-content:center;margin-top:10px;flex-wrap:wrap}
+/* 墨水泼溅特效 */
+.splat{position:absolute;background:#2B2B2B;z-index:150;pointer-events:none;
+  border-radius:46% 54% 50% 50%/52% 46% 54% 48%;animation:splatA .7s forwards}
+@keyframes splatA{0%{transform:scale(.25) rotate(0);opacity:.95}70%{opacity:.85}100%{transform:scale(1.6) translateY(7px) rotate(20deg);opacity:0}}
+
+/* 旋转遮罩 */
+#rotateMask{position:fixed;inset:0;z-index:999;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;font-size:22px;font-weight:800;
+  background-color:#FBF9F4;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M0 27.5H28' stroke='%23B9CFE3' stroke-width='1' opacity='.42'/%3E%3C/svg%3E")}
+#rotateMask svg{animation:rot 2.2s ease-in-out infinite}
+@keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
+@media (orientation:portrait){#rotateMask{display:flex}#stage{display:none}}
+/* 强制横屏：JS 接管方向检测（内联样式覆盖 media query），触控防滚动/缩放 */
+#stage,#rotateMask{touch-action:none}
+.modal{touch-action:pan-y}
+#exitForce{position:fixed;right:10px;top:10px;z-index:1001;display:none;font-size:12px;padding:6px 12px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#D8D2C4;border:1px solid #2B2B2B}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 场景0：首次画主角 -->
+  <div class="scene" id="scene-first">
+    <div class="scene-pad">
+      <div class="draw-main">
+        <div class="canvas-wrap"><canvas id="firstCanvas" width="512" height="512"></canvas></div>
+        <aside class="side-col">
+          <div class="draw-top" style="flex-direction:column;align-items:flex-start;gap:2px">
+            <h1 class="hw uw" style="font-size:28px">画出你自己吧！</h1>
+            <span class="sub small" style="font-size:12px">这只小家伙将替你在涂鸦小镇生活</span>
+          </div>
+          <div class="preview-col" style="flex:none;align-self:center">
+            <div class="mini-frame"><canvas id="firstPreview" width="150" height="150"></canvas></div>
+            <span class="small" style="text-align:center">主角预览<br>（Q弹ing）</span>
+          </div>
+          <div class="ctrl-row" id="ftColors"></div>
+          <div class="ctrl-row" id="ftTools"></div>
+          <div class="status-line" id="ftStatus">选好颜色，开始画你的主角！</div>
+          <div style="text-align:left;flex:0 0 auto">
+            <button class="btn big" id="firstDone">完成，入住小镇！</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景1：小镇广场 -->
+  <div class="scene" id="scene-plaza">
+    <canvas id="plazaCanvas"></canvas>
+    <div class="hud">
+      <div style="display:flex;gap:10px">
+        <div class="tag sketch-border">墨水 <b id="hudInk">0</b></div>
+        <div class="tag sketch-border">称号：<b id="hudTitle">路人画家</b></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <button class="btn sketch-border" id="decoBtn" style="pointer-events:auto;padding:6px 14px;font-size:14px;display:inline-flex;align-items:center;gap:5px"></button>
+        <div class="tag sketch-border small">涂鸦小镇 · 广场</div>
+      </div>
+    </div>
+    <button class="btn" id="hiBtn">击掌！</button>
+    <div id="plazaHint"></div>
+  </div>
+
+  <!-- 广场画室（重画主角 / 告示板投稿） -->
+  <div class="scene" id="scene-studio">
+    <div class="scene-pad">
+      <div class="draw-main">
+        <div class="canvas-wrap"><canvas id="studioCanvas" width="512" height="512"></canvas></div>
+        <aside class="studio-side">
+          <div class="draw-top" style="flex-wrap:wrap">
+            <button class="btn blu back-btn">← 返回广场</button>
+            <h2 class="hw uw" id="studioTitle" style="font-size:20px">小镇画室</h2>
+            <span class="sub small" id="studioHint" style="flex-basis:100%"></span>
+          </div>
+          <div class="status-line" id="stStatus"></div>
+          <div class="tool-card sketch-border">
+            <span class="tool-label">画笔</span>
+            <div class="tool-row" id="stBrushes"></div>
+            <span class="tool-label">粗细</span>
+            <div class="tool-row" id="stSizes"></div>
+          </div>
+          <div class="tool-card sketch-border">
+            <span class="tool-label">颜色</span>
+            <div class="tool-row" id="stColors"></div>
+          </div>
+          <div class="tool-card sketch-border">
+            <span class="tool-label">操作</span>
+            <div class="tool-row" id="stActions"></div>
+          </div>
+          <div style="text-align:left;flex:0 0 auto"><button class="btn big" id="studioDone">保存形象</button></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景2：失忆画室 -->
+  <div class="scene" id="scene-memory">
+    <div class="scene-pad">
+      <div class="draw-top nav-top">
+        <button class="btn blu back-btn">← 返回广场</button>
+        <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
+        <span class="sub small">3 秒速画 · 凭记忆灵魂鉴定</span>
+        <span class="sp"></span>
+      </div>
+
+      <div id="memIntro" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+        <div class="draw-top" style="width:100%;justify-content:flex-start">
+          <button class="btn blu back-btn">← 返回广场</button>
+          <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
+          <span class="sp"></span>
+        </div>
+        <div class="paper-panel sketch-border" style="max-width:580px;text-align:center">
+          <span class="tape" style="left:50%;margin-left:-46px;top:-12px"></span>
+          <p style="line-height:2;font-size:16px">画室的烘干机升级时<b class="accent">失忆</b>了……<br>
+          只有真正的神笔才能认出自己画过什么！</p>
+          <p class="hw" style="font-size:24px;margin:8px 0 2px" ><span class="accent">3 秒！画出它！</span></p>
+          <p class="small" style="font-size:13px">来不及思考，凭直觉画！每个词只有 3 秒，时间到强制切词。</p>
+          <p class="small">连画 5 个词 → 烘干 → 凭记忆鉴定，答对有奖。跳过 -5 分。</p>
+          <div class="mbtns"><button class="btn big" id="memStart">开始配题</button></div>
+        </div>
+      </div>
+
+      <div id="memDraw" hidden class="draw-stage">
+        <div class="draw-main">
+          <div class="canvas-wrap"><canvas id="memCanvas" width="512" height="512"></canvas></div>
+          <aside class="side-col">
+            <div class="draw-top" style="flex-wrap:wrap;gap:8px">
+              <button class="btn blu back-btn">← 返回广场</button>
+              <b id="memWord" class="hw" style="font-size:20px">请画：？</b>
+              <span class="small" id="memIdx"></span>
+              <div class="bar sketch-border timebar" style="flex:1 1 100%"><i id="memBar"></i></div>
+              <b id="memTime" style="font-size:14px">3.0</b>
+              <button class="btn" id="memSkip">跳过(-5分)</button>
+            </div>
+            <div class="tool-card sketch-border"><span class="tool-label">画笔</span><div class="tool-row" id="memBrushes"></div></div>
+            <div class="tool-card sketch-border"><span class="tool-label">粗细</span><div class="tool-row" id="memSizes"></div></div>
+            <div class="tool-card sketch-border"><span class="tool-label">颜色</span><div class="tool-row" id="memColors"></div></div>
+            <div class="tool-card sketch-border"><span class="tool-label">操作</span><div class="tool-row" id="memActions"></div></div>
+            <div class="status-line" id="memStatus">只剩黑色马克笔了，烘干机会忘掉颜色……</div>
+          </aside>
+        </div>
+      </div>
+
+      <div id="memDry" hidden class="colflow" style="align-items:center;justify-content:center;gap:14px">
+        <div class="draw-top" style="width:100%;justify-content:flex-start">
+          <button class="btn blu back-btn">← 返回广场</button>
+          <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
+          <span class="sp"></span>
+        </div>
+        <div id="dryWrap">
+          <div class="paper-panel sketch-border" style="padding:8px 20px;font-weight:800">烘干了……也忘了……</div>
+          <div id="dryLane" class="sketch-border">
+            <div id="dryMachine" class="hatch sketch-border">烘干机</div>
+          </div>
+          <div class="small">传送带运行中……（8 秒）</div>
+        </div>
+      </div>
+
+      <div id="memJudge" hidden class="colflow">
+        <div class="draw-top" style="justify-content:flex-start">
+          <button class="btn blu back-btn">← 返回广场</button>
+          <b id="jdIdx">鉴定 1/5</b>
+          <div class="bar sketch-border" style="flex:1"><i id="jdBar"></i></div>
+          <b id="jdTime">15.0s</b>
+        </div>
+        <div id="jdArea">
+          <div class="jd-left">
+            <div class="paper-panel sketch-border" style="flex:1;display:flex;padding:8px;min-height:0">
+              <canvas id="jdCanvas" width="512" height="512"></canvas>
+            </div>
+            <span class="small">这幅画的是什么？</span>
+          </div>
+          <div class="jd-right">
+            <div class="opts" id="jdOpts"></div>
+            <div id="jdFb"></div>
+            <div><button class="btn blu" id="jdNext" disabled>下一幅 →</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="memResult" hidden class="colflow" style="gap:10px;align-items:center;justify-content:center">
+        <div class="draw-top" style="width:100%;justify-content:flex-start">
+          <button class="btn blu back-btn">← 返回广场</button>
+          <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
+          <span class="sp"></span>
+        </div>
+        <h2 class="hw uw" style="font-size:24px">鉴定结算</h2>
+        <div class="paper-panel sketch-border" id="resBody" style="min-width:420px;max-width:640px"></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+          <button class="btn" id="resSubmit">投稿最灵魂作品 (+20墨水)</button>
+          <button class="btn blu" id="resCard">生成残局挑战卡</button>
+          <button class="btn blu" id="resAgain">再来一局</button>
+          <button class="btn back-btn">返回广场</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景3：猜谜酒馆 -->
+  <div class="scene" id="scene-tavern">
+    <div class="scene-pad">
+      <div class="draw-top nav-top">
+        <button class="btn blu back-btn">← 返回广场</button>
+        <h2 class="hw uw" style="font-size:22px">猜谜酒馆</h2>
+        <span class="sub small">掌柜老墨的手绘谜题 · 看图作答</span>
+        <span class="sp"></span>
+      </div>
+
+      <!-- 酒馆大厅：左·今日特调黑板 / 右·掌柜与入口 -->
+      <div id="tavHome" class="colflow" style="align-items:center;justify-content:center;gap:14px">
+        <div class="draw-top" style="width:100%;justify-content:flex-start;flex-wrap:wrap">
+          <button class="btn blu back-btn">← 返回广场</button>
+          <h2 class="hw uw" style="font-size:22px">猜谜酒馆</h2>
+          <span class="sub small">掌柜老墨的手绘谜题 · 看图作答</span>
+          <span class="sp"></span>
+          <div class="prop-row" id="tavProps"></div>
+        </div>
+        <div style="display:flex;gap:18px;align-items:stretch">
+          <div class="blackboard sketch-border" data-ink="#FBF9F4" style="width:250px;padding:16px 18px">
+            <div style="text-align:center;letter-spacing:4px">── 今日特调 ──</div>
+            <div class="row2" id="tavBoardLine" style="margin-top:10px">看老墨的涂鸦动画，<br>在输入框里写下答案！</div>
+            <div class="row2" style="margin-top:10px;padding-top:8px;border-top:1.5px dashed rgba(251,249,244,.3)">答对 +10 · 连对每击 +2<br>提示 -2 · 放弃 -5 · 1分=1墨水</div>
+            <div class="row2" id="tavFlowLine" style="color:#F2C4BC;margin-top:8px"></div>
+          </div>
+          <div class="paper-panel sketch-border" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px 22px">
+            <b>掌柜 · 老墨</b>
+            <canvas id="tavKeeper" width="200" height="120"></canvas>
+            <div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
+              <button class="btn big" id="tavStart">开始今日特调</button>
+              <div style="display:flex;gap:8px">
+                <button class="btn blu" id="tavCreateBtn" style="flex:1;white-space:nowrap;padding-left:8px;padding-right:8px">我来出题</button>
+                <button class="btn blu" id="tavReviewBtn" style="flex:1;white-space:nowrap">审核台</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="small">题库含官方题与镇民投稿 · 每日 5 题按日期轮换</span>
+      </div>
+
+      <!-- 答题：题目区（左图） / 答题区 + 互动区（右列） -->
+      <div id="tavPlay" hidden class="draw-stage">
+        <div class="draw-main" style="justify-content:flex-start">
+          <div class="canvas-wrap">
+            <canvas id="tavCanvas" width="512" height="512"></canvas>
+          </div>
+          <aside class="side-col">
+            <div class="draw-top" style="flex-wrap:wrap;gap:6px">
+              <button class="btn blu back-btn">← 返回广场</button>
+              <span class="stamp" id="tavCat">成语</span>
+              <b id="tavTitle" style="font-size:14px">第 1/5 题</b>
+              <span class="small" id="tavAuthor" style="font-size:11px"></span>
+              <span class="tag sketch-border small" style="margin-left:auto">得分 <b id="tavScore">0</b></span>
+              <span class="tag sketch-border small">连击 <b id="tavCombo">0</b></span>
+            </div>
+            <div class="tool-card sketch-border">
+              <span class="tool-label">答题区 · 看涂鸦写答案</span>
+              <div class="bar sketch-border"><i id="tavBar"></i></div>
+              <div class="qrow">
+                <input id="tavInput" class="qinput sketch-border" style="flex:1" placeholder="看涂鸦，输入你的答案…" maxlength="24">
+                <button class="mic-btn" data-voice="tavInput" title="语音输入" aria-label="语音输入"></button>
+                <button class="btn sketch-border" id="tavSend">提交</button>
+              </div>
+              <div id="tavFb" style="min-height:18px;font-weight:700;font-size:14px"></div>
+            </div>
+            <div class="tool-card sketch-border">
+              <span class="tool-label">卡壳与互动</span>
+              <div class="qrow" style="flex-wrap:wrap">
+                <button class="btn blu sketch-border" id="tavHintBtn">提示(-2)</button>
+                <button class="btn blu sketch-border" id="tavGiveBtn">放弃(-5)</button>
+              </div>
+              <div id="tavLove" class="lovebar"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- 我来出题：类别与答案卡 / 画布 / 工具条 / 提交 -->
+      <div id="tavCreate" hidden class="draw-stage">
+        <div class="draw-main">
+          <div class="canvas-wrap"><canvas id="ctCanvas" width="512" height="512"></canvas></div>
+          <aside class="side-col">
+            <div class="draw-top" style="flex-wrap:wrap;gap:8px">
+              <button class="btn blu" id="ctBack">← 酒馆大厅</button>
+              <h2 class="hw" style="font-size:18px">我来出题 · 投稿</h2>
+              <span class="sp"></span>
+            </div>
+            <div class="tool-card sketch-border">
+              <span class="tool-label">类别</span>
+              <div class="tool-row">
+                <span id="ctCats" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+                <input id="ctCustomCat" class="qinput sketch-border" style="flex:0 0 92px;padding:5px 8px;font-size:13px" placeholder="自定义标签" maxlength="6" hidden>
+                <button class="mic-btn" data-voice="ctCustomCat" title="语音输入" aria-label="语音输入" hidden></button>
+              </div>
+              <span class="tool-label">答案与提示</span>
+              <div class="qrow">
+                <input id="ctAns" class="qinput sketch-border" style="padding:5px 10px;font-size:14px" placeholder="答案（必填）" maxlength="20">
+                <button class="mic-btn" data-voice="ctAns" title="语音输入" aria-label="语音输入"></button>
+              </div>
+              <div class="qrow">
+                <input id="ctHint" class="qinput sketch-border" style="padding:5px 10px;font-size:14px" placeholder="提示（选填，如：首字X）" maxlength="16">
+                <button class="mic-btn" data-voice="ctHint" title="语音输入" aria-label="语音输入"></button>
+              </div>
+            </div>
+            <div class="tool-card sketch-border">
+              <span class="tool-label">画笔与粗细</span>
+              <div class="tool-row" id="ctBrushes"></div>
+              <div class="tool-row" id="ctSizes"></div>
+            </div>
+            <div class="tool-card sketch-border">
+              <span class="tool-label">颜色与操作</span>
+              <div class="tool-row" id="ctColors"></div>
+              <div class="tool-row" id="ctActions"></div>
+            </div>
+            <div class="status-line" id="ctStatus" style="min-height:16px">画 2~4 个涂鸦素材暗示答案</div>
+            <div style="flex:0 0 auto"><button class="btn big" id="ctSubmit" style="width:100%;padding-top:7px;padding-bottom:7px">提交投稿</button></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景4：你画我猜馆（AI 猜画） -->
+  <div class="scene" id="scene-guess">
+    <div class="scene-pad">
+      <div class="draw-top nav-top">
+        <button class="btn blu back-btn">← 返回广场</button>
+        <h2 class="hw uw" style="font-size:22px">你画我猜馆</h2>
+        <span class="sp"></span>
+        <span class="tag sketch-border">画技分 <b id="gvSkill">0</b>/100</span>
+      </div>
+      <div id="gvIntro" style="flex:1;display:flex;flex-direction:column;gap:16px;min-height:0">
+        <div class="draw-top" style="flex-wrap:wrap">
+          <button class="btn blu back-btn">← 返回广场</button>
+          <h2 class="hw uw" style="font-size:22px">你画我猜馆</h2>
+          <span class="sp"></span>
+          <span class="tag sketch-border">画技分 <b>0</b>/100</span>
+        </div>
+        <div class="tiers">
+          <div class="tier paper-panel sketch-border">
+            <h4>好友局</h4>
+            <span class="small">[锁] 邀请好友功能<br>接入微信后开放</span>
+          </div>
+          <div class="tier paper-panel sketch-border" style="outline:3px solid #3B6EA5;outline-offset:-8px">
+            <h4 class="blue">AI 猜画 · 你画 AI 猜</h4>
+            <span class="small">画一幅涂鸦，AI 大脑来猜！<br>猜中得画技分 · 画得越快分越高</span>
+            <span class="small" style="opacity:.6">本地 AI 引擎 · 正式版接入多模态大模型</span>
+            <button class="btn big" id="gvStart">开始 AI 猜画</button>
+          </div>
+          <div class="tier paper-panel sketch-border">
+            <h4>实时匹配</h4>
+            <span class="small">[锁] 小镇居民<br>满 1000 人开放</span>
+          </div>
+        </div>
+      </div>
+      <div id="gvPick" hidden style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+        <div class="draw-top" style="width:100%;justify-content:flex-start">
+          <button class="btn blu back-btn">← 返回广场</button>
+          <h2 class="hw uw" style="font-size:22px">你画我猜馆</h2>
+          <span class="sp"></span>
+        </div>
+        <div class="paper-panel sketch-border" style="text-align:center;max-width:520px">
+          <span class="tape" style="left:50%;margin-left:-46px;top:-12px"></span>
+          <h3 class="hw" style="margin-bottom:10px">从 3 个候选词里选一个来画</h3>
+          <div style="display:flex;gap:10px;justify-content:center" id="gvCands"></div>
+          <p class="small" style="margin-top:10px">AI 只看你的线条猜词 —— 大胆下笔！</p>
+        </div>
+      </div>
+      <div id="gvDraw" hidden class="draw-stage">
+        <div class="draw-main">
+          <div class="canvas-wrap"><canvas id="gvCanvas" width="512" height="512"></canvas></div>
+          <aside class="side-col">
+            <div class="draw-top" style="flex-wrap:wrap;gap:8px">
+              <button class="btn blu back-btn">← 返回广场</button>
+              <b class="hw" id="gvWord" style="font-size:20px">请画：？</b>
+              <span class="small" style="flex-basis:100%">20 秒内画出它，这是你的展示舞台</span>
+              <div class="bar sketch-border timebar" style="flex:1 1 100%"><i id="gvBar"></i></div>
+              <b id="gvTime" style="font-size:14px">20.0</b>
+              <button class="btn" id="gvSubmit">交卷！</button>
+              <span class="tag sketch-border small" style="margin-left:auto">画技分 <b id="gvSkill2">0</b>/100</span>
+            </div>
+            <div class="preview-col" style="flex:none;align-self:center">
+              <div class="mini-frame"><canvas id="gvMini" width="120" height="120"></canvas></div>
+              <span class="small" style="text-align:center">AI 视角<br>镜像预览</span>
+            </div>
+            <div class="ctrl-row" id="gvColors"></div>
+            <div class="ctrl-row" id="gvTools"></div>
+            <div class="status-line" id="gvStatus"></div>
+          </aside>
+        </div>
+      </div>
+      <div id="gvThink" hidden class="colflow">
+        <div id="aiWrap">
+          <svg id="aiBrain" viewBox="0 0 100 100">
+            <path d="M32 18 C18 20 12 34 18 44 C10 50 12 66 24 70 C24 82 38 88 48 82 C58 90 74 84 76 72 C88 68 92 52 84 44 C90 32 80 18 66 20 C60 10 42 10 38 20 Z" fill="#F2EDDF" stroke="#2B2B2B" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M50 16 C46 34 54 44 48 56 C44 66 52 78 50 86" fill="none" stroke="#2B2B2B" stroke-width="2.4"/>
+            <path d="M26 40 q8 -4 14 2 M60 28 q8 2 10 10 M28 62 q8 6 16 2 M66 60 q6 8 -2 14" fill="none" stroke="#E14B3B" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+          <b class="hw" style="font-size:20px">AI 大脑思考中……</b>
+          <div id="aiBarWrap" class="bar sketch-border"><i id="aiBar" style="background:#3B6EA5"></i></div>
+          <div id="aiBubbles"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景5：涂鸦跑酷 -->
+  <div class="scene" id="scene-run">
+    <canvas id="runCanvas"></canvas>
+    <div class="hud">
+      <div id="runStats" class="tag sketch-border">0 m · 得分 0</div>
+      <div id="runHearts" class="tag sketch-border">♥♥♥</div>
+    </div>
+    <button class="btn blu run-end" style="position:absolute;right:14px;top:52px;z-index:12">结束并结算</button>
+    <div id="runHint">点击 / 空格 跳跃（可二段跳）· 撞上居民画作不会倒下，只会掉心</div>
+  </div>
+
+  <div id="toast" class="sketch-border"></div>
+  <div id="modalRoot"></div>
+</div>
+
+<button id="exitForce" class="btn sketch-border">退出强制横屏</button>
+
+<div id="rotateMask">
+  <svg width="72" height="72" viewBox="0 0 72 72">
+    <rect x="24" y="10" width="24" height="52" rx="4" fill="none" stroke="#2B2B2B" stroke-width="3"/>
+    <line x1="32" y1="56" x2="40" y2="56" stroke="#2B2B2B" stroke-width="3"/>
+    <path d="M8 36 q6 -8 12 0" fill="none" stroke="#E14B3B" stroke-width="3"/>
+  </svg>
+  <div>请旋转手机</div>
+  <span class="small">涂鸦小镇是横屏游戏哦～</span>
+  <button class="btn blu" id="forceLandBtn">手机无法旋转？点此强制横屏</button>
+</div>
+
+<script>
+'use strict';
+/* ============ 工具 ============ */
+var $=function(id){return document.getElementById(id)};
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+function rndi(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function hashStr(s){var h=2166136261;s=String(s);for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(arr,rng){var a=arr.slice();for(var i=a.length-1;i>0;i--){var k=Math.floor((rng?rng():Math.random())*(i+1));var t=a[i];a[i]=a[k];a[k]=t}return a}
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function dayOfYear(){var d=new Date();return Math.floor((d-new Date(d.getFullYear(),0,0))/864e5)}
+function j(s){var v=Math.sin(s*127.1+311.7)*43758.5453;return (v-Math.floor(v))*2-1}
+var INK='#2B2B2B';
+/* 高清适配：设备像素比（上限2防性能损耗）；画布属性=设备像素，_lw/_lh 记逻辑尺寸 */
+var DPR=Math.min(window.devicePixelRatio||1,2);
+function wLine(c,x1,y1,x2,y2,seed,amp){
+  seed=seed||0;amp=(amp==null)?2:amp;
+  c.beginPath();
+  var n=Math.max(2,Math.round(Math.hypot(x2-x1,y2-y1)/26));
+  for(var i=0;i<=n;i++){var t=i/n,x=x1+(x2-x1)*t,y=y1+(y2-y1)*t;
+    if(i>0&&i<n){x+=j(seed+i*3.7)*amp;y+=j(seed+i*7.3)*amp}
+    if(i)c.lineTo(x,y);else c.moveTo(x,y)}
+  c.stroke();
+}
+function wCircle(c,cx,cy,r,seed,fill,amp){
+  seed=seed||0;amp=(amp==null)?2:amp;
+  c.beginPath();
+  var n=24;
+  for(var i=0;i<=n;i++){var a=i/n*Math.PI*2-0.5;var rr=r+j(seed+i)*amp;
+    var x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;
+    if(i)c.lineTo(x,y);else c.moveTo(x,y)}
+  c.closePath();
+  if(fill){c.fillStyle=fill;c.fill()}
+  c.stroke();
+}
+function wRect(c,x,y,w,h,seed,fill){
+  seed=seed||0;
+  if(fill){c.fillStyle=fill;c.fillRect(x+1,y+1,w-2,h-2)}
+  wLine(c,x,y,x+w,y,seed,1.6);wLine(c,x+w,y,x+w,y+h,seed+3,1.6);
+  wLine(c,x+w,y+h,x,y+h,seed+6,1.6);wLine(c,x,y+h,x,y,seed+9,1.6);
+}
+function hatchRect(c,x,y,w,h,seed){
+  c.save();c.beginPath();c.rect(x,y,w,h);c.clip();
+  c.strokeStyle=INK;c.globalAlpha=.14;c.lineWidth=1;
+  for(var i=-h;i<w;i+=7)wLine(c,x+i,y+h,x+i+h,y,(seed||0)+i,0);
+  c.globalAlpha=1;c.restore();
+}
+/* 答案归一化：去空格/标点/书名号，全角半角统一 */
+function normAns(s){
+  return String(s||'').toLowerCase()
+    .replace(/[\s，。！？、·：:；;'"“”‘’「」『』《》〈〉（）()！!？?\.,\-—_~～…]/g,'');
+}
+
+/* ============ 程序化涂鸦点序列（0-1 归一化） ============ */
+function ptsLine(x1,y1,x2,y2,n){n=n||10;var a=[];for(var i=0;i<=n;i++)a.push({x:x1+(x2-x1)*i/n,y:y1+(y2-y1)*i/n});return a}
+function ptsCircle(cx,cy,r,n,a0,a1){n=n||30;var a=[];a0=(a0==null)?-Math.PI/2:a0;a1=(a1==null)?a0+Math.PI*2:a1;
+  for(var i=0;i<=n;i++){var t=a0+(a1-a0)*i/n;a.push({x:cx+Math.cos(t)*r,y:cy+Math.sin(t)*r})}return a}
+function ptsEllipse(cx,cy,rx,ry,n){n=n||30;var a=[];for(var i=0;i<=n;i++){var t=i/n*Math.PI*2-Math.PI/2;a.push({x:cx+Math.cos(t)*rx,y:cy+Math.sin(t)*ry})}return a}
+function ptsWav(x0,y0,x1,y1,amp,waves,n){n=n||26;var a=[];for(var i=0;i<=n;i++){var t=i/n;
+  a.push({x:x0+(x1-x0)*t+Math.sin(t*waves*Math.PI*2)*amp,y:y0+(y1-y0)*t})}return a}
+function ptsRect(x,y,w,h){var a=ptsLine(x,y,x+w,y,6);
+  a=a.concat(ptsLine(x+w,y,x+w,y+h,5).slice(1),ptsLine(x+w,y+h,x,y+h,7).slice(1),ptsLine(x,y+h,x,y,5).slice(1));return a}
+function ptsDot(x,y){var a=[];for(var i=0;i<=8;i++){var t=i/8*Math.PI*2;a.push({x:x+Math.cos(t)*.008,y:y+Math.sin(t)*.008})}return a}
+function ptsStar(cx,cy,r1,r2){var a=[];for(var i=0;i<=10;i++){var t=-Math.PI/2+i*Math.PI/5;var r=(i%2)?r2:r1;a.push({x:cx+Math.cos(t)*r,y:cy+Math.sin(t)*r})}return a}
+function ptsSpiral(cx,cy){var a=[];for(var i=0;i<=80;i++){var t=i/80,ang=t*Math.PI*4,r=.02+.095*t;a.push({x:cx+Math.cos(ang)*r,y:cy+Math.sin(ang)*r*.92})}return a}
+function ptsRays(cx,cy,r0,r1,k){var out=[];for(var i=0;i<k;i++){var a=i/k*Math.PI*2-Math.PI/2;
+  out.push(ptsLine(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0,cx+Math.cos(a)*r1,cy+Math.sin(a)*r1,4))}return out}
+/* 笔画构造：ST=墨线，MK=马克笔色（粗+色） */
+function ST(pts){return {pts:pts,color:INK,size:5}}
+function MK(pts,color,w){return {pts:pts,color:color,size:w||16}}
+
+/* ============ 存档与经济 ============ */
+var SAVE_KEY='doodle_town_save_v2';
+var save={ink:0,title:'路人画家',titles:['路人画家'],avatar:null,lastLeave:Date.now(),
+  commissionDate:'',subs:[],guess:0,seen:false,
+  skill:0,            /* 画技分（AI 猜画累计） */
+  flowers:3,eggs:3,   /* 鲜花/鸡蛋 道具 */
+  adDate:'',adCount:0,claimDate:'',   /* 模拟广告每日次数 / 每日活动领取 */
+  tavFlow:0,          /* 酒馆流水彩蛋：官方图收到的鲜花 */
+  pendingQs:[],       /* 玩家投稿队列 {id,cat,ans,accept,hint,author,strokes,img,date,state,reason,rewarded} */
+  approvedQs:[],      /* 审核通过 → 进酒馆题池 */
+  receipts:[],        /* 花返还/被砸蛋 回执 */
+  artLove:{},         /* 每幅图互动计数 key->{f,e} */
+  deco:null};         /* DIY装修：{style,colors} */
+(function(){try{var raw=localStorage.getItem(SAVE_KEY);if(raw){var d=JSON.parse(raw);if(d&&typeof d==='object')for(var k in save)if(d[k]!==undefined)save[k]=d[k]}}catch(e){}})();
+function persist(){save.lastLeave=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(e){}}
+function addInk(n){save.ink+=n;updateHUD();persist()}
+function addTitle(t){if(save.titles.indexOf(t)<0){save.titles.push(t);save.title=t;updateHUD();persist()}}
+function updateHUD(){
+  $('hudInk').textContent=save.ink;$('hudTitle').textContent=save.title;
+  $('gvSkill').textContent=Math.min(save.skill,999);
+  if($('gvSkill2'))$('gvSkill2').textContent=Math.min(save.skill,999);
+}
+setInterval(persist,20000);
+window.addEventListener('beforeunload',persist);
+document.addEventListener('visibilitychange',function(){if(document.hidden)persist()});
+
+/* ============ toast / modal ============ */
+var toastTimer=0;
+function toast(msg,dur){
+  var t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show')},dur||1700);
+  requestAnimationFrame(function(){wobbleAll(t)});
+}
+function showModal(o){
+  var root=$('modalRoot');root.innerHTML='';root.classList.add('on');
+  var m=document.createElement('div');m.className='modal sketch-border';
+  var h='<h3 class="uw">'+(o.title||'')+'</h3><div class="mbody">'+(o.html||'')+'</div>';
+  var btns=document.createElement('div');btns.className='mbtns';
+  (o.buttons||[]).forEach(function(b){
+    var el=document.createElement('button');el.className='btn'+(b.blue?' blu':'')+(b.big?' big':'');
+    el.textContent=b.label;
+    el.onclick=function(){if(b.onClick)b.onClick();if(!b.keep)closeModal()};
+    btns.appendChild(el);
+  });
+  m.innerHTML=h;m.appendChild(btns);root.appendChild(m);
+  requestAnimationFrame(function(){wobbleAll(root)});
+}
+function closeModal(){var r=$('modalRoot');r.classList.remove('on');r.innerHTML=''}
+
+/* ============ SVG 手绘抖动框 ============ */
+var SVGNS='http://www.w3.org/2000/svg';
+function wobSeg(x1,y1,x2,y2,seed){
+  var d='',n=Math.max(2,Math.round(Math.hypot(x2-x1,y2-y1)/36));
+  for(var i=0;i<=n;i++){var t=i/n,x=x1+(x2-x1)*t,y=y1+(y2-y1)*t;
+    if(i>0&&i<n){x+=j(seed+i*3.1)*1.7;y+=j(seed+i*5.7)*1.7}
+    d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}
+  return d;
+}
+function wobPath(w,h,seed){
+  var o=4;
+  var p1=[wobSeg(-o,0,w+o,0,seed),wobSeg(w,-o,w,h+o,seed+9),wobSeg(w+o,h,-o,h,seed+17),wobSeg(0,h+o,0,-o,seed+25)].join(' ');
+  var p2=[wobSeg(3,3,w-3,3,seed+33),wobSeg(w-3,3,w-3,h-3,seed+41),wobSeg(w-3,h-3,3,h-3,seed+49),wobSeg(3,h-3,3,3,seed+57)].join(' ');
+  return '<path d="'+p1+'" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"/>'+
+         '<path d="'+p2+'" fill="none" stroke="#2B2B2B" stroke-width="1" opacity=".45" stroke-linecap="round"/>';
+}
+function wobbleAll(root){
+  (root||document).querySelectorAll('.sketch-border').forEach(function(el){
+    var w=el.offsetWidth,h=el.offsetHeight;
+    if(!w||!h)return;
+    var key=w+'x'+h;
+    var svg=el.querySelector('.wob-svg');
+    if(svg&&el.dataset.w===key)return;
+    el.dataset.w=key;
+    if(!svg){svg=document.createElementNS(SVGNS,'svg');svg.setAttribute('class','wob-svg');
+      svg.setAttribute('preserveAspectRatio','none');el.appendChild(svg)}
+    svg.setAttribute('viewBox','0 0 '+w+' '+h);
+    var ink=el.dataset.ink||'#2B2B2B';
+    svg.innerHTML=wobPath(w,h,hashStr(el.id||'e')%97+3).split('#2B2B2B').join(ink);
+  });
+}
+
+/* ============ 画板组件（固定512内部分辨率+正确坐标换算，保留） ============ */
+var PALETTE=[['墨','#2B2B2B'],['番茄红','#E14B3B'],['牛仔蓝','#3B6EA5'],['芥黄','#F2B134'],['草绿','#4E9B5E'],['棕','#8B5A2B'],['橘','#E87A33'],['紫','#7B5EA7']];
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* 按笔刷类型渲染一段笔画（S=缩放，upto=只画前 n 个点，供逐笔回放）；brush 缺省按普通笔，兼容旧存档 */
+function renderStrokeOn(c,s,S,upto){
+  S=S||1;
+  var pts=s.pts||s,brush=(s.pts?s.brush:'normal')||'normal';
+  if(brush==='water')brush='acrylic'; // 旧存档归一化：水彩笔刷已替换为丙烯
+  var n=Math.min(pts.length,upto||pts.length);
+  if(!n)return;
+  var col=s.color||'#2B2B2B',lw=Math.max(1,(s.size||5))*S;
+  function path(from,to){c.beginPath();for(var i=from;i<to;i++){var p=pts[i];if(i>from)c.lineTo(p.x*S,p.y*S);else c.moveTo(p.x*S,p.y*S)}
+    if(to-from===1){var p0=pts[from];c.lineTo(p0.x*S+.1,p0.y*S)}}
+  if(brush==='crayon'){ // 蜡笔：干涩颗粒——沿路径高频撒不规则色点/短痕叠出毛边与留白，多遍低透明叠加，绝无实心马克笔带
+    /* 每遍独立 rng（seed+遍号）：单遍内按弧长顺序消费随机数，前缀渲染（upto 回放）与整笔渲染逐像素一致；
+       遍间互不共享随机流，逐帧重放不闪粒 */
+    var half=lw*0.5;
+    // 第 1 遍：笔芯颗粒（高密度小点，随机跳过部分采样段 = 留白露底）
+    var r1=mulberry32((s.seed||1)+11);
+    c.save();c.fillStyle=col;
+    (function(){ // 等距采样器（局部实现，保证逐段确定性）
+      var acc=0,ax=pts[0].x*S,ay=pts[0].y*S;
+      function emit(x,y){ // 3 颗不规则颗粒 + 深浅变化
+        if(r1()<0.08)return; // 留白：随机跳过这一采样段
+        for(var k=0;k<3;k++){
+          var ox=(r1()*2-1)*half*0.6,oy=(r1()*2-1)*half*0.6;
+          var r=(0.55+r1()*0.7)*S;
+          c.globalAlpha=0.66+r1()*0.2;
+          c.fillStyle=r1()<0.18?shade(col,0.78):col; // 少量同色系深颗粒
+          c.beginPath();c.arc(x+ox,y+oy,r,0,6.2832);c.fill();
+        }
+        c.fillStyle=col;
+      }
+      emit(ax,ay);
+      for(var i=1;i<n;i++){
+        var bx=pts[i].x*S,by=pts[i].y*S,dx=bx-ax,dy=by-ay;
+        var seg=Math.sqrt(dx*dx+dy*dy);
+        while(acc+seg>=1.15*S){
+          var t=(1.15*S-acc)/seg;ax+=dx*t;ay+=dy*t;
+          emit(ax,ay);
+          dx=bx-ax;dy=by-ay;seg=Math.sqrt(dx*dx+dy*dy);acc=0;
+        }
+        acc+=seg;ax=bx;ay=by;
+      }
+    })();
+    c.restore();
+    // 第 2 遍：边缘毛糙——沿路径两侧偏移的细短痕（锯齿毛边）
+    var r2=mulberry32((s.seed||1)+37);
+    c.save();c.strokeStyle=col;c.lineCap='round';
+    (function(){
+      var acc=0,ax=pts[0].x*S,ay=pts[0].y*S;
+      function emit(x,y){
+        if(r2()<0.3)return; // 边缘天然断续
+        var side=r2()<0.5?-1:1,off=half*(0.62+r2()*0.42);
+        var ang=r2()*6.2832,len=(1.1+r2()*2.1)*S;
+        c.globalAlpha=0.4+r2()*0.22;
+        c.lineWidth=(0.5+r2()*0.7)*S;
+        c.beginPath();c.moveTo(x+Math.cos(ang)*off*0.4,y+Math.sin(ang)*off*0.4);
+        c.lineTo(x+Math.cos(ang)*off*0.4+Math.cos(ang)*len,y+Math.sin(ang)*off*0.4+Math.sin(ang)*len);
+        c.stroke();
+      }
+      for(var i=1;i<n;i++){
+        var bx=pts[i].x*S,by=pts[i].y*S,dx=bx-ax,dy=by-ay;
+        var seg=Math.sqrt(dx*dx+dy*dy);
+        while(acc+seg>=1.7*S){
+          var t=(1.7*S-acc)/seg;ax+=dx*t;ay+=dy*t;
+          emit(ax,ay);
+          dx=bx-ax;dy=by-ay;seg=Math.sqrt(dx*dx+dy*dy);acc=0;
+        }
+        acc+=seg;ax=bx;ay=by;
+      }
+    })();
+    c.restore();
+    // 第 3 遍：深浅色差颗粒（蜡笔蜡质的厚重感 / 高光碎粒）
+    var r3=mulberry32((s.seed||1)+73);
+    c.save();
+    (function(){
+      var acc=0,ax=pts[0].x*S,ay=pts[0].y*S;
+      function emit(x,y){
+        if(r3()<0.45)return;
+        var deep=r3()<0.55;
+        c.fillStyle=deep?shade(col,0.7):mixHex(col,'#FFFFFF',0.38);
+        c.globalAlpha=0.3+r3()*0.18;
+        var r=(0.5+r3()*0.75)*S;
+        c.beginPath();c.arc(x+(r3()*2-1)*half*0.8,y+(r3()*2-1)*half*0.8,r,0,6.2832);c.fill();
+      }
+      for(var i=1;i<n;i++){
+        var bx=pts[i].x*S,by=pts[i].y*S,dx=bx-ax,dy=by-ay;
+        var seg=Math.sqrt(dx*dx+dy*dy);
+        while(acc+seg>=2.3*S){
+          var t=(2.3*S-acc)/seg;ax+=dx*t;ay+=dy*t;
+          emit(ax,ay);
+          dx=bx-ax;dy=by-ay;seg=Math.sqrt(dx*dx+dy*dy);acc=0;
+        }
+        acc+=seg;ax=bx;ay=by;
+      }
+    })();
+    c.restore();
+    // 单点笔画：一小撮颗粒点
+    if(n===1){var r4=mulberry32((s.seed||1)+91);c.save();c.fillStyle=col;
+      for(var k2=0;k2<8;k2++){c.globalAlpha=0.5+r4()*0.35;
+        c.beginPath();c.arc(pts[0].x*S+(r4()*2-1)*half*0.7,pts[0].y*S+(r4()*2-1)*half*0.7,(0.4+r4()*0.7)*S,0,6.2832);c.fill()}
+      c.restore()}
+    return;
+  }
+  if(brush==='acrylic'){ // 丙烯：厚涂不透明——全宽暗缘 + 主体色 + 中心亮层三遍堆叠出厚度，端部圆头，快速段飞白
+    c.save();c.lineCap='round';c.lineJoin='round';
+    c.globalAlpha=1;c.strokeStyle=shade(col,0.68);c.lineWidth=lw; // 第 1 遍：暗缘（厚度底）
+    path(0,n);c.stroke();
+    c.strokeStyle=col;c.lineWidth=lw*0.74; // 第 2 遍：主体色
+    path(0,n);c.stroke();
+    c.strokeStyle=mixHex(col,'#FFFFFF',0.34);c.lineWidth=lw*0.46; // 第 3 遍：中心亮层（轻微抖动=堆叠起伏）
+    c.beginPath();
+    for(var ia=0;ia<n;ia++){var pa=pts[ia];
+      var ox=j((s.seed||0)+ia*1.7)*lw*0.05,oy=j((s.seed||0)+ia*2.9)*lw*0.05;
+      if(ia)c.lineTo(pa.x*S+ox,pa.y*S+oy);else c.moveTo(pa.x*S+ox,pa.y*S+oy)}
+    if(n===1){var p1=pts[0];c.lineTo(p1.x*S+.1,p1.y*S)}
+    c.stroke();
+    c.restore();
+    // 飞白：快速段（相邻点距 > 笔宽1.6倍）中央扫一道纸色细痕
+    c.save();c.strokeStyle='#FFFFFF';c.lineCap='round';c.globalAlpha=0.55;
+    for(var ib=1;ib<n;ib++){
+      var a2=pts[ib-1],b2=pts[ib],dd=Math.hypot((b2.x-a2.x)*S,(b2.y-a2.y)*S);
+      if(dd>lw*1.6){
+        c.lineWidth=Math.max(0.6,lw*0.14);
+        c.beginPath();c.moveTo(a2.x*S,a2.y*S);c.lineTo(b2.x*S,b2.y*S);c.stroke();
+      }
+    }
+    c.restore();
+    return;
+  }
+  c.strokeStyle=col;c.lineWidth=lw;c.lineCap='round';c.lineJoin='round'; // 普通笔/橡皮：实线
+  path(0,n);c.stroke();
+}
+function makeBoard(canvas,hint){
+  var ctx=canvas.getContext('2d');
+  /* DPR 化：属性=逻辑尺寸×DPR，所有绘制仍在逻辑空间（ctx 预置缩放）；_lw/_lh 供 mapClient 换算 */
+  var LW=canvas.width,LH=canvas.height;
+  canvas.width=Math.round(LW*DPR);canvas.height=Math.round(LH*DPR);
+  canvas._lw=LW;canvas._lh=LH;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  var strokes=[],undoStack=[],cur=null;
+  var size=5,color='#2B2B2B',eraser=false,brush='normal'; // brush：normal普通/crayon蜡笔/acrylic丙烯，每块画板独立记忆
+  function pos(e){return mapClient(canvas,e.clientX,e.clientY)}
+  function drawStroke(s){renderStrokeOn(ctx,s,1)}
+  function paintTo(c2){ // 白底+水印+全部已提交笔画（可画到主画布或离屏快照）
+    c2.fillStyle='#FFFFFF';c2.fillRect(0,0,LW,LH);
+    if(hint&&!strokes.length){ // 演示①：空白画布淡灰手写水印，落第一笔即清除
+      c2.save();c2.fillStyle='rgba(43,43,43,.28)';
+      c2.font='20px "Segoe Print","Comic Sans MS","Chalkboard SE",cursive';
+      c2.textAlign='center';c2.textBaseline='middle';
+      c2.fillText(hint,LW/2,LH/2);c2.restore();
+    }
+    strokes.forEach(function(s){renderStrokeOn(c2,s,1)});
+  }
+  function redraw(){paintTo(ctx)}
+  var base=document.createElement('canvas');base.width=canvas.width;base.height=canvas.height; // 快照=设备像素
+  var bctx=base.getContext('2d');bctx.setTransform(DPR,0,0,DPR,0,0);
+  function renderBase(){paintTo(bctx)} // 落笔前快照已提交图层，拖动中只重画当前笔画（半透明笔刷不会自我叠加）
+  function pushUndo(s){undoStack.push(s);if(undoStack.length>20)undoStack.shift()} // 撤销栈上限20
+  redraw();
+  canvas.style.touchAction='none';
+  canvas.style.webkitUserSelect='none';canvas.style.userSelect='none';
+  var raf=0; // pointermove 节流：一帧只重绘一次，避免长笔画掉帧断触
+  function scheduleRepaint(){
+    if(raf)return;raf=requestAnimationFrame(function(){raf=0;
+      if(cur){ctx.drawImage(base,0,0,LW,LH);drawStroke(cur)}
+    });
+  }
+  canvas.addEventListener('pointerdown',function(e){
+    e.preventDefault();
+    try{canvas.setPointerCapture(e.pointerId)}catch(err){}
+    cur={size:eraser?size*3:size,color:eraser?'#FFFFFF':color,pts:[pos(e)],
+      brush:eraser?'normal':brush,seed:(Math.random()*1e9)|0}; // seed 固定笔迹抖动，撤销/重放渲染一致
+    renderBase();drawStroke(cur);
+  });
+  canvas.addEventListener('pointermove',function(e){
+    if(!cur)return;e.preventDefault();
+    cur.pts.push(pos(e));scheduleRepaint(); // 累积点，rAF 统一重绘（防掉帧断触）
+  });
+  function up(e){if(!cur)return;if(e&&e.preventDefault)e.preventDefault();
+    if(raf){cancelAnimationFrame(raf);raf=0;ctx.drawImage(base,0,0,LW,LH);drawStroke(cur)} // 收尾确保最后一段落地
+    strokes.push(cur);pushUndo(cur);cur=null;
+    renderBase();ctx.drawImage(base,0,0,LW,LH)} // 提交后刷新快照（首笔落地下水印清除）
+  canvas.addEventListener('pointerup',up);
+  canvas.addEventListener('pointercancel',up);
+  canvas.addEventListener('lostpointercapture',up); // 捕获丢失也算一笔结束
+  return {
+    undo:function(){var s=undoStack.pop();if(!s){toast('没有可以撤销的笔画了');return}
+      var i=strokes.lastIndexOf(s);if(i>=0)strokes.splice(i,1);redraw()},
+    clear:function(){strokes=[];undoStack=[];redraw()},
+    reset:function(){strokes=[];undoStack=[];cur=null;redraw()},
+    strokeCount:function(){return strokes.length},
+    getStrokes:function(){return strokes},
+    setSize:function(n){size=n;eraser=false},
+    setColor:function(c){color=c;eraser=false},
+    setBrush:function(b){brush=(b==='crayon'||b==='acrylic')?b:'normal'},
+    getBrush:function(){return brush},
+    setEraser:function(b){eraser=b},
+    isEraser:function(){return eraser},
+    getColor:function(){return color},
+    getSize:function(){return size},
+    drawStrokesOn:function(c2,W,H){
+      var S=W/512;c2.fillStyle='#FFFFFF';c2.fillRect(0,0,W,H);
+      strokes.forEach(function(s){renderStrokeOn(c2,s,S)})
+    }
+  };
+}
+/* ============ 绘画工具 UI（演示①极简风：文字按钮行 + 色板行 + 状态行） ============ */
+/* 统一手绘感线性图标：细墨线 1.8 描边（CSS svg.i），随按钮文字色 currentColor 变化 */
+function toolIcon(name){
+  var P={
+    pen:'<path d="M5 17.2 L14.6 7.6 L17.6 10.6 L8 20.2 L4.4 20.8 Z"/><path d="M13.2 9 L16.2 12"/>',
+    crayon:'<path d="M8.2 20 L8.2 8.6 Q8.2 5.6 10.6 3.8 Q13 5.6 13 8.6 L13 20 Z"/><path d="M8.2 15.4 L13 15.4"/><path d="M5.4 20.4 L15.8 20.4"/>',
+    acrylic:'<path d="M4.6 15.6 Q11.4 8.2 19.6 6.4" stroke-width="4.2"/><path d="M17.6 12.2 q1.7 2.3 0 3.5 q-1.7-1.2 0-3.5"/>',
+    eraser:'<path d="M5.2 14.6 L11.4 8.4 L17.4 12.6 L12.6 18.8 Z"/><path d="M8.8 11.6 L14.4 15.6"/><path d="M4.6 20.6 L18.6 20.6"/>',
+    undo:'<path d="M7.4 6.6 L4 10 L7.4 13.4"/><path d="M4.4 10 L12.6 10 Q17.8 10 17.8 14.4 Q17.8 18 14.2 18.6"/>',
+    clear:'<path d="M6 6 L16 16"/><path d="M16 6 L6 16"/>',
+    mic:'<rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"/><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"/><path d="M11 16 L11 19"/><path d="M8.4 19 L13.6 19"/>',
+    palette:'<path d="M11 3.6 C6.4 3.6 3.2 6.9 3.2 11 C3.2 15.1 6.6 18.4 10.8 18.4 C12 18.4 12.7 17.6 12.7 16.8 C12.7 16 12 15.6 12 14.8 C12 13.9 12.7 13.3 13.7 13.3 L15.9 13.3 C18.8 13.3 20.8 11.2 20.8 9.2 C20.8 6.1 16.6 3.6 11 3.6 Z"/><circle cx="7.2" cy="9.2" r="1.05" fill="currentColor" stroke="none"/><circle cx="11" cy="7.2" r="1.05" fill="currentColor" stroke="none"/><circle cx="15" cy="8.6" r="1.05" fill="currentColor" stroke="none"/>'
+  };
+  return '<svg class="i" viewBox="0 0 22 22" aria-hidden="true">'+(P[name]||'')+'</svg>';
+}
+function buildTools(board,o){
+  var tools=o.tools,sizes=o.sizes,actions=o.actions,colors=o.colors,status=o.status,onlyBlack=!!o.onlyBlack;
+  var tEls={},sEls=[],swEls=[];
+  function say(t){if(status){var el=$(status);if(el)el.textContent=t}}
+  function colorName(){ // 当前颜色名（失忆画室只有黑）
+    if(onlyBlack)return '黑';
+    var cc=board.getColor();
+    for(var i=0;i<PALETTE.length;i++)if(PALETTE[i][1]===cc)return PALETTE[i][0];
+    return '黑';
+  }
+  function stateText(){ // 状态行：当前笔刷 · 颜色 · 粗细
+    var bn={normal:'普通',crayon:'蜡笔',acrylic:'丙烯'}[board.getBrush()]||'普通';
+    var sn=['细','中','粗'][board._sizeIdx==null?1:board._sizeIdx];
+    return board.isEraser()?('橡皮 · '+sn):(bn+' · '+colorName()+' · '+sn);
+  }
+  var BRUSH_DEFS=[['画笔','brush','pen'],['蜡笔','crayon','crayon'],['丙烯','acrylic','acrylic'],['橡皮','eraser','eraser']];
+  var ACT_DEFS=[['撤销','undo','undo','blue'],['清空','clear','clear','blue']];
+  function mkBtn(def){ // def:[文案,动作,图标名,附加类]
+    var b=document.createElement('button');b.className='btn'+(def[3]?' '+def[3]:'');b.dataset.t=def[1];
+    b.innerHTML=toolIcon(def[2])+'<span>'+def[0]+'</span>';
+    b.onclick=function(){
+      if(def[1]==='brush'){board.setBrush('normal');board.setEraser(false)}
+      else if(def[1]==='crayon'){board.setBrush('crayon');board.setEraser(false)}
+      else if(def[1]==='acrylic'){board.setBrush('acrylic');board.setEraser(false)}
+      else if(def[1]==='eraser'){board.setEraser(!board.isEraser())}
+      else if(def[1]==='undo'){board.undo();say('撤销一步');sync();return}
+      else{board.clear();say('画布已清空');sync();return}
+      say(stateText());sync();
+    };
+    return b;
+  }
+  function mkSize(name,i){
+    var b=document.createElement('button');b.className='btn';b.dataset.s=i;b.textContent=name;
+    b.style.padding='4px 10px';b.style.fontSize='12px';
+    b.onclick=function(){board.setSize([2,5,10][i]);board._sizeIdx=i;say(stateText());sync()};
+    return b;
+  }
+  if(tools){ // 单行模式（未分组时画笔/粗细/操作全并入 tools 行）
+    tools.innerHTML='';
+    BRUSH_DEFS.forEach(function(d){var b=mkBtn(d);tools.appendChild(b);tEls[d[1]]=b});
+    if(!sizes)['细','中','粗'].forEach(function(name,i){tools.appendChild(mkSize(name,i));sEls.push({el:tools.lastChild,i:i})});
+    if(!actions)ACT_DEFS.forEach(function(d){tools.appendChild(mkBtn(d))});
+  }
+  if(sizes){sizes.innerHTML='';['细','中','粗'].forEach(function(name,i){var b=mkSize(name,i);sizes.appendChild(b);sEls.push({el:b,i:i})})}
+  if(actions){actions.innerHTML='';ACT_DEFS.forEach(function(d){actions.appendChild(mkBtn(d))})}
+  if(colors){
+    colors.innerHTML='';
+    var list=onlyBlack?[['黑','#2B2B2B']]:PALETTE;
+    list.forEach(function(pc,i){
+      var d=document.createElement('button');d.className='swatch';d.style.background=pc[1];d.title=pc[0];
+      d.onclick=function(){board.setColor(pc[1]);board.setEraser(false);say(stateText());sync()};
+      colors.appendChild(d);swEls.push({el:d,c:pc[1]});
+    });
+  }
+  function sync(){
+    var bk=board.getBrush();
+    if(tEls.brush)tEls.brush.classList.toggle('active',!board.isEraser()&&bk==='normal');
+    if(tEls.crayon)tEls.crayon.classList.toggle('active',!board.isEraser()&&bk==='crayon');
+    if(tEls.acrylic)tEls.acrylic.classList.toggle('active',!board.isEraser()&&bk==='acrylic');
+    if(tEls.eraser)tEls.eraser.classList.toggle('active',board.isEraser());
+    sEls.forEach(function(x){x.el.classList.toggle('active',x.i===(board._sizeIdx==null?1:board._sizeIdx))});
+    swEls.forEach(function(x){x.el.classList.toggle('active',!board.isEraser()&&board.getColor()===x.c)});
+  }
+  sync();
+  if(status){var el0=$(status);if(el0&&!el0.textContent)say(stateText())} // 保留场景原有提示语，状态行原本为空才补默认状态
+  return {sync:sync};
+}
+
+/* ============ 语音输入（Web Speech API）：所有答题输入框旁的麦克风按钮 ============ */
+/* lang=zh-CN，实时上屏；说完自动结束；微信等不支持的环境走 toast 兜底，不报错 */
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var voiceSt={}; // inputId -> {rec,on,btn,final}
+function setupVoiceInputs(){
+  var btns=document.querySelectorAll('[data-voice]');
+  for(var i=0;i<btns.length;i++){
+    var btn=btns[i],inputId=btn.getAttribute('data-voice'),inp=$(inputId);
+    if(!inp||voiceSt[inputId])continue;
+    btn.innerHTML=toolIcon('mic'); // 统一手绘线性麦克风图标
+    (function(btn,inp,inputId){
+      var st={rec:null,on:false,final:'',btn:btn};
+      voiceSt[inputId]=st;
+      function stop(){st.on=false;btn.classList.remove('rec');if(st.rec){try{st.rec.abort()}catch(e){}}st.rec=null}
+      btn.addEventListener('click',function(){
+        if(!SR){toast('当前环境不支持语音输入');return}
+        if(st.on){stop();return}
+        var rec;
+        try{rec=new SR()}catch(err){toast('当前环境不支持语音输入');return}
+        st.rec=rec;st.on=true;st.final=inp.value||'';
+        btn.classList.add('rec'); // 识别中：番茄红呼吸态
+        rec.lang='zh-CN';rec.interimResults=true;rec.maxAlternatives=1;
+        rec.onresult=function(ev){
+          var interim='';
+          for(var k=ev.resultIndex;k<ev.results.length;k++){
+            var r=ev.results[k];
+            if(r.isFinal)st.final+=r[0].transcript;
+            else interim+=r[0].transcript;
+          }
+          var cap=inp.maxLength>0?inp.maxLength:999;
+          inp.value=(st.final+interim).slice(0,cap); // 实时填入输入框
+        };
+        rec.onerror=function(ev){
+          var er=ev&&ev.error;
+          if(er==='not-allowed'||er==='service-not-allowed')toast('麦克风权限被拒绝，无法语音输入');
+          else if(er==='no-speech')toast('没听到声音，再试一次～');
+          else if(er!=='aborted')toast('语音识别出错了，再试一次～');
+        };
+        rec.onend=stop;
+        try{rec.start();toast('请说话～')}
+        catch(e){stop();toast('当前环境不支持语音输入')}
+      });
+    })(btn,inp,inputId);
+  }
+}
+setupVoiceInputs();
+
+/* ============ 笔画回放 / 缩略图 ============ */
+function replayStrokes(canvas,strokes,ms,done){
+  var c=canvas.getContext('2d'),W=canvas.width,H=canvas.height,S=W/512;
+  var total=0;strokes.forEach(function(s){total+=(s.pts||s).length});
+  c.fillStyle='#FFFFFF';c.fillRect(0,0,W,H);
+  if(!total){if(done)done();return function(){}}
+  var cancelled=false,raf=0,t0=performance.now();
+  function frame(now){
+    if(cancelled)return;
+    var k=Math.min(1,(now-t0)/ms),budget=k*total;
+    c.fillStyle='#FFFFFF';c.fillRect(0,0,W,H);c.lineCap='round';c.lineJoin='round';
+    for(var si=0;si<strokes.length;si++){
+      var s=strokes[si];if(budget<=0)break;
+      var pts=s.pts||s;
+      var n=Math.min(pts.length,Math.floor(budget));
+      if(n>0){renderStrokeOn(c,s,S,n);budget-=n}
+    }
+    if(k<1)raf=requestAnimationFrame(frame);else if(done)done();
+  }
+  raf=requestAnimationFrame(frame);
+  return function(){cancelled=true;cancelAnimationFrame(raf)};
+}
+function drawStrokesScaled(c,strokes,W,H){
+  var S=W/512;c.fillStyle='#FFFFFF';c.fillRect(0,0,W,H);
+  strokes.forEach(function(s){renderStrokeOn(c,s,S)});
+}
+function thumbCanvas(strokes,px){
+  var cv=document.createElement('canvas');cv.width=px;cv.height=px;
+  drawStrokesScaled(cv.getContext('2d'),strokes,px,px);return cv;
+}
+
+/* ============ 场景切换 ============ */
+var curScene='';
+var sceneStops={};
+function showScene(id){
+  if(curScene&&sceneStops[curScene])sceneStops[curScene]();
+  document.querySelectorAll('.scene').forEach(function(s){s.classList.remove('on')});
+  $(id).classList.add('on');curScene=id;
+  requestAnimationFrame(function(){wobbleAll($(id))});
+  if(id==='scene-plaza')startPlaza();
+  if(id==='scene-first')startFirstPreview();
+}
+function goPlaza(){closeModal();persist();showScene('scene-plaza')}
+function reframe(){requestAnimationFrame(function(){wobbleAll(document)})}
+document.querySelectorAll('.back-btn').forEach(function(b){b.addEventListener('click',goPlaza)});
+
+/* ============ 场景0：首次画主角 ============ */
+var firstBoard=makeBoard($('firstCanvas'),'在这里画你的主角…');
+buildTools(firstBoard,{tools:$('ftTools'),colors:$('ftColors'),status:'ftStatus'});
+var avatarImg=new Image();
+var firstRaf=0;
+function startFirstPreview(){
+  cancelAnimationFrame(firstRaf);
+  var cv=$('firstPreview'),c=cv.getContext('2d');
+  function loop(t){
+    if(curScene!=='scene-first')return;
+    c.clearRect(0,0,150,150);
+    var sq=0.92+0.08*(1+Math.sin(t/450));      // 挤压拉伸 scaleY 0.92~1.08
+    var bob=Math.sin(t/500)*4;                  // 上下浮动
+    c.save();c.translate(75,80+bob);c.scale(2-sq,sq);
+    c.strokeStyle=INK;c.lineWidth=2;
+    wCircle(c,0,-6,52,11,'#FFFFFF',2.5);
+    c.save();c.beginPath();c.arc(0,-6,47,0,Math.PI*2);c.clip();
+    c.drawImage($('firstCanvas'),-47,-53,94,94);c.restore();
+    c.restore();
+    firstRaf=requestAnimationFrame(loop);
+  }
+  firstRaf=requestAnimationFrame(loop);
+}
+/* 完成按钮永远有可见响应；空画布 → 手绘toast提示 */
+$('firstDone').addEventListener('click',function(){
+  var btn=$('firstDone');
+  if(firstBoard.strokeCount()===0){
+    btn.classList.remove('shk');void btn.offsetWidth;btn.classList.add('shk');
+    toast('先画点什么吧～',1800);
+    return;
+  }
+  save.avatar=($('firstCanvas').toDataURL('image/png'));
+  save.seen=true;persist();
+  avatarImg.src=save.avatar;
+  showModal({title:'欢迎入住涂鸦小镇！',html:'<p style="line-height:2">这就是你的形象，够灵魂。<br>在广场<b class="blue">左右拖动画面</b>逛小镇，<b class="accent">点击建筑</b>进入玩法，<br>靠近居民可以<b>击掌</b>赚墨水。</p>',
+    buttons:[{label:'出发逛逛！',big:true,onClick:function(){goPlaza()}}]});
+});
+
+/* ============ 场景1：小镇广场（彩色蜡笔版） ============ */
+/* 镜头制：拖动屏幕平移镜头（plaza.cam=世界坐标位移），主角站在广场中央作景观不被驱动 */
+var plaza={raf:0,last:0,px:1200,dir:1,hop:0,keys:{},hov:'',
+  vw:0,vh:0,suppressClick:false,   /* 逻辑视口尺寸 / 拖动后抑制下一次 click */
+  cam:0,camInit:false,parts:[],decoMode:false,decoHov:null,   /* 镜头世界坐标 / 初值只定一次 / 可配色部件 / 悬停区域 */
+  npcs:[
+    {name:'阿茶',x:430,dir:1,min:260,max:640,cd:0,kind:0},
+    {name:'老墨',x:860,dir:1,min:720,max:1000,cd:0,kind:1},
+    {name:'小葵',x:1180,dir:-1,min:1080,max:1330,cd:0,kind:2},
+    {name:'大白',x:1560,dir:1,min:1420,max:1700,cd:0,kind:3}
+  ],
+  clouds:[{x:200,y:60,s:1.1},{x:900,y:90,s:0.8},{x:1600,y:50,s:1.3}]};
+var WORLD_W=2400;
+var BUILDINGS=[
+  {id:'studio',x:200,w:170,h:150,name:'画室',desc:'重画主角形象',roof:'#3B6EA5',wall:'#F3EFE4',icon:'pencil',lift:0},
+  {id:'memory',x:500,w:185,h:160,name:'失忆画室',desc:'3秒速画 · 灵魂鉴定',roof:'#C9B8E8',wall:'#F7F3FB',icon:'hourglass',lift:6},
+  {id:'tavern',x:830,w:200,h:172,name:'猜谜酒馆',desc:'看图猜谜 · 老墨特调',roof:'#E14B3B',wall:'#FBF3E2',icon:'wine',flag:'谜',lift:2},
+  {id:'guess',x:1160,w:185,h:150,name:'你画我猜馆',desc:'AI 猜画 · 你画 AI 猜',roof:'#E9B824',wall:'#FDF7E6',icon:'bubble',lift:8},
+  {id:'run',x:1480,w:170,h:142,name:'跑酷起点',desc:'用脚投票的画廊',roof:'#7FC8A9',wall:'#F1F8F2',icon:'flag',lift:0},
+  {id:'home',x:1790,w:155,h:142,name:'家园',desc:'影子们的问候',roof:'#F0A8A0',wall:'#FBF1EE',icon:'bed',lift:5},
+  {id:'board',x:2070,w:120,h:128,name:'告示板',desc:'每日委托',wood:'#C9A06B',icon:'board',lift:3}
+];
+/* 世界坐标装饰物：小花/石块/草簇 */
+var DECOR=[];
+(function(){var rns=mulberry32(20260601);
+  for(var x=60;x<WORLD_W;x+=70+rns()*95){
+    var t=rns();
+    DECOR.push({x:x,k:t<0.42?'flower':(t<0.68?'stone':'tuft'),
+      c:['#F4A7B9','#F7DC79','#C9B8E8'][Math.floor(rns()*3)],s:0.7+rns()*0.55,o:Math.floor(rns()*90)});
+  }
+})();
+var plazaCanvas=$('plazaCanvas');
+/* 逻辑视口（DPR 适配后所有广场逻辑都用逻辑尺寸） */
+function plazaVW(){return plaza.vw||plazaCanvas._lw||plazaCanvas.width}
+function plazaVH(){return plaza.vh||plazaCanvas._lh||plazaCanvas.height}
+function sizePlaza(){
+  var st=$('stage');
+  plaza.vw=st.clientWidth;plaza.vh=st.clientHeight;
+  plazaCanvas.width=Math.round(plaza.vw*DPR);plazaCanvas.height=Math.round(plaza.vh*DPR);
+  plazaCanvas._lw=plaza.vw;plazaCanvas._lh=plaza.vh;
+}
+function groundY(){return (plaza.vh||plazaCanvas.height)*0.78}
+function startPlaza(){
+  sizePlaza();cancelAnimationFrame(plaza.raf);plaza.last=performance.now();
+  $('hiBtn').style.display='none';
+  if(!plaza.camInit){ // 镜头初值：以广场中央的主角为中心（只定一次，之后由拖动接管）
+    plaza.camInit=true;
+    var W0=plaza.vw||plazaCanvas._lw||plazaCanvas.width;
+    plaza.cam=clamp(plaza.px-W0/2,0,Math.max(0,WORLD_W-W0));
+  }
+  plaza.raf=requestAnimationFrame(plazaLoop);
+}
+sceneStops['scene-plaza']=function(){cancelAnimationFrame(plaza.raf);$('hiBtn').style.display='none';if(plaza.decoMode)exitDeco()};
+function plazaLoop(now){
+  if(curScene!=='scene-plaza')return;
+  var dt=Math.min(0.05,(now-plaza.last)/1000);plaza.last=now;
+  var H=plaza.vh||plazaCanvas._lh||plazaCanvas.height,W=plaza.vw||plazaCanvas._lw||plazaCanvas.width;
+  // 镜头：拖动平移在 pointermove 已更新 plaza.cam，这里仅按视口宽度重新钳制世界边界
+  plaza.cam=clamp(plaza.cam,0,Math.max(0,WORLD_W-W));
+  drawPlaza(plaza.cam,now/1000,false,dt);
+  // NPC 靠近检测（主角站在广场中央，居民散步路过即可击掌）
+  var near=null,best=95;
+  plaza.npcs.forEach(function(n){var d=Math.abs(n.x-plaza.px);if(d<best){best=d;near=n}});
+  var hb=$('hiBtn');
+  if(near){
+    hb.style.display='block';
+    var cdLeft=Math.ceil((near.cd-Date.now())/1000);
+    hb.textContent=cdLeft>0?('和'+near.name+'击掌（'+cdLeft+'s）'):('和'+near.name+'击掌 +1墨水');
+    hb.disabled=cdLeft>0;
+    hb.dataset.npc=near.name;
+  }else hb.style.display='none';
+  plaza.raf=requestAnimationFrame(plazaLoop);
+}
+function crayonFillRect(c,x,y,w,h,color,seed,alpha){
+  c.save();c.globalAlpha=(alpha==null)?0.78:alpha;c.fillStyle=color;c.fillRect(x,y,w,h);c.restore();
+  c.strokeStyle=INK;c.lineWidth=2.1;
+  wLine(c,x-2+j(seed)*3,y,x+w+2+j(seed+1)*3,y,seed,1.7);
+  wLine(c,x+w,y-2+j(seed+2)*3,x+w,y+h+2,seed+3,1.7);
+  wLine(c,x+w+2,y+h,x-2,y+h,seed+6,1.7);
+  wLine(c,x,y+h+2,x,y-2,seed+9,1.7);
+}
+/* ============ DIY 装修：统一绘色管线 ============ */
+/* 区域当前色：默认全走治愈水彩（返回 null），玩家装修过的颜色存 save.deco 优先 */
+function decoCol(type){
+  if(save.deco)return save.deco.colors[type]||null;
+  return null;
+}
+function hexRGB(h){h=String(h).replace('#','');return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)]}
+function rgbHex(r,g,b){function p(v){v=clamp(Math.round(v),0,255).toString(16);return v.length<2?'0'+v:v}return '#'+p(r)+p(g)+p(b)}
+function shade(hex,f){var v=hexRGB(hex);return rgbHex(v[0]*f,v[1]*f,v[2]*f)}       /* f<1 加深 / f>1 提亮 */
+function mixHex(h1,h2,t){var a=hexRGB(h1),b=hexRGB(h2);return rgbHex(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t)}
+function retroTone(hex){ /* 复古：去饱和(≈55%) + 微偏暖 */
+  var v=hexRGB(hex),mx=(v[0]+v[1]+v[2])/3;
+  return rgbHex(mx+(v[0]-mx)*0.55+14,mx+(v[1]-mx)*0.55+6,mx+(v[2]-mx)*0.55-6);
+}
+/* 厚涂丙烯：按颜色缓存的横向短笔痕 pattern */
+var acrylicPats={};
+function acrylicPattern(c,color){
+  if(!acrylicPats[color]){
+    var pc=document.createElement('canvas');pc.width=64;pc.height=64;
+    var g=pc.getContext('2d'),rng=mulberry32(hashStr(color));
+    g.fillStyle=color;g.fillRect(0,0,64,64);
+    for(var i=0;i<7;i++){
+      var y=rng()*64,x0=rng()*52-10,len=18+rng()*34,hh=5+rng()*4;
+      g.globalAlpha=0.22+rng()*0.2;
+      g.fillStyle=rng()<0.5?shade(color,0.8):mixHex(color,'#FFFFFF',0.35);
+      g.beginPath();g.ellipse(x0+len/2,y,len/2,hh/2,0,0,7);g.fill();
+    }
+    acrylicPats[color]=pc;
+  }
+  return c.createPattern(acrylicPats[color],'repeat');
+}
+/* 复古：全屏纸颗粒噪点 pattern */
+var grainPc=null;
+function grainPattern(c){
+  if(!grainPc){
+    grainPc=document.createElement('canvas');grainPc.width=128;grainPc.height=128;
+    var g=grainPc.getContext('2d'),rng=mulberry32(998);
+    for(var i=0;i<900;i++){g.globalAlpha=0.5+rng()*0.5;
+      g.fillStyle=rng()<0.5?'#2B2B2B':'#FBF9F4';g.fillRect(rng()*128,rng()*128,1.2,1.2)}
+  }
+  return c.createPattern(grainPc,'repeat');
+}
+/* 形状路径：{x,y,w,h} 矩形 / {cx,cy,r} 圆 / {pts:[[x,y]..]} 多边形 */
+function shapePath(c,sh){
+  c.beginPath();
+  if(sh.pts){c.moveTo(sh.pts[0][0],sh.pts[0][1]);for(var i=1;i<sh.pts.length;i++)c.lineTo(sh.pts[i][0],sh.pts[i][1]);c.closePath()}
+  else if(sh.cx!=null)c.arc(sh.cx,sh.cy,sh.r,0,Math.PI*2);
+  else c.rect(sh.x,sh.y,sh.w,sh.h);
+}
+function shapeBBox(sh){
+  if(sh.pts){var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    sh.pts.forEach(function(p){if(p[0]<x0)x0=p[0];if(p[1]<y0)y0=p[1];if(p[0]>x1)x1=p[0];if(p[1]>y1)y1=p[1]});
+    return{x:x0,y:y0,w:x1-x0,h:y1-y0}}
+  if(sh.cx!=null)return{x:sh.cx-sh.r,y:sh.cy-sh.r,w:sh.r*2,h:sh.r*2};
+  return sh;
+}
+/* 手绘抖线描边（inset>0 时向内收，用于复古双线） */
+function styledStroke(c,sh,color,lw,seed,inset){
+  inset=inset||0;c.strokeStyle=color;c.lineWidth=lw;
+  if(sh.pts){
+    var pts=sh.pts;
+    if(inset){var mx=0,my=0;pts.forEach(function(p){mx+=p[0];my+=p[1]});mx/=pts.length;my/=pts.length;
+      pts=pts.map(function(p){return[p[0]+(mx-p[0])*0.12,p[1]+(my-p[1])*0.12]})}
+    for(var i=0;i<pts.length;i++){var a=pts[i],b=pts[(i+1)%pts.length];
+      wLine(c,a[0],a[1],b[0],b[1],seed+i*3,1.5)}
+  }else if(sh.cx!=null){
+    wCircle(c,sh.cx,sh.cy,Math.max(1,sh.r-inset),seed,null,1.8);
+  }else{
+    var x=sh.x+inset,y=sh.y+inset,w=sh.w-inset*2,h=sh.h-inset*2;
+    wLine(c,x,y,x+w,y,seed,1.5);wLine(c,x+w,y,x+w,y+h,seed+3,1.5);
+    wLine(c,x+w,y+h,x,y+h,seed+6,1.5);wLine(c,x,y+h,x,y,seed+9,1.5);
+  }
+}
+/* 四种绘色风格统一入口：doodle涂鸦 / acrylic厚涂丙烯 / retro复古 / oil油画 */
+function fillStyled(c,sh,color,style,seed){
+  seed=seed||0;
+  c.save();
+  if(style==='acrylic'){
+    shapePath(c,sh);c.fillStyle=acrylicPattern(c,color);c.fill();
+    c.restore();c.save();
+    styledStroke(c,sh,shade(color,0.62),3,seed);
+  }else if(style==='retro'){
+    var rc=retroTone(color);
+    shapePath(c,sh);c.fillStyle=rc;c.fill();
+    styledStroke(c,sh,INK,2,seed);
+    styledStroke(c,sh,shade(rc,0.68),1,seed+17,3);
+  }else if(style==='oil'){
+    shapePath(c,sh);c.fillStyle=color;c.fill();
+    var bb=shapeBBox(sh);
+    shapePath(c,sh);c.clip();
+    c.globalAlpha=0.25;c.fillStyle=shade(color,0.55);
+    c.fillRect(bb.x+bb.w*0.35,bb.y+bb.h*0.4,bb.w*0.8,bb.h*0.8);   /* 右下深色堆叠 */
+    c.globalAlpha=0.5;c.fillStyle=mixHex(color,'#FFFFFF',0.6);     /* 左上亮色厚堆斑 */
+    var rng=mulberry32(seed+5);
+    for(var i=0;i<4;i++){c.beginPath();
+      c.arc(bb.x+bb.w*(0.1+rng()*0.32),bb.y+bb.h*(0.08+rng()*0.3),2.2+rng()*2.4,0,7);c.fill()}
+    c.restore();c.save();
+    styledStroke(c,sh,INK,2.5,seed);
+  }else{ /* doodle 涂鸦风：平涂 + 手绘墨描边 */
+    c.globalAlpha=0.8;shapePath(c,sh);c.fillStyle=color;c.fill();c.globalAlpha=1;
+    styledStroke(c,sh,INK,2.1,seed);
+  }
+  c.restore();
+}
+/* ============ 治愈水彩工具：淡水彩渐变 + 墨线勾边 ============ */
+function wcGrad(c,x0,y0,x1,y1,c1,c2){
+  var g=c.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,c1);g.addColorStop(1,c2);return g;
+}
+/* 水彩矩形：上浅下深同色系渐变 + 手绘墨描边 */
+function wcFill(c,x,y,w,h,c1,c2,seed,lw){
+  c.save();
+  c.fillStyle=wcGrad(c,x,y,x,y+h,c1,c2);
+  c.fillRect(x,y,w,h);
+  c.strokeStyle=INK;c.lineWidth=lw||2.2;
+  wLine(c,x,y,x+w,y,seed,1.4);wLine(c,x+w,y,x+w,y+h,seed+3,1.4);
+  wLine(c,x+w,y+h,x,y+h,seed+6,1.4);wLine(c,x,y+h,x,y,seed+9,1.4);
+  c.restore();
+}
+/* 水彩多边形（屋顶/山）：pts=[[x,y]..]，纵向渐变 + 逐边墨线 */
+function wcPoly(c,pts,c1,c2,seed,lw){
+  c.save();
+  c.beginPath();c.moveTo(pts[0][0],pts[0][1]);
+  for(var i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);
+  c.closePath();
+  var x0=1e9,y0=1e9,y1=-1e9;
+  pts.forEach(function(p){if(p[0]<x0)x0=p[0];if(p[1]<y0)y0=p[1];if(p[1]>y1)y1=p[1]});
+  c.fillStyle=wcGrad(c,x0,y0,x0,y1,c1,c2);c.fill();
+  c.strokeStyle=INK;c.lineWidth=lw||2.2;
+  for(var k=0;k<pts.length;k++){var a=pts[k],b=pts[(k+1)%pts.length];wLine(c,a[0],a[1],b[0],b[1],seed+k*3,1.5)}
+  c.restore();
+}
+/* 水彩圆：纵向渐变填充 + 抖线圆描边 */
+function wcCircle(c,cx,cy,r,c1,c2,seed,lw){
+  c.save();
+  c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);
+  c.fillStyle=wcGrad(c,cx,cy-r,cx,cy+r,c1,c2);c.fill();
+  c.strokeStyle=INK;c.lineWidth=lw||2.2;
+  wCircle(c,cx,cy,r,seed,null,1.8);
+  c.restore();
+}
+function drawPlaza(cam,t,moving,dt){
+  var c=plazaCanvas.getContext('2d');
+  c.setTransform(DPR,0,0,DPR,0,0); // 高清：逻辑坐标 × DPR
+  var W=plaza.vw||plazaCanvas._lw||plazaCanvas.width,H=plaza.vh||plazaCanvas._lh||plazaCanvas.height,gy=groundY();
+  var style=save.deco?save.deco.style:'doodle';
+  plaza.cam=cam;plaza.parts.length=0;
+  // 奶油纸底 + 天空：奶油→淡杏竖渐变（装修配色优先）
+  c.fillStyle=wcGrad(c,0,0,0,H,'#FDFCF7','#F7EFDC');c.fillRect(0,0,W,H);
+  var skyC=decoCol('sky');
+  if(skyC)fillStyled(c,{x:0,y:0,w:W,h:gy},skyC,style,11);
+  // 太阳：暖杏水彩 + 淡橙晕 + 墨线光芒
+  var sunC=decoCol('sun');
+  if(sunC){fillStyled(c,{cx:W-110,cy:86,r:33},sunC,style,5)}
+  else{
+    c.save();
+    var hg=c.createRadialGradient(W-110,86,8,W-110,86,66);
+    hg.addColorStop(0,'rgba(245,185,113,.32)');hg.addColorStop(1,'rgba(245,185,113,0)');
+    c.fillStyle=hg;c.beginPath();c.arc(W-110,86,66,0,Math.PI*2);c.fill();
+    c.restore();
+    wcCircle(c,W-110,86,33,'#F8CD8F','#F0AC62',5,2.2);
+  }
+  c.strokeStyle=INK;c.lineWidth=2;
+  for(var ri=0;ri<8;ri++){var a=ri/8*Math.PI*2;
+    wLine(c,W-110+Math.cos(a)*44,86+Math.sin(a)*44,W-110+Math.cos(a)*58,86+Math.sin(a)*58,5+ri,1.5)}
+  // 云：白水彩 + 底边淡蓝洗染（视差0.25 + 漂移）
+  var cloudC=decoCol('cloud');
+  plaza.clouds.forEach(function(cl){
+    cl.x+=dt*6;if(cl.x>WORLD_W+200)cl.x=-200;
+    var x=cl.x-cam*0.25;
+    if(x>-160&&x<W+160){
+      if(cloudC){
+        fillStyled(c,{cx:x-24*cl.s,cy:cl.y+6*cl.s,r:14*cl.s},cloudC,style,cl.x+7);
+        fillStyled(c,{cx:x+24*cl.s,cy:cl.y+6*cl.s,r:14*cl.s},cloudC,style,cl.x+3);
+        fillStyled(c,{cx:x,cy:cl.y,r:19*cl.s},cloudC,style,cl.x);
+      }else{
+        c.save();
+        var cg=wcGrad(c,0,cl.y-20*cl.s,0,cl.y+22*cl.s,'#FFFFFF','#DCEBF5');
+        c.fillStyle=cg;
+        c.beginPath();c.arc(x-24*cl.s,cl.y+6*cl.s,14*cl.s,0,Math.PI*2);c.fill();
+        c.beginPath();c.arc(x+24*cl.s,cl.y+6*cl.s,14*cl.s,0,Math.PI*2);c.fill();
+        c.beginPath();c.arc(x,cl.y,19*cl.s,0,Math.PI*2);c.fill();
+        c.strokeStyle=INK;c.lineWidth=2;
+        wCircle(c,x-24*cl.s,cl.y+6*cl.s,14*cl.s,cl.x+7,null,2.2);
+        wCircle(c,x+24*cl.s,cl.y+6*cl.s,14*cl.s,cl.x+3,null,2.2);
+        wCircle(c,x,cl.y,19*cl.s,cl.x,null,2.4);
+        c.restore();
+      }
+    }
+  });
+  // 远山：雾蓝紫水彩渐变 + 墨线脊线（视差0.4）
+  var mh=H*0.34;
+  for(var m=0;m<6;m++){
+    var bx=m*620-cam*0.4;
+    if(bx<-400||bx>W+400)continue;
+    var peak=gy-mh*(0.5+(m%3)*0.18);
+    c.save();c.globalAlpha=.8;
+    wcPoly(c,[[bx-190,gy],[bx-60+j(m)*8,peak],[bx+80,gy]],'#D9E4F5','#BFD3EE',m,2);
+    c.restore();
+  }
+  // 地面：薄荷绿水彩渐变 + 波浪墨线
+  var gndC=decoCol('ground');
+  if(gndC)fillStyled(c,{x:0,y:gy,w:W,h:H-gy},gndC,style,99);
+  else wcFill(c,0,gy,W,H-gy,'#CDEBCB','#A9D6A4',99,2.2);
+  c.strokeStyle=INK;c.lineWidth=2.2;
+  wLine(c,0,gy,W,gy,99,1.8);
+  // 草叶（纯墨线）
+  c.strokeStyle=INK;
+  for(var g=Math.floor(cam/46)*46;g<cam+W;g+=46){
+    var gx=g-cam;
+    c.lineWidth=1.4;
+    c.beginPath();c.moveTo(gx,gy);c.lineTo(gx-3+j(g)*3,gy-7-j(g+2)*3);
+    c.moveTo(gx+4,gy);c.lineTo(gx+5,gy-6-j(g+5)*3);c.stroke();
+  }
+  // 装饰：马卡龙小花 / 石块 / 草簇（世界坐标）
+  DECOR.forEach(function(d){
+    var dx=d.x-cam;
+    if(dx<-30||dx>W+30)return;
+    c.save();c.translate(dx,gy+8+d.s*8);c.scale(d.s,d.s);
+    if(d.k==='flower'){
+      c.strokeStyle=INK;c.lineWidth=1.4;
+      c.beginPath();c.moveTo(0,4);c.quadraticCurveTo(2,-4,0,-9);c.stroke();
+      c.lineWidth=1.1;
+      c.save();c.globalAlpha=.92;c.fillStyle=d.c;
+      for(var p=0;p<5;p++){var pa=p/5*Math.PI*2-Math.PI/2;
+        c.beginPath();c.arc(Math.cos(pa)*4.5,-11+Math.sin(pa)*4.5,3,0,7);c.fill();c.stroke()}
+      c.restore();
+      c.fillStyle=INK;c.beginPath();c.arc(0,-11,1.6,0,7);c.fill();
+    }else if(d.k==='stone'){
+      c.strokeStyle=INK;c.lineWidth=1.3;
+      c.beginPath();c.ellipse(0,2,6,3.4,0,0,7);c.fillStyle='#EFE9DA';c.fill();c.stroke();
+    }else{
+      c.strokeStyle=INK;c.lineWidth=1.5;
+      c.beginPath();c.moveTo(-3,4);c.lineTo(-4,-4);c.moveTo(0,4);c.lineTo(0,-6);c.moveTo(3,4);c.lineTo(4,-3);c.stroke();
+    }
+    c.restore();
+  });
+  // 建筑（含 hover 跳动 + 箭头标签）
+  BUILDINGS.forEach(function(b){drawBuilding(c,b,b.x-cam,gy,t,b.id===plaza.hov)});
+  // NPC
+  plaza.npcs.forEach(function(n){
+    n.x+=n.dir*26*dt;
+    if(n.x<n.min){n.x=n.min;n.dir=1}if(n.x>n.max){n.x=n.max;n.dir=-1}
+    if(Math.random()<dt*0.25)n.dir*=-1;
+    drawNPC(c,n.kind,n.x-cam,gy,t,n.dir,n.name);
+  });
+  // 主角
+  drawPlayer(c,plaza.px-cam,gy,t,moving,plaza.dir);
+  // 标题小字
+  c.fillStyle='rgba(43,43,43,.55)';c.font='12px sans-serif';
+  c.fillText('← 小镇东边',W-120,H-10);c.fillText('小镇西边 →',14,H-10);
+  // 复古风：全屏纸颗粒覆盖
+  if(save.deco&&style==='retro'){
+    c.save();c.globalAlpha=.06;c.fillStyle=grainPattern(c);c.fillRect(0,0,W,H);c.restore();
+  }
+  // 装修模式：悬停区域墨线虚线高亮
+  if(plaza.decoMode&&plaza.decoHov)drawDecoHov(c,plaza.decoHov,gy);
+}
+/* 装修模式：虚线高亮当前悬停的可配色区域 */
+function drawDecoHov(c,hov,gy){
+  var W=plazaVW(),H=plazaVH();
+  c.save();c.strokeStyle=INK;c.lineWidth=2;c.setLineDash([6,4]);
+  if(hov.type==='sky')c.strokeRect(5,5,W-10,gy-8);
+  else if(hov.type==='ground')c.strokeRect(5,gy+3,W-10,H-gy-8);
+  else if(hov.type==='sun')c.strokeRect(W-110-46,86-46,92,92);
+  else if(hov.type==='cloud'&&hov.ref){var cl=hov.ref,x=cl.x-plaza.cam*0.25;
+    c.strokeRect(x-46*cl.s,cl.y-30*cl.s,92*cl.s,56*cl.s)}
+  else if(hov.ref){
+    var p=hov.ref;
+    if(p.pts){var bb=shapeBBox(p);c.strokeRect(bb.x-plaza.cam-5,bb.y-5,bb.w+10,bb.h+10)}
+    else c.strokeRect(p.x-plaza.cam-5,p.y-5,p.w+10,p.h+10);
+  }
+  c.restore();
+}
+/* 建筑挂牌小图标（墨线） */
+function signIcon(c,kind,x,y,s){
+  c.save();c.translate(x,y);c.scale(s,s);c.strokeStyle=INK;c.lineWidth=1.5;
+  if(kind==='pencil'){c.beginPath();c.moveTo(-5,5);c.lineTo(3,-3);c.lineTo(5,-1);c.lineTo(-3,6);c.closePath();c.stroke();c.beginPath();c.moveTo(-5,5);c.lineTo(-6,7);c.stroke()}
+  else if(kind==='hourglass'){c.beginPath();c.moveTo(-4,-5);c.lineTo(4,-5);c.lineTo(-4,5);c.lineTo(4,5);c.closePath();c.stroke()}
+  else if(kind==='wine'){c.beginPath();c.arc(0,-2,4,0,Math.PI);c.moveTo(-4,-2);c.lineTo(4,-2);c.moveTo(0,2);c.lineTo(0,6);c.moveTo(-3,6);c.lineTo(3,6);c.stroke()}
+  else if(kind==='bubble'){wRect(c,-6,-5,12,8,3);c.beginPath();c.moveTo(-3,3);c.lineTo(-5,6);c.stroke();c.fillStyle=INK;c.beginPath();c.arc(-2,-1,.9,0,7);c.arc(1,-1,.9,0,7);c.arc(4,-1,.9,0,7);c.fill()}
+  else if(kind==='flag'){c.beginPath();c.moveTo(-4,7);c.lineTo(-4,-6);c.lineTo(5,-4);c.lineTo(-4,-1);c.stroke()}
+  else if(kind==='bed'){wRect(c,-6,-3,12,6,2);c.beginPath();c.moveTo(-6,3);c.lineTo(-6,-1);c.moveTo(6,3);c.lineTo(6,-2);c.stroke();c.fillRect(-4,-2,3,3)}
+  else{wRect(c,-6,-5,12,10,2);c.lineWidth=1;c.beginPath();c.moveTo(-3,-2);c.lineTo(3,-2);c.moveTo(-3,1);c.lineTo(2,1);c.stroke()}
+  c.restore();
+}
+/* 七栋治愈水彩小屋调色板：w=墙体渐变 r=屋顶渐变（全部保留「墙+屋顶+门窗」房屋轮廓，靠配色/屋顶造型/道具区分） */
+var HOUSES={
+  studio:{w1:'#FBE8D3',w2:'#F6D9B8',r1:'#F2A69B',r2:'#E87A6E',ah:48},
+  memory:{w1:'#EFE9F9',w2:'#DDD1F0',r1:'#C9B8E8',r2:'#A08CCF',ah:60},
+  tavern:{w1:'#FBEFD7',w2:'#F3DEB2',r1:'#8A6242',r2:'#66452B',ah:50},
+  guess:{w1:'#EAF6EE',w2:'#D3EBDC',r1:'#F2D06B',r2:'#E9B824',ah:44},
+  run:{w1:'#E7EFF9',w2:'#CFE0F0',r1:'#8FB8E0',r2:'#6691C7',ah:42},
+  home:{w1:'#FBF6EC',w2:'#F0E6D2',r1:'#E8836F',r2:'#D95F4C',ah:54}
+};
+var RAINBOW=['#F4A7B9','#F7DC79','#A8D5A2','#8FC1E3','#C9B8E8'];
+function drawBuilding(c,b,x,gy,t,hov){
+  if(x<-280||x>plazaVW()+280)return;
+  var h=b.h,w=b.w,seed=hashStr(b.id)%50,lift=b.lift||0;
+  var style=save.deco?save.deco.style:'doodle';
+  var decoM=plaza.decoMode;
+  var hs=HOUSES[b.id]||HOUSES.studio;
+  c.save();
+  c.strokeStyle=INK;
+  if(hov)c.translate(0,-2); // hover 轻跳 2px
+  if(b.id==='board'){ // 告示板：暖木水彩木牌（不参与配色）
+    c.strokeStyle=INK;c.lineWidth=2.2;
+    wLine(c,x+18,gy,x+18,gy-h+14,1,2);wLine(c,x+w-18,gy,x+w-18,gy-h+14,2,2);
+    wcFill(c,x-6,gy-h,w+12,h-10,'#D9B27E','#C49A5F',3,2.2);
+    c.save();c.globalAlpha=.92;c.fillStyle='#FDF9EE';c.fillRect(x+9,gy-h+20,w-18,h-36);c.restore();
+    c.strokeStyle=INK;c.lineWidth=1.2;c.strokeRect(x+9,gy-h+20,w-18,h-36);
+    c.lineWidth=1.4;
+    for(var i=0;i<3;i++)wLine(c,x+15,gy-h+34+i*17,x+w-21,gy-h+34+i*17,4+i,1.5);
+    c.fillStyle=INK;c.font='bold 13px sans-serif';c.textAlign='center';
+    c.fillText('告示板',x+w/2,gy-h+14);c.textAlign='left';
+    signIcon(c,'board',x+w/2-8,gy-h+92,1);
+    c.restore();return;
+  }
+  var y0=gy-lift;
+  var wallC=decoCol('wall'),roofC=decoCol('roof'),doorC=decoCol('door'),winC=decoCol('window'),chmC=decoCol('chimney');
+  // 墙体：默认水彩渐变（装修配色优先）
+  if(wallC)fillStyled(c,{x:x,y:y0-h,w:w,h:h},wallC,style,seed);
+  else wcFill(c,x,y0-h,w,h,hs.w1,hs.w2,seed);
+  hatchRect(c,x+w-26,y0-h+8,18,h-8,seed+40);
+  if(decoM)plaza.parts.push({type:'wall',x:x+plaza.cam,y:y0-h,w:w,h:h});
+  // 屋顶：home=蘑菇伞盖坡顶（仍压在墙体上），其余人字坡（坡度各异）
+  var apex=x+w/2+j(seed%7)*4,ay=y0-h-hs.ah;
+  var roofPts=[[x-14+plaza.cam,y0-h],[apex+plaza.cam,ay],[x+w+14+plaza.cam,y0-h]];
+  if(roofC)fillStyled(c,{pts:[[x-14,y0-h],[apex,ay],[x+w+14,y0-h]]},roofC,style,seed+1);
+  else if(b.id==='home'){
+    var capH=hs.ah;
+    c.beginPath();
+    c.moveTo(x-18,y0-h+2);
+    c.quadraticCurveTo(x+w/2,y0-h-capH*2,x+w+18,y0-h+2);
+    c.closePath();
+    c.fillStyle=wcGrad(c,x,y0-h-capH,x,y0-h,hs.r1,hs.r2);c.fill();
+    c.strokeStyle=INK;c.lineWidth=2.4;c.stroke();
+    c.lineWidth=1.6;
+    wLine(c,x-18,y0-h+2,x+w+18,y0-h+2,seed+4,1.5);
+    c.save();c.globalAlpha=.95;c.fillStyle='#FFFDF4';c.strokeStyle=INK;c.lineWidth=1.1;
+    [[0.27,-15,6.5],[0.5,-33,8.5],[0.73,-14,5.5]].forEach(function(dp){
+      c.beginPath();c.arc(x+w*dp[0],y0-h+dp[1],dp[2],0,Math.PI*2);c.fill();c.stroke();
+    });
+    c.restore();
+  }else{
+    wcPoly(c,[[x-16,y0-h],[apex,ay],[x+w+16,y0-h]],hs.r1,hs.r2,seed+1,2.3);
+    c.lineWidth=1.2;
+    wLine(c,x+w*0.24,y0-h-14,x+w*0.76,y0-h-14,seed+5,1.4);
+    wLine(c,x+w*0.34,y0-h-28,x+w*0.66,y0-h-28,seed+6,1.4);
+  }
+  if(decoM)plaza.parts.push({type:'roof',pts:roofPts});
+  // 烟囱 + 卷云烟（蘑菇屋免烟囱）
+  if(b.id!=='home'){
+    var chx=x+w*0.74;
+    if(chmC)fillStyled(c,{x:chx,y:y0-h-34,w:13,h:26},chmC,style,seed+7);
+    else wcFill(c,chx,y0-h-34,13,26,'#EFE4D2','#E0D2B8',seed+7,1.8);
+    if(decoM)plaza.parts.push({type:'chimney',x:chx+plaza.cam,y:y0-h-34,w:13,h:26});
+    c.lineWidth=1.4;c.strokeStyle=INK;
+    for(var sk=0;sk<3;sk++){
+      var smokeY=y0-h-40-((t*9+sk*10)%28);
+      var alpha=1-((t*9+sk*10)%28)/28;
+      c.save();c.globalAlpha=alpha*.8;
+      c.beginPath();c.arc(chx+6+Math.sin(t*2+sk)*3+j(seed+sk)*2,smokeY,3.5+sk*1.4,0,7);c.stroke();
+      c.restore();
+    }
+  }
+  // 窗：默认水彩（home·memory 左圆窗，其余方窗），装修配色优先
+  var wy=y0-h+h*0.26,ww=22;
+  [x+w*0.14,x+w*0.68].forEach(function(wx0,wi){
+    var roundWin=(b.id==='home'||b.id==='memory')&&wi===0;
+    if(winC)fillStyled(c,{x:wx0,y:wy,w:ww,h:ww*0.86},winC,style,seed+10+wi);
+    else if(roundWin){
+      wcCircle(c,wx0+ww/2,wy+ww*0.43,ww*0.55,'#FEFCF4','#EFE5CF',seed+10,1.7);
+      if(b.id==='memory'){ // 月牙窗芯
+        c.strokeStyle=INK;c.lineWidth=1.1;
+        c.beginPath();c.arc(wx0+ww/2+3,wy+ww*0.43,ww*0.36,0.7,2.6);c.stroke();
+      }
+    }else wcFill(c,wx0,wy,ww,ww*0.86,'#FEFCF4','#F0E9D6',seed+10+wi,1.6);
+    c.strokeStyle=INK;c.lineWidth=1.2;
+    if(roundWin&&!winC){
+      wLine(c,wx0+ww/2-ww*0.55,wy+ww*0.43,wx0+ww/2+ww*0.55,wy+ww*0.43,seed+12,0.8);
+      wLine(c,wx0+ww/2,wy+ww*0.43-ww*0.55,wx0+ww/2,wy+ww*0.43+ww*0.55,seed+14,0.8);
+    }else{
+      wLine(c,wx0+ww/2,wy,wx0+ww/2,wy+ww*0.86,seed+12+wi,0.8);
+      wLine(c,wx0,wy+ww*0.43,wx0+ww,wy+ww*0.43,seed+14+wi,0.8);
+    }
+    if(decoM)plaza.parts.push({type:'window',x:wx0+plaza.cam,y:wy,w:ww,h:ww*0.86});
+  });
+  // 酒馆：琥珀窗光晕（外扩淡金洗染）
+  if(b.id==='tavern'&&!winC){
+    c.save();c.globalAlpha=.3;c.fillStyle='#F7D774';
+    [x+w*0.14,x+w*0.68].forEach(function(wx0){c.fillRect(wx0-5,wy-5,ww+10,ww*0.86+10)});
+    c.restore();
+  }
+  // 木门 + 门牌 + 门前小台阶（home 圆拱门 / 酒馆深木门，其余暖木门）
+  var dw=30,dx0=x+w/2-dw/2;
+  if(doorC)fillStyled(c,{x:dx0,y:y0-40,w:dw,h:40},doorC,style,seed+18);
+  else if(b.id==='home'){
+    c.beginPath();
+    c.moveTo(dx0,y0);c.lineTo(dx0,y0-24);
+    c.arc(dx0+dw/2,y0-24,dw/2,Math.PI,0);
+    c.lineTo(dx0+dw,y0);c.closePath();
+    c.fillStyle=wcGrad(c,0,y0-40,0,y0,'#DCAE72','#C08D52');c.fill();
+    c.strokeStyle=INK;c.lineWidth=2;c.stroke();
+  }
+  else wcFill(c,dx0,y0-40,dw,40,b.id==='tavern'?'#B98A55':'#E5C890',b.id==='tavern'?'#9E6E40':'#D4B271',seed+18,1.8);
+  c.strokeStyle=INK;c.lineWidth=1.1;
+  c.beginPath();c.moveTo(dx0+10,y0-36);c.lineTo(dx0+10,y0-4);c.moveTo(dx0+20,y0-36);c.lineTo(dx0+20,y0-4);c.stroke();
+  c.fillStyle=INK;c.beginPath();c.arc(dx0+dw-7,y0-20,1.8,0,7);c.fill();
+  c.lineWidth=1.6;
+  wRect(c,dx0-4,y0+2,dw+8,5,seed+20,'#EDE5D2');
+  wRect(c,dx0+2,y0+7,dw-4,5,seed+21,'#EDE5D2');
+  if(decoM)plaza.parts.push({type:'door',x:dx0+plaza.cam,y:y0-40,w:dw,h:40});
+  // ── 各屋专属氛围道具（不参与装修配色，纯治愈点缀） ──
+  if(b.id==='guess'){ // 门楣马卡龙彩虹细带
+    for(var rb=0;rb<5;rb++){c.fillStyle=RAINBOW[rb];c.fillRect(dx0-4,y0-52+rb*3.4,dw+8,3.4)}
+    c.strokeStyle=INK;c.lineWidth=1;wLine(c,dx0-4,y0-52,dx0+dw+4,y0-52,seed+26,1);
+  }else if(b.id==='run'){ // 门面三角彩旗绳
+    c.strokeStyle=INK;c.lineWidth=1.2;
+    c.beginPath();c.moveTo(x+4,y0-h+18);c.quadraticCurveTo(x+w/2,y0-h+34,x+w-4,y0-h+22);c.stroke();
+    for(var bf=0;bf<5;bf++){
+      var bt=(bf+0.5)/5,bxx=x+4+(x+w-8)*bt,byy=y0-h+18+Math.sin(Math.PI*bt)*14;
+      c.beginPath();c.moveTo(bxx-5,byy);c.lineTo(bxx+5,byy);c.lineTo(bxx,byy+9);c.closePath();
+      c.fillStyle=RAINBOW[bf%5];c.fill();c.stroke();
+    }
+  }else if(b.id==='memory'){ // 屋顶挂星星小旗
+    c.strokeStyle=INK;c.lineWidth=1.1;
+    wLine(c,apex,ay,apex+8,ay+14,seed+27,0.6);
+    var stp=ptsStar(apex+8,ay+20,7,3);
+    c.beginPath();stp.forEach(function(p,si){if(si)c.lineTo(p.x,p.y);else c.moveTo(p.x,p.y)});
+    c.closePath();c.fillStyle='#F7DC79';c.fill();c.stroke();
+  }else if(b.id==='studio'){ // 门口调色盘 + 颜料罐
+    c.save();c.translate(dx0-16,y0-10);
+    c.beginPath();c.ellipse(0,0,10,7,-.3,0,Math.PI*2);
+    c.fillStyle='#F6E7D4';c.fill();c.strokeStyle=INK;c.lineWidth=1.2;c.stroke();
+    c.fillStyle='#E14B3B';c.beginPath();c.arc(-4,-1,1.6,0,7);c.fill();
+    c.fillStyle='#3B6EA5';c.beginPath();c.arc(0,2,1.6,0,7);c.fill();
+    c.fillStyle='#F2B134';c.beginPath();c.arc(4,-2,1.6,0,7);c.fill();
+    c.restore();
+    wcFill(c,dx0+dw+8,y0-14,10,14,'#E7D9C4','#D9C7AC',seed+28,1.3);
+    c.strokeStyle=INK;c.lineWidth=1;
+    c.beginPath();c.moveTo(dx0+dw+11,y0-14);c.lineTo(dx0+dw+9,y0-20);c.moveTo(dx0+dw+15,y0-14);c.lineTo(dx0+dw+17,y0-21);c.stroke();
+  }else if(b.id==='tavern'){ // 檐下摇摆灯笼 + 门口木酒桶
+    var pivX=x+16,pivY=y0-h+2,sw=Math.sin(t*1.7)*0.18;
+    var lnx=pivX+Math.sin(sw)*16,lny=pivY+Math.cos(sw)*16;
+    c.strokeStyle=INK;c.lineWidth=1.3;
+    c.beginPath();c.moveTo(pivX,pivY);c.lineTo(lnx,lny);c.stroke();
+    c.save();
+    var lg=c.createRadialGradient(lnx,lny+8,2,lnx,lny+8,22);
+    lg.addColorStop(0,'rgba(247,215,116,.55)');lg.addColorStop(1,'rgba(247,215,116,0)');
+    c.fillStyle=lg;c.beginPath();c.arc(lnx,lny+8,22,0,Math.PI*2);c.fill();
+    c.beginPath();c.ellipse(lnx,lny+8,6.5,8.5,0,0,Math.PI*2);
+    c.fillStyle=wcGrad(c,lnx,lny,lnx,lny+17,'#F9E08A','#F2B84E');c.fill();
+    c.strokeStyle=INK;c.lineWidth=1.4;c.stroke();
+    c.lineWidth=1;
+    wLine(c,lnx-5.5,lny+8,lnx+5.5,lny+8,seed+29,0.5);
+    c.restore();
+    var bvX=dx0+dw+18;
+    c.save();c.translate(bvX,y0-13);
+    c.beginPath();c.ellipse(0,0,11,13,0,0,Math.PI*2);
+    c.fillStyle=wcGrad(c,-11,-13,11,13,'#C89B63','#A87B45');c.fill();
+    c.strokeStyle=INK;c.lineWidth=1.5;c.stroke();
+    c.lineWidth=1.2;
+    wLine(c,-10.6,-5,10.6,-5,seed+30,0.6);
+    wLine(c,-10.6,5,10.6,5,seed+31,0.6);
+    c.beginPath();c.ellipse(0,-13,9,3,0,0,Math.PI*2);c.stroke();
+    c.restore();
+  }
+  // 酒旗（酒馆专属：红酒旗奶白「谜」字）
+  if(b.flag){
+    var fx=x+w-6;
+    c.lineWidth=1.8;wLine(c,fx,y0-6,fx,y0-78,seed+22,1.6);
+    c.save();c.globalAlpha=.95;c.fillStyle='#D95F4C';c.fillRect(fx,y0-78,26,34);c.restore();
+    c.strokeStyle=INK;c.lineWidth=1.6;wRect(c,fx,y0-78,26,34,seed+23);
+    c.fillStyle='#FFF6E8';c.font='bold 19px "Kaiti SC","KaiTi",serif';c.textAlign='center';
+    c.fillText(b.flag,fx+13,y0-53);c.textAlign='left';
+  }
+  // 檐下挂牌（墨线小图标）
+  var sgx=x+w*0.42;
+  c.lineWidth=1.3;
+  wLine(c,sgx,y0-h-2,sgx-10,y0-h+12,seed+24,1);
+  wRect(c,sgx-22,y0-h+12,44,30,seed+25,'#FDF9EE');
+  signIcon(c,b.icon,sgx,y0-h+27,1.1);
+  // 名字
+  c.fillStyle=INK;c.font='bold 14px sans-serif';c.textAlign='center';
+  c.fillText(b.name,x+w/2,Math.min(y0-h+70,gy-6));
+  c.fillStyle='rgba(43,43,43,.6)';c.font='11px sans-serif';c.textAlign='center';
+  c.fillText(b.desc,x+w/2,gy+20+lift);c.textAlign='left';
+  // hover：手绘箭头 + 名称气泡
+  if(hov){
+    var hx=x+w/2,hy=ay-16+Math.sin(t*5)*2;
+    c.strokeStyle='#E14B3B';c.lineWidth=2.4;
+    c.beginPath();c.moveTo(hx-4,hy-14);c.quadraticCurveTo(hx+8,hy-8,hx,hy);c.stroke();
+    c.beginPath();c.moveTo(hx,hy);c.lineTo(hx-7,hy-4);c.moveTo(hx,hy);c.lineTo(hx+2,hy-8);c.stroke();
+    c.strokeStyle=INK;
+    c.save();c.globalAlpha=.95;c.fillStyle='#FFFFFF';c.fillRect(hx-34,hy-46,68,24);c.restore();
+    wRect(c,hx-34,hy-46,68,24,seed+30,'#FFFFFF');
+    c.fillStyle=INK;c.font='bold 13px sans-serif';c.textAlign='center';
+    c.fillText(b.name,hx,hy-30);c.textAlign='left';
+  }
+  c.restore();
+}
+function drawNPC(c,kind,x,gy,t,dir,name){
+  if(x<-90||x>plazaVW()+90)return;
+  c.save();c.translate(x,gy);if(dir<0)c.scale(-1,1);
+  var bob=Math.sin(t*2.4+x)*2;
+  c.strokeStyle=INK;c.lineWidth=2;
+  c.fillStyle='#FFFFFF';
+  if(kind===0){ // 阿茶：圆滚滚 + 粉围巾
+    wCircle(c,0,-30+bob,26,20,'#FFFFFF',2.5);
+    c.fillStyle=INK;
+    c.beginPath();c.arc(-8,-34+bob,2.4,0,7);c.arc(8,-34+bob,2.4,0,7);c.fill();
+    c.beginPath();c.arc(0,-28+bob,7,0.3,Math.PI-0.3);c.stroke();
+    c.strokeStyle='#E087A6';c.lineWidth=5;wLine(c,-20,-14+bob,20,-12+bob,23,1.5);
+    c.strokeStyle=INK;c.lineWidth=2;
+    wLine(c,-10,-4, -12,0,24,1);wLine(c,10,-4,12,0,25,1);
+  }else if(kind===1){ // 老墨：速写 tall + 蓝框眼镜
+    wRect(c,-18,-58+bob,36,54,30,'#FFFFFF');
+    c.strokeStyle=INK;
+    for(var i=0;i<4;i++)wLine(c,-14,-48+i*12+bob,14,-46+i*12+bob,31+i,0.8);
+    c.strokeStyle='#3B6EA5';c.lineWidth=2.4;
+    wCircle(c,-6,-46+bob,5,35);wCircle(c,8,-46+bob,5,36);
+    c.strokeStyle=INK;c.lineWidth=1.6;
+    wLine(c,-1,-46+bob,3,-46+bob,37,1);
+    wLine(c,-20,-62+bob,20,-60+bob,38,2); // 贝雷帽
+    wLine(c,-6,4,-6,0,39,1);wLine(c,8,4,8,0,40,1);
+  }else if(kind===2){ // 小葵：头上黄花
+    wCircle(c,0,-44+bob,17,41,'#FFFFFF',2);
+    for(var p=0;p<5;p++){var a=p/5*Math.PI*2-Math.PI/2;
+      wCircle(c,Math.cos(a)*15,-44+bob+Math.sin(a)*15,6,42+p,'#FFFFFF',1.5)}
+    c.save();c.globalAlpha=.9;c.fillStyle='#E9B824';
+    for(var p2=0;p2<5;p2++){var a2=p2/5*Math.PI*2-Math.PI/2;
+      c.beginPath();c.arc(Math.cos(a2)*15,-44+bob+Math.sin(a2)*15,5,0,7);c.fill()}
+    c.restore();
+    c.strokeStyle=INK;c.lineWidth=1.6;
+    wCircle(c,0,-44+bob,5,50,'#E14B3B',1);
+    wRect(c,-13,-27+bob,26,27,51,'#FFFFFF');
+    c.fillStyle=INK;c.beginPath();c.arc(-5,-46+bob,2,0,7);c.arc(5,-46+bob,2,0,7);c.fill();
+    wLine(c,-8,0,-8,-2,52,1);wLine(c,7,0,7,-2,53,1);
+  }else{ // 大白：云朵先生 + 蓝云朵手举牌
+    wCircle(c,0,-22+bob,22,60,'#FFFFFF',2.5);
+    wCircle(c,-10,-50+bob,13,61,'#FFFFFF',2);
+    wCircle(c,4,-54+bob,15,62,'#FFFFFF',2);
+    wCircle(c,14,-46+bob,11,63,'#FFFFFF',2);
+    c.fillStyle=INK;c.beginPath();c.arc(-4,-52+bob,2.2,0,7);c.arc(8,-52+bob,2.2,0,7);c.fill();
+    wLine(c,-8,-16+bob,8,-16+bob,64,1.5);
+    c.lineWidth=1.6;wLine(c,22,-18+bob,26,-40+bob,67,1.6);
+    wRect(c,20,-62+bob,34,24,68,'#FFFFFF');
+    c.save();c.globalAlpha=.85;c.fillStyle='#3B6EA5';
+    c.beginPath();c.arc(33,-52+bob,5,0,7);c.arc(39,-50+bob,6,0,7);c.arc(45,-52+bob,5,0,7);c.fill();c.restore();
+    c.strokeStyle=INK;c.lineWidth=1.2;
+    c.beginPath();c.arc(33,-52+bob,5,0,7);c.arc(39,-50+bob,6,0,7);c.arc(45,-52+bob,5,0,7);c.stroke();
+  }
+  c.restore();
+  c.fillStyle='rgba(43,43,43,.75)';c.font='bold 12px sans-serif';c.textAlign='center';
+  c.fillText(name,x,gy+16);c.textAlign='left';
+}
+function drawPlayer(c,x,gy,t,moving,dir){
+  if(x<-90||x>plazaVW()+90)return;
+  c.save();c.translate(x,gy);
+  var sq,bob;
+  if(moving){sq=1+0.07*Math.sin(plaza.hop*2);bob=-Math.abs(Math.sin(plaza.hop))*12}
+  else{sq=1+0.05*Math.sin(t*3);bob=Math.sin(t*2)*4}
+  c.scale(dir,1);
+  c.scale(2-sq,sq);
+  c.strokeStyle=INK;c.lineWidth=2.2;
+  wLine(c,-12,0,-16,0,71,1);wLine(c,12,0,16,0,72,1); // 脚
+  wCircle(c,0,-38,32,70,'#FFFFFF',2.5);
+  if(save.avatar&&avatarImg.complete&&avatarImg.naturalWidth){
+    c.save();c.beginPath();c.arc(0,-38,28,0,Math.PI*2);c.clip();
+    try{c.drawImage(avatarImg,-28,-66,56,56)}catch(e){}
+    c.restore();
+  }else{
+    c.fillStyle=INK;c.beginPath();c.arc(-9,-42,2.6,0,7);c.arc(9,-42,2.6,0,7);c.fill();
+    c.beginPath();c.arc(0,-34,8,0.3,Math.PI-0.3);c.stroke();
+  }
+  c.restore();
+}
+/* 广场输入 */
+window.addEventListener('keydown',function(e){
+  var k=(e.key||'').toLowerCase();plaza.keys[k]=true;
+  if(curScene==='scene-run'&&k===' '){e.preventDefault();runJump()}
+  if(k===' ')e.preventDefault();
+});
+window.addEventListener('keyup',function(e){plaza.keys[(e.key||'').toLowerCase()]=false});
+/* 全屏拖动平移镜头：按住画面拖动 = 画面跟随平移（镜头位移 = -拖动 delta，钳制世界边界）；
+   主角站广场中央不再被拖动驱动（force-land 下 mapClient 已转置，天然正确） */
+(function(){
+  var drag=null; // {x0:判定起点逻辑x,cam0:判定起点镜头,moved:是否已判定为拖动,id:指针id}
+  plazaCanvas.addEventListener('pointerdown',function(e){
+    if(curScene!=='scene-plaza')return;
+    var pt=mapClient(plazaCanvas,e.clientX,e.clientY);
+    drag={x0:pt.x,cam0:plaza.cam||0,moved:false,id:e.pointerId};
+    plaza.suppressClick=false;
+    try{plazaCanvas.setPointerCapture(e.pointerId)}catch(err){}
+  });
+  plazaCanvas.addEventListener('pointermove',function(e){
+    if(!drag||e.pointerId!==drag.id)return;
+    var pt=mapClient(plazaCanvas,e.clientX,e.clientY);
+    var dx=pt.x-drag.x0;
+    if(!drag.moved&&Math.abs(dx)>14){ // 超过 14px 才判定为拖动，起点重锚保证平移无跳变
+      drag.moved=true;drag.x0=pt.x;drag.cam0=plaza.cam||0;
+    }
+    if(drag.moved){
+      var W=plazaVW();
+      plaza.cam=clamp(drag.cam0-dx,0,Math.max(0,WORLD_W-W)); // 镜头位移 = -拖动 delta
+    }
+  });
+  function end(e){
+    if(!drag||(e&&e.pointerId!==drag.id))return;
+    if(drag.moved)plaza.suppressClick=true; // 拖动结束后的 click 不触发进建筑
+    drag=null;
+  }
+  plazaCanvas.addEventListener('pointerup',end);
+  plazaCanvas.addEventListener('pointercancel',end);
+})();
+$('hiBtn').addEventListener('click',function(){
+  var name=this.dataset.npc;
+  var npc=null;plaza.npcs.forEach(function(n){if(n.name===name)npc=n});
+  if(!npc)return;
+  if(Date.now()<npc.cd){toast(npc.name+'：刚击过掌了，歇会儿～');return}
+  npc.cd=Date.now()+30000;
+  addInk(1);
+  toast(npc.name+'：击掌！+1 墨水',1500);
+});
+/* ============ DIY 装修模式 ============ */
+var DECO_REGION_NAMES={sky:'天空',sun:'太阳',cloud:'云朵',ground:'地面草地',roof:'屋顶',wall:'墙面',door:'门',window:'窗',chimney:'烟囱'};
+var DECO_COLORS=['#E84C3D','#F2A65A','#F7D774','#A8D5A2','#7FC8A9','#8FC1E3','#3B6EA5','#C9B8E8','#E087A6','#C9A06B','#BDB7AA','#5B8C5A'];
+var DECO_STYLES=[['doodle','涂鸦风'],['acrylic','厚涂丙烯'],['retro','复古风'],['oil','油画风']];
+function ensureDeco(){
+  if(!save.deco)save.deco={style:'doodle',colors:{sky:null,sun:null,cloud:null,ground:null,roof:null,wall:null,door:null,window:null,chimney:null}};
+  return save.deco;
+}
+function decoBtnLabel(t){$('decoBtn').innerHTML=toolIcon('palette')+'<span>'+t+'</span>'}
+decoBtnLabel('装修'); // 装修按钮：统一手绘调色盘图标 + 文字
+function enterDeco(){
+  plaza.decoMode=true;plaza.decoHov=null;plaza.hov='';
+  ensureDeco();persist();
+  decoBtnLabel('完成');
+  $('plazaHint').textContent='装修模式：点击云朵/太阳/房屋部件换颜色';
+  toast('进入装修模式：点击区域换颜色');
+}
+function exitDeco(){
+  plaza.decoMode=false;plaza.decoHov=null;
+  decoBtnLabel('装修');
+  $('plazaHint').textContent=''; // 常态不显示任何提示（需求：删除右下角提示）
+  persist();toast('装修已保存');
+}
+$('decoBtn').addEventListener('click',function(){if(plaza.decoMode)exitDeco();else enterDeco()});
+function ptInPoly(x,y,pts){
+  var inside=false;
+  for(var i=0,j2=pts.length-1;i<pts.length;j2=i++){
+    var xi=pts[i][0],yi=pts[i][1],xj=pts[j2][0],yj=pts[j2][1];
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+/* 装修模式命中检测（画布坐标，调用方已走 mapClient） */
+function decoHit(cx,cy){
+  var W=plazaVW(),gy=groundY();
+  var cam=plaza.cam||0,wx=cx+cam;
+  var i,p;
+  // 建筑部件：后画的优先（门/窗/烟囱 > 屋顶 > 墙）
+  for(i=plaza.parts.length-1;i>=0;i--){
+    p=plaza.parts[i];
+    if(p.pts){if(ptInPoly(wx,cy,p.pts))return{type:p.type,ref:p}}
+    else if(wx>=p.x-4&&wx<=p.x+p.w+4&&cy>=p.y-4&&cy<=p.y+p.h+4)return{type:p.type,ref:p};
+  }
+  // 太阳
+  if(Math.hypot(cx-(W-110),cy-86)<46)return{type:'sun'};
+  // 云
+  for(i=0;i<plaza.clouds.length;i++){
+    var cl=plaza.clouds[i],x=cl.x-cam*0.25;
+    if(Math.hypot(cx-x,cy-cl.y)<22*cl.s||
+       Math.hypot(cx-(x+24*cl.s),cy-(cl.y+6*cl.s))<17*cl.s||
+       Math.hypot(cx-(x-24*cl.s),cy-(cl.y+6*cl.s))<17*cl.s)return{type:'cloud',ref:cl};
+  }
+  if(cy>=gy)return{type:'ground'};
+  return{type:'sky'};
+}
+/* 配色弹窗：12 马卡龙色块 + 风格切换 + 恢复线稿 */
+function openDecoPanel(type){
+  var d=ensureDeco();
+  var html='<div style="margin-bottom:12px;font-size:13px;text-align:center">绘色风格：'+
+    DECO_STYLES.map(function(s){return '<button class="btn'+(d.style===s[0]?' sel':'')+'" data-style="'+s[0]+'" style="padding:5px 12px;font-size:13px;margin:2px">'+s[1]+'</button>'}).join('')+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:320px;margin:0 auto">'+
+    DECO_COLORS.map(function(col){return '<button class="swatch" data-col="'+col+'" style="background:'+col+';width:34px;height:34px"></button>'}).join('')+'</div>';
+  showModal({title:'给「'+DECO_REGION_NAMES[type]+'」选个颜色',html:html,
+    buttons:[
+      {label:'恢复线稿',keep:true,onClick:function(){d.colors[type]=null;persist();toast(DECO_REGION_NAMES[type]+' 已恢复线稿')}},
+      {label:'完成',blue:true}
+    ]});
+  var root=$('modalRoot');
+  root.querySelectorAll('[data-col]').forEach(function(el){
+    el.addEventListener('click',function(){
+      d.colors[type]=el.getAttribute('data-col');persist();
+      toast(DECO_REGION_NAMES[type]+' 上色完成');closeModal();
+    });
+  });
+  root.querySelectorAll('[data-style]').forEach(function(el){
+    el.addEventListener('click',function(){
+      d.style=el.getAttribute('data-style');persist();
+      root.querySelectorAll('[data-style]').forEach(function(x){x.classList.toggle('sel',x===el)});
+      toast('全场切换为'+el.textContent);
+    });
+  });
+}
+/* hover 检测（建筑轻跳 + 名称标签 / 装修模式区域虚线框） */
+plazaCanvas.addEventListener('pointermove',function(e){
+  if(curScene!=='scene-plaza')return;
+  var pt=mapClient(plazaCanvas,e.clientX,e.clientY);
+  var cx=pt.x,cy=pt.y;
+  if(plaza.decoMode){
+    plaza.decoHov=decoHit(cx,cy);plaza.hov='';
+    plazaCanvas.style.cursor='pointer';return;
+  }
+  var cam=plaza.cam||0;
+  var wx=cx+cam,gy=groundY(),found='';
+  for(var i=0;i<BUILDINGS.length;i++){
+    var b=BUILDINGS[i];
+    if(wx>=b.x-14&&wx<=b.x+b.w+14&&cy>=gy-b.h-(b.lift||0)-58&&cy<=gy+22){found=b.id;break}
+  }
+  plaza.hov=found;
+  plazaCanvas.style.cursor=found?'pointer':'';
+});
+plazaCanvas.addEventListener('pointerleave',function(){plaza.hov='';plaza.decoHov=null;plazaCanvas.style.cursor=''});
+plazaCanvas.addEventListener('click',function(e){
+  if(plaza.suppressClick){plaza.suppressClick=false;return} // 拖动结束后的 click 不触发进入
+  var pt=mapClient(plazaCanvas,e.clientX,e.clientY);
+  var cx=pt.x,cy=pt.y;
+  if(plaza.decoMode){var hit=decoHit(cx,cy);if(hit)openDecoPanel(hit.type);return}
+  var cam=plaza.cam||0; // 命中检测：点击坐标 + 镜头偏移 = 世界坐标（与绘制一致）
+  var wx=cx+cam,gy=groundY();
+  for(var i=0;i<BUILDINGS.length;i++){
+    var b=BUILDINGS[i];
+    if(wx>=b.x-14&&wx<=b.x+b.w+14&&cy>=gy-b.h-(b.lift||0)-58&&cy<=gy+22){
+      enterBuilding(b.id);return;
+    }
+  }
+});
+function enterBuilding(id){
+  if(id==='studio')openStudio('avatar');
+  else if(id==='memory')enterMemory();
+  else if(id==='tavern')enterTavern();
+  else if(id==='guess')enterGuess();
+  else if(id==='run')enterRun();
+  else if(id==='home')openHome();
+  else if(id==='board')openBoard();
+}
+
+/* ============ 广场画室 / 告示板投稿 ============ */
+var studioBoard=makeBoard($('studioCanvas'),'在这里开始作画…');
+buildTools(studioBoard,{tools:$('stBrushes'),sizes:$('stSizes'),actions:$('stActions'),colors:$('stColors'),status:'stStatus'});
+var studioMode='avatar';
+function openStudio(mode){
+  studioMode=mode;studioBoard.reset();
+  if(mode==='avatar'){$('studioTitle').textContent='小镇画室';$('studioHint').textContent='重新捏一个你';$('studioDone').textContent='保存形象'}
+  else{$('studioTitle').textContent='画室 · 投稿台';$('studioHint').textContent='为今日委托画一幅投稿';$('studioDone').textContent='交付投稿 (+30墨水)'}
+  showScene('scene-studio');
+}
+$('studioDone').addEventListener('click',function(){
+  if(studioBoard.strokeCount()===0){
+    var b=$('studioDone');b.classList.remove('shk');void b.offsetWidth;b.classList.add('shk');
+    toast('先画点什么吧～');return;
+  }
+  if(studioMode==='avatar'){
+    save.avatar=$('studioCanvas').toDataURL('image/png');persist();
+    avatarImg.src=save.avatar;
+    toast('新形象已保存！',1600);setTimeout(goPlaza,500);
+  }else{
+    save.commissionDate=todayStr();addInk(30);
+    toast('委托完成！+30 墨水',1800);setTimeout(goPlaza,700);
+  }
+});
+
+/* ============ 鲜花 / 鸡蛋 道具与互动 ============ */
+function flowerSVG(){return '<svg viewBox="0 0 20 20"><g stroke="#2B2B2B" stroke-width="1.4" fill="#E087A6"><circle cx="10" cy="5.4" r="3"/><circle cx="14.3" cy="8.5" r="3"/><circle cx="12.7" cy="13.6" r="3"/><circle cx="7.3" cy="13.6" r="3"/><circle cx="5.7" cy="8.5" r="3"/></g><circle cx="10" cy="10" r="2.2" fill="#E9B824" stroke="#2B2B2B" stroke-width="1.2"/></svg>'}
+function eggSVG(){return '<svg viewBox="0 0 20 20"><path d="M10 2 C13.6 2 15.6 8 15.6 12 C15.6 15.6 13 17.6 10 17.6 C7 17.6 4.4 15.6 4.4 12 C4.4 8 6.4 2 10 2 Z" fill="#FBF3E2" stroke="#2B2B2B" stroke-width="1.6"/><path d="M7 12 q3 2.4 6 0" fill="none" stroke="#2B2B2B" stroke-width="1.2"/></svg>'}
+function artLoveOf(key){if(!save.artLove[key])save.artLove[key]={f:0,e:0};return save.artLove[key]}
+/* 花蛋返还/吐槽记账 */
+function loveFeedback(key,isF,art){
+  if(art&&art.by==='player'){
+    var msg;
+    if(isF){msg='你的《'+art.name+'》收到 1 朵鲜花，已入账（+1 鲜花）';save.flowers++;}
+    else{msg='你的《'+art.name+'》被砸了一蛋。作者吐槽：画得很有勇气，下次更好';}
+    save.receipts.unshift({t:Date.now(),msg:msg});if(save.receipts.length>20)save.receipts.pop();
+    toast(msg,2200);
+  }else if(art&&isF){
+    save.tavFlow++;
+  }
+}
+function giveLove(key,isF,art){
+  if(isF){
+    if(save.flowers<=0){toast('鲜花用完啦～看广告或每日活动领取');return false}
+    save.flowers--;artLoveOf(key).f++;loveFeedback(key,true,art);
+  }else{
+    if(save.eggs<=0){toast('鸡蛋用完啦～看广告或每日活动领取');return false}
+    save.eggs--;artLoveOf(key).e++;loveFeedback(key,false,art);
+  }
+  persist();renderProps();return true;
+}
+/* 互动条：送花+1 / 砸蛋+1 */
+function makeLoveBar(el,key,art){
+  if(!el)return;
+  var rec=artLoveOf(key);
+  el.innerHTML=
+    '<button class="lvbtn sketch-border" data-lv="f">'+flowerSVG()+'送花 +1 <b>'+rec.f+'</b></button>'+
+    '<button class="lvbtn sketch-border" data-lv="e">'+eggSVG()+'砸蛋 +1 <b>'+rec.e+'</b></button>'+
+    '<span class="small">鲜花 '+save.flowers+' · 鸡蛋 '+save.eggs+'</span>';
+  el.querySelectorAll('.lvbtn').forEach(function(b){
+    b.onclick=function(){
+      var isF=b.dataset.lv==='f';
+      if(giveLove(key,isF,art)){
+        var rec2=artLoveOf(key);
+        b.querySelector('b').textContent=isF?rec2.f:rec2.e;
+        var cnt=el.querySelector('.small');
+        if(cnt)cnt.textContent='鲜花 '+save.flowers+' · 鸡蛋 '+save.eggs;
+      }
+    };
+  });
+}
+/* 道具面板：看广告（模拟3s）+ 每日领取 */
+function renderProps(){
+  var el=$('tavProps');if(!el)return;
+  var isNewDay=save.adDate!==todayStr();
+  if(isNewDay){save.adDate=todayStr();save.adCount=0}
+  el.innerHTML='<span>'+flowerSVG().replace('<svg','<svg width="16" height="16" style="vertical-align:-3px"')+'<b>'+save.flowers+'</b></span>'+
+    '<span style="margin-left:8px">'+eggSVG().replace('<svg','<svg width="16" height="16" style="vertical-align:-3px"')+'<b>'+save.eggs+'</b></span>'+
+    '<button class="btn blu" id="adBtn" style="padding:4px 10px;font-size:12px;margin-left:8px">看广告 +3/+3</button>'+
+    '<button class="btn blu" id="claimBtn" style="padding:4px 10px;font-size:12px">每日领取 +2/+2</button>';
+  $('adBtn').onclick=watchAdModal;
+  $('claimBtn').onclick=function(){
+    if(save.claimDate===todayStr()){toast('今天的活动奖励已经领过啦',1500);return}
+    save.claimDate=todayStr();save.flowers+=2;save.eggs+=2;persist();
+    renderProps();toast('每日活动：+2 鲜花 +2 鸡蛋！',1800);
+  };
+}
+/* 模拟激励视频广告：3 秒倒计时 */
+/* 微信激励视频广告接入点：正式版替换为 wx.createRewardedVideoAd({adUnitId:'xxx'})，
+   onClose(res.isEnded) 时发放奖励，替换本模拟弹窗 */
+function watchAdModal(){
+  if(save.adCount>=5){toast('今日广告次数已用完（5/5），明天再来～',2000);return}
+  var left=3;
+  showModal({title:'激励广告（模拟 3 秒）',
+    html:'<p style="text-align:center;line-height:2;font-size:17px">广告播放中……<br><b id="adCnt" class="accent" style="font-size:30px">'+left+'</b><br><span class="small">奖励：+3 鲜花 +3 鸡蛋</span></p>',
+    buttons:[]});
+  var iv=setInterval(function(){
+    left--;
+    var el=$('adCnt');
+    if(!el){clearInterval(iv);return}
+    if(left<=0){
+      clearInterval(iv);closeModal();
+      save.adCount++;save.flowers+=3;save.eggs+=3;persist();
+      renderProps();toast('看完广告：+3 鲜花 +3 鸡蛋！（今日 '+save.adCount+'/5 次）',2000);
+    }else el.textContent=left;
+  },1000);
+}
+
+/* ============ 家园（离线结算 + 花蛋道具 + 回执） ============ */
+function openHome(){
+  var ms=Date.now()-save.lastLeave;
+  ms=clamp(ms,0,8*3600*1000); // 上限8小时
+  var shadows=Math.floor(ms/300000); // 每5分钟1个影子
+  var ink=shadows;
+  var html;
+  if(shadows>0){
+    html='<p style="line-height:2">你不在的时候，<b class="accent">'+shadows+' 个影子</b>找过你，<br>它们留下了 <b class="accent">+'+ink+' 墨水</b>。</p>';
+    addInk(ink);
+  }else{
+    html='<p style="line-height:2">影子们还没来得及想你。<br><span class="small">离开小镇满 5 分钟会有 1 个影子回访，最多积累 8 小时。</span></p>';
+  }
+  html+='<div class="share-card"><div class="mini-frame" style="width:120px">'+
+    (save.avatar?'<img src="'+save.avatar+'" style="width:106px;height:106px">':'<div style="width:106px;height:106px;display:flex;align-items:center;justify-content:center" class="small">还没画形象</div>')+
+    '</div><div id="homeLove" class="lovebar"></div></div>';
+  if(save.receipts&&save.receipts.length){
+    html+='<p class="small" style="margin-top:8px"><b>回执箱：</b><br>'+save.receipts.slice(0,4).map(function(r){return '· '+r.msg}).join('<br>')+'</p>';
+  }
+  persist();
+  showModal({title:'家园 · 小木屋',html:html,buttons:[{label:'收到！',big:true}]});
+  if(save.avatar)makeLoveBar($('homeLove'),'avatar',{by:'player',name:'主角形象'});
+}
+
+/* ============ 告示板（每日委托） ============ */
+var TOPICS=['小镇需要海洋生物','小镇需要甜甜的点心','小镇需要跑得快的交通工具','小镇需要毛茸茸的小动物','小镇需要好天气','小镇需要甜甜的水果'];
+function openBoard(){
+  var topic=TOPICS[dayOfYear()%TOPICS.length];
+  var done=save.commissionDate===todayStr();
+  showModal({title:'告示板 · 今日委托',
+    html:'<p style="line-height:2;font-size:17px">「<b class="accent uw">'+topic+'</b>」<br><span class="small">画一幅切题涂鸦投稿 +30 墨水（每日一次）</span></p>'+
+      (done?'<p class="blue" style="font-weight:700">今天的委托已经完成啦，明天再来～</p>':''),
+    buttons:done?[{label:'先不了',blue:true}]:[{label:'去投稿！',big:true,onClick:function(){openStudio('commission')}},{label:'先不了',blue:true}]});
+}
+
+/* ============ 细进度条倒计时（演示①极简风，<30% 变红） ============ */
+function setBar(barId,frac,hot){
+  var b=$(barId);if(!b)return;
+  var i=b.querySelector('i');if(i)i.style.width=(clamp(frac,0,1)*100)+'%';
+  b.classList.toggle('hot',!!hot);
+}
+/* 墨水泼溅特效 + 抖动 */
+function inkSplat(el){
+  if(!el)return;
+  var st=$('stage').getBoundingClientRect(),r=el.getBoundingClientRect();
+  var fl=isForceLand(),rw=fl?r.height:r.width,rh=fl?r.width:r.height;
+  var ex,ey;
+  if(fl){ // 旋转舞台：元素中心屏幕坐标转置回舞台局部坐标
+    ex=((r.top+r.bottom)/2-(st.top+st.height/2))+st.clientWidth/2;
+    ey=-((r.left+r.right)/2-(st.left+st.width/2))+st.clientHeight/2;
+  }else{
+    ex=r.left-st.left;ey=r.top-st.top;
+  }
+  for(var i=0;i<7;i++){
+    var s=document.createElement('span');s.className='splat';
+    var sz=6+Math.random()*12;
+    s.style.width=sz+'px';s.style.height=sz*(0.8+Math.random()*0.4)+'px';
+    if(fl){
+      s.style.left=(ex+(Math.random()*0.5-0.25)*rw-sz/2)+'px';
+      s.style.top=(ey+((Math.random()<0.5)?(-rh/2-8):(rh*(Math.random()*0.6-0.3))))+'px';
+    }else{
+      s.style.left=(ex+rw*(0.25+Math.random()*0.5)-sz/2)+'px';
+      s.style.top=(ey+((Math.random()<0.5)?-8:rh*(0.2+Math.random()*0.6)))+'px';
+    }
+    $('stage').appendChild(s);
+    (function(node){setTimeout(function(){if(node.parentNode)node.parentNode.removeChild(node)},760)})(s);
+  }
+}
+function shakeEl(el){if(!el)return;el.classList.remove('shk');void el.offsetWidth;el.classList.add('shk')}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+/* ============ 场景2：失忆画室（3 秒极限速画版） ============ */
+var CLUSTERS={
+  '海洋':['章鱼','水母','鱿鱼','墨鱼'],
+  '水果':['苹果','梨','桃子','李子'],
+  '交通':['自行车','摩托车','滑板车','三轮车'],
+  '动物':['猫','兔子','仓鼠','刺猬'],
+  '天气':['太阳','云朵','彩虹','闪电'],
+  '点心':['蛋糕','甜甜圈','冰淇淋','棒棒糖']
+};
+var memBoard=makeBoard($('memCanvas'),'3 秒！凭直觉画！');
+buildTools(memBoard,{tools:$('memBrushes'),sizes:$('memSizes'),actions:$('memActions'),colors:$('memColors'),status:'memStatus',onlyBlack:true});
+var mem={words:[],arts:[],idx:0,timer:0,left:0,TOTAL:3,skips:0,
+  jOrder:[],jIdx:0,correct:0,score:0,replayCancel:0,jTimer:0,dryRaf:0,submitted:false};
+function enterMemory(){
+  showScene('scene-memory');
+  $('memIntro').hidden=false;$('memDraw').hidden=true;$('memDry').hidden=true;$('memJudge').hidden=true;$('memResult').hidden=true;
+  stopMemTimers();
+}
+sceneStops['scene-memory']=stopMemTimers;
+function stopMemTimers(){
+  clearInterval(mem.timer);clearInterval(mem.jTimer);
+  cancelAnimationFrame(mem.dryRaf);
+  if(mem.replayCancel){mem.replayCancel();mem.replayCancel=0}
+}
+$('memStart').addEventListener('click',function(){
+  var keys=shuffle(Object.keys(CLUSTERS)).slice(0,5); // 5词两两不同簇
+  mem.words=keys.map(function(k){var ws=CLUSTERS[k];return {word:ws[rndi(0,ws.length-1)],cluster:k}});
+  mem.arts=[];mem.idx=0;mem.skips=0;mem.correct=0;mem.score=0;mem.submitted=false;
+  $('memIntro').hidden=true;$('memDraw').hidden=false;
+  memBeginWord();
+});
+function memBeginWord(){
+  memBoard.reset();
+  var w=mem.words[mem.idx];
+  $('memWord').textContent='请画：'+w.word;
+  $('memIdx').textContent='第 '+(mem.idx+1)+'/'+mem.words.length+' 词（'+w.cluster+'类）';
+  mem.left=mem.TOTAL;
+  setBar('memBar',1,false);
+  $('memTime').textContent=mem.TOTAL.toFixed(1);
+  clearInterval(mem.timer);
+  mem.timer=setInterval(function(){
+    mem.left-=0.1;
+    if(mem.left<=0){setBar('memBar',0,false);memFinishWord();return}
+    var frac=mem.left/mem.TOTAL;
+    setBar('memBar',frac,mem.left<=1.05); // 最后1秒变红
+    $('memTime').textContent=mem.left.toFixed(1);
+  },100);
+}
+$('memSkip').addEventListener('click',function(){mem.skips++;memFinishWord()});
+function memFinishWord(){
+  clearInterval(mem.timer);
+  var strokes=memBoard.getStrokes().slice();
+  var cv=document.createElement('canvas');cv.width=512;cv.height=512;
+  drawStrokesScaled(cv.getContext('2d'),strokes,512,512);
+  mem.arts.push({word:mem.words[mem.idx].word,cluster:mem.words[mem.idx].cluster,
+    strokes:strokes,n:strokes.length,img:cv.toDataURL('image/png')});
+  mem.idx++;
+  if(mem.idx<mem.words.length)memBeginWord();
+  else memDryStart();
+}
+function memDryStart(){
+  $('memDraw').hidden=true;$('memDry').hidden=false;
+  var lane=$('dryLane');
+  lane.querySelectorAll('.th').forEach(function(t){t.remove()});
+  var laneW=lane.clientWidth||600;
+  var ths=mem.arts.map(function(a){
+    var d=document.createElement('div');d.className='th sketch-border';
+    d.appendChild(thumbCanvas(a.strokes,96));
+    lane.appendChild(d);return d;
+  });
+  var t0=performance.now(),dur=8000;
+  reframe();
+  function anim(now){
+    if(curScene!=='scene-memory'||!$('memDry')||$('memDry').hidden)return;
+    var k=Math.min(1,(now-t0)/dur);
+    var travel=laneW+160;
+    ths.forEach(function(th,i){
+      var x=-140+i*38+k*travel;
+      th.style.left=x+'px';
+      var mid=Math.abs(x+48-laneW/2)<75;
+      th.style.opacity=mid?0.12:1;
+    });
+    if(k<1)mem.dryRaf=requestAnimationFrame(anim);
+    else memJudgeStart();
+  }
+  mem.dryRaf=requestAnimationFrame(anim);
+}
+function soulStars(n){return n<=1?5:n<=3?4:n<=6?3:n<=10?2:1}
+function memJudgeStart(){
+  $('memDry').hidden=true;$('memJudge').hidden=false;
+  mem.jOrder=shuffle(mem.arts);mem.jIdx=0;mem.correct=0;mem.score=0;
+  memJudgeShow();
+}
+function memJudgeShow(){
+  var art=mem.jOrder[mem.jIdx];
+  $('jdIdx').textContent='鉴定 '+(mem.jIdx+1)+'/'+mem.jOrder.length;
+  $('jdFb').textContent='';$('jdNext').disabled=true;$('jdNext').textContent=mem.jIdx<mem.jOrder.length-1?'下一幅 →':'看结算 →';
+  drawStrokesScaled($('jdCanvas').getContext('2d'),art.strokes,512,512);
+  var opts=shuffle(CLUSTERS[art.cluster]);
+  var box=$('jdOpts');box.innerHTML='';
+  opts.forEach(function(w){
+    var b=document.createElement('button');b.className='btn opt sketch-border';b.textContent=w;
+    b.onclick=function(){memAnswer(art,w,box)};
+    box.appendChild(b);
+  });
+  var left=15;clearInterval(mem.jTimer);
+  $('jdBar').style.width='100%';$('jdTime').textContent='15.0s';
+  reframe();
+  mem.jTimer=setInterval(function(){
+    left-=0.1;
+    if(left<=0){memAnswer(art,null,$('jdOpts'));return}
+    $('jdBar').style.width=(left/15*100)+'%';
+    $('jdTime').textContent=left.toFixed(1)+'s';
+  },100);
+}
+function memAnswer(art,pick,box){
+  clearInterval(mem.jTimer);
+  var ok=pick===art.word;
+  if(ok){mem.correct++;mem.score+=10}
+  Array.prototype.forEach.call(box.children,function(b){
+    b.disabled=true;
+    if(b.textContent===art.word)b.classList.add('sel');
+    if(pick&&b.textContent===pick&&!ok)b.classList.remove('sel');
+  });
+  $('jdFb').innerHTML=ok?'<span class="blue">答对了！回放作画过程……</span>':'<span class="accent">答错咯，正确答案是「'+art.word+'」</span>';
+  if(mem.replayCancel)mem.replayCancel();
+  mem.replayCancel=replayStrokes($('jdCanvas'),art.strokes,1800,function(){
+    $('jdNext').disabled=false;
+  });
+}
+$('jdNext').addEventListener('click',function(){
+  if(mem.jIdx<mem.jOrder.length-1){mem.jIdx++;memJudgeShow()}
+  else memResultShow();
+});
+function memResultShow(){
+  $('memJudge').hidden=true;$('memResult').hidden=false;
+  var allRight=mem.correct===mem.jOrder.length;
+  var bonus=allRight?50:0;
+  var gained=Math.max(0,mem.score+bonus-mem.skips*5);
+  addInk(gained);
+  var html='<p style="line-height:2;text-align:center">答对 <b class="blue">'+mem.correct+'</b>/'+mem.jOrder.length+
+    ' · 跳过 '+mem.skips+' 次 · 墨水 <b class="accent">+'+gained+'</b></p>';
+  if(allRight){
+    addTitle('神笔');
+    html+='<p style="text-align:center;font-size:18px" class="accent">全部答对！额外 +50，获得称号「神笔」！</p>';
+  }else{
+    var wrongs=mem.jOrder.slice().sort(function(a,b){return a.n-b.n});
+    html+='<div id="resList"><b>灵魂度排行（笔画越少越灵魂）：</b>'+wrongs.map(function(a){
+      var st=soulStars(a.n),s='';for(var i=0;i<st;i++)s+='★';
+      return '<div>《'+a.word+'》 '+a.n+' 笔 · 灵魂度 '+s+'</div>';
+    }).join('')+'</div>';
+  }
+  html+='<p class="small" style="text-align:center;margin-top:4px">3 秒的灵魂涂鸦，AI 都看不懂。</p>';
+  $('resBody').innerHTML=html;
+  $('resSubmit').disabled=mem.submitted;
+  $('resSubmit').onclick=function(){
+    var min=mem.jOrder.slice().sort(function(a,b){return a.n-b.n})[0];
+    save.subs.push({img:min.img,name:'《'+min.word+'》',artist:'你'});
+    mem.submitted=true;this.disabled=true;persist();
+    toast('已投稿！24小时内将有机会击倒其他小画家',2400);
+  };
+  $('resCard').onclick=function(){
+    var pick=mem.jOrder[rndi(0,mem.jOrder.length-1)];
+    showModal({title:'残局挑战卡',
+      html:'<div class="share-card"><div class="paper-panel sketch-border" style="width:170px;height:170px;padding:6px">'+
+        '<img src="'+pick.img+'" style="width:100%;height:100%;background:#fff"></div>'+
+        '<p style="font-size:17px;font-weight:800">你能认出我画的是什么吗？<br><span class="small">（模拟分享卡 · 接入微信后可真转发）</span></p></div>',
+      buttons:[{label:'收好',blue:true}]});
+  };
+  if(allRight){
+    showModal({title:'称号解锁',html:'<p style="text-align:center;font-size:20px;font-weight:800" class="accent">「神笔」<br><span class="small" style="color:#2B2B2B">画室烘干机含泪认证</span></p>',
+      buttons:[{label:'收下称号',big:true}]});
+  }
+}
+$('resAgain').addEventListener('click',function(){
+  $('memResult').hidden=true;$('memIntro').hidden=false;
+});
+
+/* ============ 场景3：猜谜酒馆（看图猜谜 · 输入框作答） ============ */
+/* ── 题包体系 ─────────────────────────────────────────────────────────
+   官方题包交付后在此追加 pack 或替换 builtin；图片版题包可扩展 draw 为图片路径渲染。
+   registerTavernPack(pack) 为预留挂载接口。每题自带类别标签 cat（印章样式展示）。 */
+function P(cat,ans,accept,hint,egg,draw){return {cat:cat,ans:ans,accept:accept||[ans],hint:hint||'',egg:egg||'',draw:draw}}
+var TAVERN_PACKS=[{packId:'builtin',name:'内置题包',author:'老墨',puzzles:[
+  /* ── 成语 ── */
+  P('成语','画蛇添足',null,'成语 · 先画蛇，再多画几只脚','在涂鸦游戏里画蛇添足，你也是很有精神',function(){return [D.snake(),D.feet()]}),
+  P('成语','对牛弹琴',null,'成语 · 一位“听众”根本不懂音乐','对牛弹琴：琴声再美，牛吃它的草',function(){return [D.cow(),D.qin()]}),
+  P('成语','守株待兔',null,'成语 · 一个树桩和一场车祸','守株待兔：兔子撞桩，农夫躺赢',function(){return [D.stump(),D.rabbit()]}),
+  P('成语','井底之蛙',null,'成语 · 井里住着一位“歌唱家”','井底之蛙：天只有井口那么大',function(){return [D.well(),D.frog()]}),
+  P('成语','一石二鸟',null,'成语 · 一块石头和两位“观众”','一石二鸟：精准投放，双倍收获',function(){return [D.stone(),D.bird(),D.bird()]}),
+  P('成语','指鹿为马',null,'成语 · 两种动物长得有点像','指鹿为马：赵高说它是马它就是马',function(){return [D.deer(),D.horse()]}),
+  /* ── 歇后语（答整句或后半句都算对）── */
+  P('歇后语','泥菩萨过江——自身难保',['自身难保','泥菩萨过江'],'歇后语 · 猜后半句：菩萨过了江会怎样？','',function(){return [D.bodha(),D.wave()]}),
+  P('歇后语','黄鼠狼给鸡拜年——没安好心',['没安好心','黄鼠狼给鸡拜年'],'歇后语 · 猜后半句：它拜年是为了什么？','',function(){return [D.weasel(),D.chicken()]}),
+  P('歇后语','猪八戒照镜子——里外不是人',['里外不是人','猪八戒照镜子'],'歇后语 · 猜后半句：镜子里外都是什么？','',function(){return [D.pig(),D.mirror()]}),
+  P('歇后语','十五个吊桶打水——七上八下',['七上八下','十五个吊桶打水'],'歇后语 · 猜后半句：看吊桶的高度！','',function(){return [D.bucketRow()]}),
+  P('歇后语','兔子的尾巴——长不了',['长不了','兔子的尾巴'],'歇后语 · 猜后半句：这尾巴注定怎样？','',function(){return [D.rabbit(),D.shortTail()]}),
+  /* ── 歌曲名 ── */
+  P('歌名','小星星',null,'歌曲名 · 一闪一闪亮晶晶','满天的星星都在看着你画',function(){return [D.star(),D.star(),D.note()]}),
+  P('歌名','两只老虎',null,'歌曲名 · 一只没有耳朵，一只没有尾巴','跑得快，跑得快～',function(){return [D.tiger(),D.tiger()]}),
+  P('歌名','月亮代表我的心',null,'歌曲名 · 天上一个它，心里一个它','',function(){return [D.moon(),D.heart()]}),
+  P('歌名','小苹果',null,'歌曲名 · 你是我的呀呀呀～','怎么爱你都不嫌多',function(){return [D.apple()]}),
+  P('歌名','童话',null,'歌曲名 · 一种住着公主的建筑','',function(){return [D.castle()]}),
+  /* ── 古诗名句 ── */
+  P('古诗','床前明月光',null,'古诗 · 疑是地上霜','李白深夜失眠现场',function(){return [D.bed(),D.moon(),D.rays()]}),
+  P('古诗','锄禾日当午',null,'古诗 · 汗滴禾下土','农民伯伯的正午',function(){return [D.hoe(),D.sunBig()]}),
+  P('古诗','春风又绿江南岸',null,'古诗 · 明月何时照我还','王安石的春天',function(){return [D.wind(),D.willow()]}),
+  /* ── 经典俗语 ── */
+  P('俗语','三个臭皮匠顶个诸葛亮',null,'俗语 · 三个小人 + 一把羽扇','团队的力量！',function(){return [D.threeMen(),D.fan()]}),
+  P('俗语','姜太公钓鱼愿者上钩',null,'俗语 · 直钩钓鱼的老者','愿者上钩',function(){return [D.fisher(),D.rod()]}),
+  /* ── 台词 / 动画梗 ── */
+  P('台词','我还会回来的',null,'台词 · 灰太狼的口号 + 一道弧线','《喜羊羊与灰太狼》经典退场白',function(){return [D.wolf(),D.arrowArc()]}),
+  P('台词','葫芦娃救爷爷',null,'动画 · 七个彩色小人排队','一个一个送，爷爷哭了',function(){return [D.gourds()]}),
+  /* ── 网络热梗（经久不衰型）── */
+  P('热梗','多喝热水',null,'热梗 · 一个杯子冒热气','直男关怀三件套之首',function(){return [D.cup(),D.steam()]}),
+  P('热梗','锦鲤附体',null,'热梗 · 发光的鱼，转发这条','转发这条涂鸦，本周好运',function(){return [D.koi()]}),
+  P('热梗','地铁老人看手机',null,'热梗 · 低头族 + 手机','经典表情包画面',function(){return [D.oldman(),D.phone()]})
+]}];
+/* 素材涂鸦元素库（每个 5-15 笔，墨线 + 局部马克笔色） */
+var D={
+  snake:function(){return [ST(ptsWav(.24,.60,.66,.50,.05,2.5,26)),ST(ptsCircle(.71,.47,.045,18)),
+    ST(ptsDot(.725,.46)),ST(ptsLine(.755,.455,.815,.43,3)),ST(ptsLine(.70,.505,.72,.565,3))]},
+  feet:function(){var a=[];for(var i=0;i<4;i++){var x=.33+i*.105;
+    a.push(ST(ptsLine(x,.615,x,.662,3)),ST(ptsLine(x,.662,x+.038,.668,2)))}return a},
+  shortTail:function(){return [ST(ptsCircle(.40,.63,.018,8)),ST(ptsLine(.415,.63,.45,.632,2))]},
+  cow:function(){return [MK(ptsCircle(.43,.52,.05,12),'#E8E2D2',10),
+    ST(ptsEllipse(.46,.55,.15,.10,28)),ST(ptsCircle(.66,.44,.06,16)),
+    ST(ptsLine(.63,.39,.60,.33,2)),ST(ptsLine(.69,.39,.72,.33,2)),
+    ST(ptsDot(.645,.43)),ST(ptsDot(.685,.43)),ST(ptsCircle(.665,.47,.022,8)),
+    ST(ptsLine(.38,.64,.37,.76,3)),ST(ptsLine(.44,.65,.44,.77,3)),ST(ptsLine(.52,.65,.52,.77,3)),ST(ptsLine(.57,.63,.58,.75,3)),
+    ST(ptsWav(.31,.50,.25,.64,.012,1.5,10))]},
+  qin:function(){return [ST(ptsRect(.34,.66,.38,.08)),
+    ST(ptsLine(.36,.685,.70,.685,6)),ST(ptsLine(.36,.703,.70,.703,6)),ST(ptsLine(.36,.721,.70,.721,6)),
+    ST(ptsDot(.355,.703)),ST(ptsDot(.725,.703))]},
+  rabbit:function(){return [ST(ptsCircle(.50,.42,.055,16)),
+    ST(ptsEllipse(.468,.335,.015,.05,10)),ST(ptsEllipse(.528,.335,.015,.05,10)),
+    ST(ptsEllipse(.52,.60,.10,.085,24)),ST(ptsCircle(.412,.598,.02,8)),
+    ST(ptsDot(.49,.415)),ST(ptsDot(.512,.435)),
+    ST(ptsLine(.455,.45,.425,.455,2)),ST(ptsLine(.455,.46,.425,.47,2)),
+    ST(ptsLine(.45,.665,.44,.71,2)),ST(ptsLine(.55,.67,.56,.71,2))]},
+  stump:function(){return [ST(ptsEllipse(.50,.42,.095,.038,18)),
+    ST(ptsLine(.405,.42,.42,.66,4)),ST(ptsLine(.595,.42,.58,.66,4)),ST(ptsLine(.42,.66,.58,.66,4)),
+    ST(ptsEllipse(.50,.42,.05,.02,12)),ST(ptsLine(.44,.52,.44,.62,3)),ST(ptsLine(.56,.52,.555,.62,3)),
+    ST(ptsLine(.42,.66,.38,.70,2)),ST(ptsLine(.58,.66,.62,.70,2))]},
+  well:function(){return [ST(ptsEllipse(.50,.46,.12,.045,18)),ST(ptsEllipse(.50,.46,.085,.03,12)),
+    ST(ptsLine(.38,.46,.40,.68,4)),ST(ptsLine(.62,.46,.60,.68,4)),
+    ST(ptsWav(.40,.68,.60,.68,.008,1,8)),ST(ptsLine(.40,.56,.60,.565,4)),ST(ptsLine(.40,.62,.60,.625,4)),
+    ST(ptsLine(.44,.40,.44,.30,2)),ST(ptsLine(.56,.40,.56,.30,2)),ST(ptsLine(.44,.30,.56,.30,2))]},
+  frog:function(){return [MK(ptsEllipse(.50,.62,.088,.056,18),'#4C9F70',14),
+    ST(ptsEllipse(.50,.62,.095,.062,22)),
+    ST(ptsCircle(.455,.545,.022,8)),ST(ptsCircle(.545,.545,.022,8)),
+    ST(ptsDot(.455,.545)),ST(ptsDot(.545,.545)),
+    ST(ptsLine(.45,.635,.55,.635,3)),
+    ST(ptsLine(.44,.665,.42,.715,2)),ST(ptsLine(.56,.665,.58,.715,2)),
+    ST(ptsWav(.58,.62,.64,.71,.02,1,8))]},
+  stone:function(){return [MK(ptsEllipse(.50,.64,.09,.055,18),'#BDB7AA',14),
+    ST(ptsEllipse(.50,.64,.10,.062,20)),
+    ST(ptsLine(.45,.63,.52,.60,3)),ST(ptsLine(.47,.665,.55,.645,3))]},
+  deer:function(){return [ST(ptsEllipse(.48,.56,.115,.078,24)),
+    ST(ptsLine(.565,.50,.615,.375,4)),ST(ptsEllipse(.645,.345,.038,.028,10)),
+    ST(ptsLine(.63,.315,.60,.26,2)),ST(ptsLine(.60,.285,.565,.245,2)),
+    ST(ptsLine(.66,.315,.665,.255,2)),ST(ptsLine(.665,.275,.70,.225,2)),
+    ST(ptsDot(.65,.342)),
+    ST(ptsLine(.40,.625,.39,.74,3)),ST(ptsLine(.45,.63,.45,.75,3)),ST(ptsLine(.52,.63,.52,.75,3)),ST(ptsLine(.56,.62,.575,.73,3)),
+    MK(ptsDot(.45,.54),'#C9A06B',7),MK(ptsDot(.51,.565),'#C9A06B',7),
+    ST(ptsLine(.365,.53,.34,.50,2))]},
+  horse:function(){return [ST(ptsEllipse(.47,.56,.13,.082,24)),
+    ST(ptsLine(.575,.51,.63,.37,4)),ST(ptsEllipse(.665,.345,.048,.03,10)),
+    ST(ptsWav(.585,.49,.64,.375,.014,2,10)),
+    ST(ptsDot(.685,.34)),ST(ptsDot(.705,.352)),
+    ST(ptsLine(.38,.63,.37,.75,3)),ST(ptsLine(.44,.64,.44,.76,3)),ST(ptsLine(.52,.64,.52,.76,3)),ST(ptsLine(.57,.62,.585,.74,3)),
+    ST(ptsWav(.345,.53,.27,.66,.02,1.2,10))]},
+  bodha:function(){return [MK(ptsCircle(.50,.52,.08,16),'#C9B8E8',18),
+    ST(ptsCircle(.50,.35,.085,20)),ST(ptsCircle(.50,.36,.048,14)),
+    ST(ptsDot(.485,.352)),ST(ptsDot(.515,.352)),ST(ptsCircle(.50,.375,.014,8,.4,2.7)),
+    ST(ptsLine(.44,.41,.37,.64,4)),ST(ptsLine(.56,.41,.63,.64,4)),
+    ST(ptsWav(.37,.64,.63,.64,.008,1.5,10)),
+    ST(ptsCircle(.50,.49,.02,8)),
+    ST(ptsLine(.44,.50,.56,.50,4)),
+    ST(ptsCircle(.42,.655,.02,8,3.4,6.0)),ST(ptsCircle(.50,.665,.02,8,3.4,6.0)),ST(ptsCircle(.58,.655,.02,8,3.4,6.0))]},
+  wave:function(){return [MK(ptsWav(.28,.62,.74,.62,.02,2.5,20),'#3B6EA5',10),
+    ST(ptsWav(.28,.62,.74,.62,.02,2.5,20)),
+    ST(ptsWav(.30,.70,.72,.70,.018,2.2,16)),
+    ST(ptsWav(.33,.77,.70,.77,.015,2,12))]},
+  weasel:function(){return [MK(ptsWav(.28,.56,.60,.51,.02,1.5,18),'#E8842C',12),
+    ST(ptsWav(.28,.52,.60,.48,.02,1.5,18)),ST(ptsWav(.28,.60,.60,.555,.02,1.5,18)),
+    ST(ptsCircle(.645,.49,.032,10)),ST(ptsLine(.635,.455,.62,.43,2)),
+    ST(ptsDot(.668,.485)),
+    ST(ptsWav(.28,.545,.14,.38,.03,1.2,12)),ST(ptsWav(.28,.565,.15,.42,.025,1.2,10)),
+    ST(ptsLine(.40,.60,.39,.655,2)),ST(ptsLine(.52,.585,.52,.64,2))]},
+  chicken:function(){return [MK(ptsWav(.565,.408,.615,.408,.012,1.5,8),'#E14B3B',9),
+    ST(ptsEllipse(.46,.58,.095,.075,22)),ST(ptsCircle(.585,.455,.042,12)),
+    ST(ptsWav(.565,.405,.615,.405,.012,1.5,8)),
+    ST(ptsLine(.627,.45,.663,.458,2)),ST(ptsLine(.663,.458,.627,.475,2)),
+    ST(ptsDot(.595,.445)),
+    ST(ptsWav(.365,.55,.30,.44,.025,1,8)),ST(ptsWav(.37,.58,.28,.50,.02,1,8)),
+    ST(ptsLine(.45,.655,.44,.70,2)),ST(ptsLine(.49,.657,.495,.70,2))]},
+  pig:function(){return [MK(ptsEllipse(.47,.56,.10,.075,20),'#E087A6',20),
+    ST(ptsEllipse(.47,.56,.115,.085,24)),ST(ptsCircle(.62,.51,.058,14)),
+    ST(ptsEllipse(.688,.51,.024,.018,8)),
+    ST(ptsDot(.683,.508)),ST(ptsDot(.695,.512)),
+    ST(ptsLine(.60,.455,.575,.415,2)),ST(ptsLine(.575,.415,.61,.44,2)),
+    ST(ptsDot(.615,.492)),
+    ST(ptsLine(.40,.635,.39,.70,2)),ST(ptsLine(.45,.642,.45,.70,2)),ST(ptsLine(.52,.642,.52,.70,2)),ST(ptsLine(.56,.63,.57,.69,2)),
+    ST(ptsCircle(.352,.52,.02,10,0,4.5))]},
+  mirror:function(){return [MK(ptsEllipse(.50,.44,.062,.092,16),'#D6E9F8',12),
+    ST(ptsEllipse(.50,.44,.075,.105,22)),ST(ptsEllipse(.50,.44,.055,.085,18)),
+    ST(ptsLine(.50,.545,.50,.635,3)),ST(ptsCircle(.50,.65,.018,8)),
+    ST(ptsLine(.455,.385,.475,.365,2)),ST(ptsLine(.452,.415,.468,.40,2))]},
+  bucket:function(x,y){return [ST(ptsLine(x-.035,y,x+.035,y,3)),
+    ST(ptsLine(x-.035,y,x-.027,y+.09,2)),ST(ptsLine(x+.035,y,x+.027,y+.09,2)),
+    ST(ptsLine(x-.027,y+.09,x+.027,y+.09,2)),
+    ST(ptsCircle(x,y+.012,.042,10,Math.PI,Math.PI*2))]},
+  bucketRow:function(){var a=[],xs=[.30,.40,.50,.60,.70],ys=[.46,.54,.46,.54,.46];
+    for(var i=0;i<5;i++)a=a.concat(D.bucket(xs[i],ys[i]));
+    a.push(MK(ptsWav(.24,.70,.76,.70,.015,2,18),'#3B6EA5',10));
+    a.push(ST(ptsWav(.24,.70,.76,.70,.015,2,18)));
+    a.push(ST(ptsLine(.50,.36,.50,.30,2)),ST(ptsCircle(.50,.47,.20,18,Math.PI*1.05,Math.PI*1.95)));
+    return a},
+  star:function(){return [MK(ptsStar(.5,.45,.088,.04),'#E9B824',12),ST(ptsStar(.5,.45,.10,.045))]},
+  tiger:function(){return [MK(ptsCircle(.44,.42,.062,14),'#E8842C',14),MK(ptsEllipse(.57,.60,.092,.058,18),'#E8842C',18),
+    ST(ptsCircle(.44,.42,.075,18)),
+    ST(ptsCircle(.38,.355,.025,8,Math.PI,Math.PI*2)),ST(ptsCircle(.50,.355,.025,8,Math.PI,Math.PI*2)),
+    ST(ptsLine(.415,.372,.455,.372,2)),ST(ptsLine(.42,.394,.45,.394,2)),
+    ST(ptsLine(.415,.372,.415,.394,2)),ST(ptsLine(.455,.372,.455,.394,2)),
+    ST(ptsDot(.425,.425)),ST(ptsDot(.458,.425)),
+    ST(ptsCircle(.44,.455,.022,8,0,Math.PI)),ST(ptsDot(.44,.443)),
+    ST(ptsLine(.39,.45,.405,.458,2)),ST(ptsLine(.475,.45,.46,.458,2)),
+    ST(ptsEllipse(.57,.60,.105,.072,22)),
+    ST(ptsLine(.55,.545,.543,.59,2)),ST(ptsLine(.585,.542,.578,.588,2)),ST(ptsLine(.62,.555,.612,.595,2)),
+    ST(ptsLine(.50,.655,.495,.71,2)),ST(ptsLine(.56,.66,.56,.712,2)),ST(ptsLine(.61,.65,.615,.705,2)),ST(ptsLine(.645,.63,.655,.71,2)),
+    ST(ptsWav(.665,.60,.735,.52,.02,1,8))]},
+  moon:function(){return [MK(ptsCircle(.47,.44,.085,16,1.6,4.7),'#E9B824',10),
+    ST(ptsCircle(.48,.44,.095,20,1.22,5.06)),
+    ST(ptsCircle(.545,.44,.08,16,1.45,4.85)),
+    ST(ptsDot(.43,.40)),ST(ptsDot(.41,.47))]},
+  heart:function(){var pts=ptsCircle(.464,.425,.036,10,Math.PI,0)
+      .concat(ptsCircle(.536,.425,.036,10,Math.PI,0).slice(1))
+      .concat(ptsLine(.572,.425,.50,.56,4).slice(1))
+      .concat(ptsLine(.50,.56,.428,.425,4).slice(1))
+      .concat(ptsCircle(.464,.425,.036,10,0,Math.PI).slice(1));
+    return [MK(pts,'#E14B3B',14),ST(pts)]},
+  apple:function(){return [MK(ptsCircle(.50,.53,.07,18),'#E14B3B',18),
+    ST(ptsCircle(.50,.53,.075,20)),
+    ST(ptsLine(.50,.455,.53,.405,3)),ST(ptsEllipse(.568,.418,.028,.014,8)),
+    ST(ptsCircle(.47,.505,.018,8,2.5,4.5))]},
+  castle:function(){return [MK(ptsRect(.35,.53,.30,.23),'#D6D6CE',16),
+    ST(ptsRect(.34,.52,.32,.24)),
+    ST(ptsRect(.295,.40,.10,.36)),ST(ptsRect(.605,.40,.10,.36)),
+    ST(ptsLine(.36,.52,.36,.485,1)),ST(ptsLine(.42,.52,.42,.485,1)),ST(ptsLine(.48,.52,.48,.485,1)),ST(ptsLine(.54,.52,.54,.485,1)),ST(ptsLine(.60,.52,.60,.485,1)),
+    ST(ptsLine(.305,.40,.305,.37,1)),ST(ptsLine(.335,.40,.335,.37,1)),ST(ptsLine(.615,.40,.615,.37,1)),ST(ptsLine(.645,.40,.645,.37,1)),
+    ST(ptsLine(.455,.76,.455,.665,2)),ST(ptsLine(.545,.76,.545,.665,2)),ST(ptsCircle(.50,.665,.045,10,Math.PI,0)),
+    ST(ptsDot(.35,.44)),ST(ptsDot(.65,.44)),
+    ST(ptsLine(.35,.40,.35,.315,2)),ST(ptsLine(.35,.315,.43,.332,2)),ST(ptsLine(.43,.332,.35,.352,2)),
+    ST(ptsLine(.36,.60,.64,.60,2)),ST(ptsLine(.40,.66,.40,.75,2)),ST(ptsLine(.50,.56,.50,.60,2))]},
+  bed:function(){return [ST(ptsLine(.30,.38,.30,.64,4)),ST(ptsLine(.74,.50,.74,.64,3)),
+    ST(ptsLine(.30,.56,.74,.56,6)),ST(ptsLine(.30,.64,.74,.64,6)),
+    ST(ptsRect(.325,.495,.12,.06)),
+    MK(ptsWav(.46,.555,.72,.60,.012,1,12),'#7A5BA6',14),
+    ST(ptsWav(.46,.555,.72,.60,.012,1,12)),
+    ST(ptsLine(.315,.64,.315,.68,1)),ST(ptsLine(.725,.64,.725,.68,1))]},
+  man:function(x,y,color){var a=[ST(ptsCircle(x,y-.10,.028,10)),
+    ST(ptsLine(x,y-.072,x,y-.02,3)),ST(ptsLine(x-.03,y-.055,x+.03,y-.055,3)),
+    ST(ptsLine(x,y-.02,x-.025,y,2)),ST(ptsLine(x,y-.02,x+.025,y,2))];
+    if(color)a.unshift(MK(ptsDot(x,y-.135),color,9));return a},
+  threeMen:function(){return D.man(.34,.64).concat(D.man(.50,.66)).concat(D.man(.66,.64))},
+  fan:function(){return [ST(ptsLine(.50,.565,.50,.72,3)),
+    ST(ptsCircle(.50,.50,.078,14,Math.PI*1.15,Math.PI*1.85)),
+    ST(ptsCircle(.50,.53,.042,10,Math.PI*1.2,Math.PI*1.8)),
+    ST(ptsLine(.50,.53,.455,.455,3)),ST(ptsLine(.50,.53,.50,.42,3)),ST(ptsLine(.50,.53,.545,.455,3))]},
+  fisher:function(){return [ST(ptsLine(.40,.40,.56,.40,4)),ST(ptsCircle(.48,.40,.05,10,Math.PI,0)),
+    ST(ptsCircle(.48,.435,.028,10)),ST(ptsDot(.47,.43)),ST(ptsDot(.492,.43)),
+    ST(ptsWav(.475,.462,.505,.56,.008,1,8)),
+    ST(ptsLine(.44,.50,.40,.70,4)),ST(ptsLine(.52,.50,.56,.70,4)),ST(ptsLine(.40,.70,.56,.70,4)),
+    ST(ptsLine(.52,.55,.60,.505,3)),
+    ST(ptsEllipse(.47,.725,.10,.028,10))]},
+  rod:function(){return [ST(ptsLine(.58,.52,.80,.28,5)),
+    ST(ptsLine(.80,.28,.80,.545,4)),ST(ptsCircle(.80,.565,.015,8,1.2,4.6)),
+    ST(ptsEllipse(.75,.63,.032,.018,10)),
+    ST(ptsLine(.72,.63,.69,.60,2)),ST(ptsLine(.72,.63,.69,.66,2)),
+    ST(ptsDot(.735,.625))]},
+  wolf:function(){return [MK(ptsCircle(.50,.44,.062,14),'#B8B8B0',14),
+    ST(ptsCircle(.50,.44,.075,18)),
+    ST(ptsLine(.445,.382,.415,.298,2)),ST(ptsLine(.415,.298,.468,.345,2)),
+    ST(ptsLine(.555,.382,.585,.298,2)),ST(ptsLine(.585,.298,.532,.345,2)),
+    ST(ptsLine(.545,.415,.578,.455,2)),ST(ptsLine(.578,.415,.545,.455,2)),
+    ST(ptsLine(.425,.415,.452,.425,2)),ST(ptsLine(.478,.428,.452,.425,2)),
+    ST(ptsEllipse(.50,.478,.04,.026,10)),ST(ptsDot(.50,.47)),
+    ST(ptsWav(.465,.482,.535,.482,.006,1,6)),
+    ST(ptsWav(.42,.525,.58,.525,.012,1,8))]},
+  arrowArc:function(){return [ST(ptsCircle(.50,.60,.16,18,Math.PI,Math.PI*2)),
+    ST(ptsLine(.66,.60,.635,.552,2)),ST(ptsLine(.66,.60,.685,.552,2)),
+    ST(ptsLine(.30,.44,.38,.44,3)),ST(ptsLine(.28,.48,.34,.48,3))]},
+  gourds:function(){var cs=['#E14B3B','#E8842C','#E9B824','#4C9F70','#3B6EA5','#7A5BA6','#E087A6'],a=[];
+    for(var i=0;i<7;i++)a=a.concat(D.man(.22+i*.093,.64,cs[i]));
+    return a},
+  cup:function(){return [MK(ptsRect(.455,.555,.09,.115),'#E8842C',12),
+    ST(ptsLine(.43,.46,.45,.68,4)),ST(ptsLine(.57,.46,.55,.68,4)),
+    ST(ptsLine(.43,.46,.57,.46,3)),ST(ptsLine(.45,.68,.55,.68,3)),
+    ST(ptsCircle(.585,.55,.03,10,-1.2,1.2)),ST(ptsLine(.445,.55,.555,.55,3))]},
+  steam:function(){function vp(cx,cy0,h,ph){var a=[];for(var i=0;i<=14;i++){var t=i/14;
+      a.push({x:cx+Math.sin(t*2.5*Math.PI+ph)*.014,y:cy0-h*t})}return a}
+    return [ST(vp(.475,.42,.11,0)),ST(vp(.525,.42,.09,1.6))]},
+  koi:function(){return [MK(ptsEllipse(.47,.55,.11,.058,20),'#E14B3B',16),
+    ST(ptsEllipse(.47,.55,.118,.065,22)),
+    ST(ptsLine(.355,.55,.298,.505,2)),ST(ptsLine(.355,.55,.298,.595,2)),
+    ST(ptsDot(.55,.538)),
+    ST(ptsWav(.44,.585,.52,.585,.012,1,8)),
+    ST(ptsCircle(.42,.545,.02,8,0,Math.PI)),ST(ptsCircle(.49,.552,.02,8,0,Math.PI)),
+    ST(ptsStar(.63,.38,.02,.009)),ST(ptsStar(.68,.46,.015,.007)),ST(ptsStar(.60,.30,.013,.006)),
+    ST(ptsLine(.66,.33,.71,.28,3)),ST(ptsLine(.70,.40,.76,.37,3))]},
+  phone:function(){return [ST(ptsRect(.44,.42,.14,.24)),ST(ptsRect(.457,.452,.106,.155)),
+    ST(ptsDot(.51,.632)),
+    ST(ptsLine(.60,.38,.655,.33,2)),ST(ptsLine(.62,.42,.675,.40,2))]},
+  oldman:function(){return [ST(ptsCircle(.42,.46,.04,12)),ST(ptsLine(.375,.432,.465,.432,3)),
+    ST(ptsDot(.408,.458)),ST(ptsDot(.434,.458)),ST(ptsWav(.404,.48,.438,.48,.004,1,6)),
+    ST(ptsWav(.42,.50,.53,.575,.012,1,8)),
+    ST(ptsLine(.46,.55,.53,.565,3)),
+    ST(ptsRect(.515,.525,.05,.085)),ST(ptsLine(.522,.538,.558,.538,2)),
+    ST(ptsLine(.45,.60,.44,.70,2)),ST(ptsLine(.50,.59,.52,.695,2))]},
+  rays:function(){return [MK(ptsLine(.56,.50,.44,.66,4),'#E9B824',8),ST(ptsLine(.56,.50,.44,.66,4)),
+    MK(ptsLine(.60,.55,.48,.71,4),'#E9B824',8),ST(ptsLine(.60,.55,.48,.71,4)),
+    MK(ptsLine(.52,.45,.40,.61,4),'#E9B824',8),ST(ptsLine(.52,.45,.40,.61,4))]},
+  hoe:function(){return [MK(ptsLine(.36,.38,.28,.30,2),'#BDB7AA',10),
+    ST(ptsLine(.36,.38,.62,.68,6)),
+    ST(ptsLine(.36,.38,.275,.298,2)),ST(ptsLine(.275,.298,.40,.255,2)),ST(ptsLine(.40,.255,.36,.38,2)),
+    ST(ptsLine(.33,.335,.395,.308,2))]},
+  sunBig:function(){return [MK(ptsCircle(.5,.45,.095,18),'#E14B3B',20),ST(ptsCircle(.5,.45,.105,20))]
+    .concat(ptsRays(.5,.45,.145,.215,8).map(function(p){return ST(p)}))},
+  wind:function(){return [ST(ptsWav(.30,.50,.60,.48,.02,1.5,16)),ST(ptsCircle(.655,.465,.038,12,1.0,5.6)),
+    ST(ptsWav(.32,.58,.56,.57,.018,1.2,14)),ST(ptsCircle(.61,.555,.03,10,1.0,5.4))]},
+  willow:function(){function droop(sx,sy,dx){var a=[];for(var i=0;i<=12;i++){var t=i/12;
+      a.push({x:sx+dx*t,y:sy+t*t*.26})}return a}
+    return [ST(ptsLine(.50,.38,.495,.55,4)),
+      ST(droop(.46,.40,-.05)),ST(droop(.50,.39,-.01)),ST(droop(.53,.40,.06)),ST(droop(.505,.41,.03)),
+      MK(ptsDot(.415,.52),'#4C9F70',7),MK(ptsDot(.49,.55),'#4C9F70',7),MK(ptsDot(.575,.53),'#4C9F70',7),MK(ptsDot(.53,.58),'#4C9F70',7),
+      ST(ptsWav(.42,.72,.60,.72,.008,1.5,10))]},
+  note:function(){return [MK(ptsCircle(.47,.595,.02,8),'#3B6EA5',12),
+    ST(ptsCircle(.47,.595,.024,10)),ST(ptsLine(.494,.585,.494,.415,3)),
+    ST(ptsWav(.494,.415,.532,.452,.012,.6,6))]},
+  bird:function(){return [ST(ptsEllipse(.50,.52,.055,.042,14)),ST(ptsCircle(.565,.465,.026,8)),
+    ST(ptsLine(.59,.462,.618,.468,1)),ST(ptsLine(.618,.468,.59,.478,1)),ST(ptsDot(.568,.458)),
+    ST(ptsWav(.47,.50,.535,.478,.02,1,8)),
+    ST(ptsLine(.45,.53,.41,.50,2)),ST(ptsLine(.45,.545,.405,.535,2)),
+    ST(ptsLine(.49,.562,.485,.60,2)),ST(ptsLine(.51,.562,.515,.60,2))]}
+};
+var tav={official:[],qs:[],idx:0,score:0,combo:0,best:0,correctN:0,timer:0,left:0,
+  cancel:0,hintUsed:false,arts:[],locked:false};
+function resolvePack(pack){
+  return (pack.puzzles||[]).map(function(p){
+    var parts=p.draw?p.draw():(p.parts||[]);
+    var strokes=[];
+    parts.forEach(function(g){if(g&&g.length)g.forEach(function(s){strokes.push(s)})});
+    return {cat:p.cat,ans:p.ans,accept:(p.accept&&p.accept.length)?p.accept:[p.ans],
+      hint:p.hint||'',egg:p.egg||'',strokes:strokes,
+      author:pack.author||'老墨',packId:pack.packId,npc:true};
+  });
+}
+/* 官方题包挂载接口：交付的新题包调用 registerTavernPack 即可进池 */
+function registerTavernPack(pack){
+  if(!pack||!pack.packId||!pack.puzzles||!pack.puzzles.length)return false;
+  TAVERN_PACKS.push(pack);
+  tav.official=tav.official.concat(resolvePack(pack));
+  return true;
+}
+TAVERN_PACKS.forEach(function(p){tav.official=tav.official.concat(resolvePack(p))});
+function enterTavern(){
+  showScene('scene-tavern');
+  drawTavernKeeper();
+  renderProps();
+  $('tavHome').hidden=false;$('tavPlay').hidden=true;$('tavCreate').hidden=true;
+  $('tavScore').textContent='0';$('tavCombo').textContent='0';
+  var poolN=tav.official.length+save.approvedQs.length;
+  $('tavBoardLine').innerHTML='题库 '+poolN+' 题 · 今日 5 题轮换<br>在输入框写下答案，回车提交';
+  $('tavFlowLine').textContent=save.tavFlow>0?('酒馆今日流水：'+save.tavFlow+' 朵鲜花，老墨笑开了花'):'给谜题图送花，老墨记在流水账上';
+  var c=$('tavCanvas').getContext('2d');c.fillStyle='#FFFFFF';c.fillRect(0,0,512,512);
+  c.fillStyle='rgba(43,43,43,.5)';c.font='16px sans-serif';c.textAlign='center';
+  c.fillText('老墨的谜题马上开始……',256,250);c.textAlign='left';
+  $('tavLove').innerHTML='';
+}
+sceneStops['scene-tavern']=function(){clearInterval(tav.timer);if(tav.cancel){tav.cancel();tav.cancel=0}};
+function drawTavernKeeper(){
+  var cv=$('tavKeeper'),c=cv.getContext('2d');
+  c.clearRect(0,0,200,120);c.strokeStyle=INK;c.lineWidth=2;
+  wCircle(c,100,44,22,3,'#FFFFFF',2);
+  c.fillStyle=INK;c.beginPath();c.arc(93,40,2.2,0,7);c.arc(107,40,2.2,0,7);c.fill();
+  wLine(c,88,52,112,52,4,1.5);
+  c.strokeStyle='#3B6EA5';c.lineWidth=2.4;
+  wCircle(c,93,40,5.5,31);wCircle(c,107,40,5.5,32);
+  c.strokeStyle=INK;c.lineWidth=2;
+  wLine(c,70,26,130,24,5,2);
+  wRect(c,70,66,60,54,6,'#FFFFFF');
+  c.lineWidth=1.2;
+  for(var i=0;i<3;i++)wLine(c,76,78+i*13,124,76+i*13,8+i,0.8);
+  wCircle(c,58,90,5,12,'#E14B3B',1);
+}
+function playerQToPuzzle(q){
+  return {cat:q.cat,ans:q.ans,accept:q.accept&&q.accept.length?q.accept:[q.ans],
+    hint:q.hint||'',egg:'玩家出品，必属精品',strokes:q.strokes||[],
+    author:q.author||('镇民'+(q.id||'')),pid:q.id,player:true};
+}
+$('tavStart').addEventListener('click',function(){
+  var pool=tav.official.concat(save.approvedQs.map(playerQToPuzzle));
+  if(!pool.length){toast('题库是空的，先去出题或等官方题包',1800);return}
+  var rng=mulberry32(hashStr(todayStr()+'tavern2'));
+  tav.qs=shuffle(pool,rng).slice(0,5);
+  tav.idx=0;tav.score=0;tav.combo=0;tav.best=0;tav.correctN=0;tav.arts=[];
+  $('tavHome').hidden=true;$('tavPlay').hidden=false;$('tavCreate').hidden=true;
+  reframe();
+  tavPlayQ();
+});
+function tavPlayQ(){
+  if(curScene!=='scene-tavern')return;
+  var q=tav.qs[tav.idx];
+  tav.locked=false;tav.hintUsed=false;
+  $('tavCat').textContent=q.cat||'谜题';
+  $('tavTitle').textContent='第 '+(tav.idx+1)+'/'+tav.qs.length+' 题';
+  $('tavAuthor').textContent=(q.player?'玩家出品 · ':'老墨出品 · ')+q.author;
+  $('tavFb').textContent='';$('tavHintBtn').disabled=false;
+  $('tavBar').style.width='100%';
+  var inp=$('tavInput');inp.value='';inp.disabled=false;
+  makeLoveBar($('tavLove'),q.pid?('q:'+q.pid):('tav:'+normAns(q.ans)),
+    {by:q.player?'player':'npc',name:q.ans,author:q.author});
+  var c=$('tavCanvas').getContext('2d');c.fillStyle='#FFFFFF';c.fillRect(0,0,512,512);
+  if(tav.cancel)tav.cancel();
+  tav.cancel=replayStrokes($('tavCanvas'),q.strokes,2500,function(){});
+  var left=30;clearInterval(tav.timer);
+  tav.timer=setInterval(function(){
+    left-=0.1;
+    if(left<=0){tavTimeout();return}
+    $('tavBar').style.width=(left/30*100)+'%';
+  },100);
+  reframe();
+  setTimeout(function(){if(curScene==='scene-tavern'&&!tav.locked)inp.focus()},2600);
+}
+function tavAccepts(q){return [q.ans].concat(q.accept||[])}
+function tavCheck(){
+  if(tav.locked)return;
+  var q=tav.qs[tav.idx];
+  var inp=$('tavInput');
+  var v=normAns(inp.value);
+  if(!v){shakeEl(inp);toast('先写下你的答案',1200);return}
+  var ok=tavAccepts(q).some(function(a){return normAns(a)===v});
+  if(ok)tavRight(q);else tavWrong(inp);
+}
+function tavRight(q){
+  tav.locked=true;clearInterval(tav.timer);
+  tav.combo++;tav.correctN++;tav.best=Math.max(tav.best,tav.combo);
+  var pts=10+(tav.combo-1)*2;tav.score+=pts;
+  $('tavScore').textContent=tav.score;$('tavCombo').textContent=tav.combo;
+  $('tavFb').innerHTML='<span class="blue">答对啦！+'+pts+' 分'+(tav.combo>1?'（连对 x'+tav.combo+'）':'')+'</span>'+
+    (q.egg?'<br><span class="small">'+q.egg+'</span>':'');
+  $('tavInput').disabled=true;
+  toast('答对！+10 起，连对每击 +2',1400);
+  setTimeout(function(){if(curScene==='scene-tavern')tavNext()},1200);
+}
+function tavWrong(inp){
+  tav.combo=0;$('tavCombo').textContent='0';
+  shakeEl(inp);inkSplat(inp);
+  $('tavFb').innerHTML='<span class="accent">不对，再想想！（墨水泼了一地）</span>';
+}
+function tavHint(){
+  if(tav.locked||tav.hintUsed)return;
+  var q=tav.qs[tav.idx];
+  tav.hintUsed=true;tav.score-=2;
+  $('tavHintBtn').disabled=true;
+  $('tavFb').innerHTML='<span class="blue">提示（-2 分）：'+(q.hint||('首字「'+q.ans.charAt(0)+'」'))+'</span>';
+}
+function tavTimeout(){
+  if(tav.locked)return;
+  tav.locked=true;clearInterval(tav.timer);
+  tavReveal('时间到！老墨把答案收走了',false);
+}
+function tavGive(){
+  if(tav.locked)return;
+  tav.locked=true;clearInterval(tav.timer);
+  tav.score-=5;tav.combo=0;
+  $('tavScore').textContent=tav.score;$('tavCombo').textContent='0';
+  tavReveal('放弃（-5 分）',true);
+}
+function tavReveal(prefix){
+  var q=tav.qs[tav.idx];
+  $('tavFb').innerHTML='<span class="accent">'+prefix+' · 答案是「'+q.ans+'」</span>'+
+    (q.player?'<br><span class="small">玩家出品 · '+q.author+'</span>':'');
+  $('tavInput').disabled=true;
+  setTimeout(function(){if(curScene==='scene-tavern')tavNext()},1600);
+}
+function tavNext(){
+  tav.idx++;
+  if(tav.idx<tav.qs.length)tavPlayQ();
+  else tavSettle();
+}
+function tavSettle(){
+  var gained=Math.max(0,tav.score);
+  addInk(gained);
+  var flowerArt=null,maxF=0;
+  tav.qs.forEach(function(q){
+    var key=q.pid?('q:'+q.pid):('tav:'+normAns(q.ans));
+    var rec=save.artLove[key];
+    if(rec&&rec.f>maxF){maxF=rec.f;flowerArt=q}
+  });
+  var html='<p style="line-height:2.2;text-align:center;font-size:17px">答对 <b class="blue">'+tav.correctN+'/'+tav.qs.length+
+    '</b> 题<br>最高连对 <b class="accent">x'+tav.best+'</b><br>墨水 <b class="accent">+'+gained+'</b>（1 分 = 1 墨水）</p>';
+  if(flowerArt&&maxF>0)html+='<p class="small" style="text-align:center">今日镇花：《'+flowerArt.ans+'》以 '+maxF+' 朵鲜花登顶！</p>';
+  if(save.tavFlow>0)html+='<p class="small" style="text-align:center">酒馆流水：官方图共收到 '+save.tavFlow+' 朵鲜花，老墨笑开了花。</p>';
+  showModal({title:'今日特调 · 结算',html:html,
+    buttons:[{label:'回广场',big:true,onClick:function(){goPlaza()}},{label:'再喝一杯',blue:true,onClick:function(){enterTavern()}}]});
+}
+$('tavSend').addEventListener('click',tavCheck);
+$('tavInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){e.preventDefault();tavCheck()}
+  e.stopPropagation();
+});
+$('tavHintBtn').addEventListener('click',tavHint);
+$('tavGiveBtn').addEventListener('click',tavGive);
+
+/* ── 我来出题（玩家投稿） ── */
+var ctBoard=makeBoard($('ctCanvas'),'在这里画投稿素材…');
+buildTools(ctBoard,{tools:$('ctBrushes'),sizes:$('ctSizes'),actions:$('ctActions'),colors:$('ctColors'),status:'ctStatus'});
+var CT_CATS=['成语','歇后语','歌名','古诗','热梗','台词','自定义'];
+var ctState={cat:''};
+(function(){
+  var box=$('ctCats');
+  CT_CATS.forEach(function(cn){
+    var b=document.createElement('button');b.className='btn sketch-border';b.style.padding='4px 10px';b.style.fontSize='13px';
+    b.textContent=cn;
+    b.onclick=function(){ctState.cat=cn;
+      box.querySelectorAll('button').forEach(function(x){x.classList.toggle('sel',x===b)});
+      var custInp=$('ctCustomCat');custInp.hidden=cn!=='自定义';
+      var mb=voiceSt.ctCustomCat&&voiceSt.ctCustomCat.btn;if(mb)mb.hidden=custInp.hidden; // 麦克风跟随输入框显隐
+    };
+    box.appendChild(b);
+  });
+})();
+$('tavCreateBtn').addEventListener('click',function(){
+  $('tavHome').hidden=true;$('tavPlay').hidden=true;$('tavCreate').hidden=false;
+  ctBoard.reset();ctState.cat='';
+  $('ctAns').value='';$('ctHint').value='';$('ctCustomCat').value='';$('ctCustomCat').hidden=true;
+  if(voiceSt.ctCustomCat&&voiceSt.ctCustomCat.btn)voiceSt.ctCustomCat.btn.hidden=true;
+  $('ctCats').querySelectorAll('button').forEach(function(x){x.classList.remove('sel')});
+  reframe();
+});
+$('ctBack').addEventListener('click',function(){
+  $('tavCreate').hidden=true;$('tavHome').hidden=false;
+});
+$('ctSubmit').addEventListener('click',function(){
+  var cat=ctState.cat;
+  if(!cat){toast('先选一个类别',1500);return}
+  if(cat==='自定义'){
+    cat=($('ctCustomCat').value||'').trim();
+    if(!cat){toast('自定义标签还没填',1500);shakeEl($('ctCustomCat'));return}
+  }
+  var ans=($('ctAns').value||'').trim();
+  if(!ans){toast('答案还没填',1500);shakeEl($('ctAns'));return}
+  var strokes=ctBoard.getStrokes();
+  if(!strokes.length){toast('画点素材暗示答案吧（2~4 个涂鸦）',1800);return}
+  var q={id:'u'+Date.now()+rndi(100,999),cat:cat,ans:ans,accept:[ans],
+    hint:($('ctHint').value||'').trim(),author:save.title||'无名画师',
+    strokes:strokes.slice(0,60),img:thumbCanvas(strokes,128).toDataURL('image/png'),
+    date:todayStr(),state:'pending',reason:'',rewarded:false};
+  save.pendingQs.unshift(q);persist();
+  toast('投稿成功！等待审核，通过后 +20 墨水',2200);
+  $('tavCreate').hidden=true;$('tavHome').hidden=false;
+});
+/* ── 审核台（模拟后台，策划演示用） ── */
+function showReview(){
+  var root=$('modalRoot');
+  var pend=save.pendingQs.filter(function(q){return q.state==='pending'});
+  var done=save.pendingQs.filter(function(q){return q.state!=='pending'});
+  var html='<h3 class="uw">审核台 · 玩家投稿</h3>';
+  if(!pend.length)html+='<p class="small">暂时没有待审投稿。</p>';
+  pend.forEach(function(q){
+    html+='<div class="rv-item"><img src="'+q.img+'"><div style="flex:1;min-width:0">'+
+      '<b>《'+esc(q.ans)+'》</b> <span class="badge pd">'+esc(q.cat)+'</span><br>'+
+      '<span class="small">by '+esc(q.author)+' · '+esc(q.date)+' · 提示：'+esc(q.hint||'无')+'</span></div>'+
+      '<div style="display:flex;flex-direction:column;gap:5px">'+
+      '<button class="btn" data-ap="'+q.id+'" style="padding:4px 10px;font-size:12px">通过(+20)</button>'+
+      '<button class="btn blu" data-rj="'+q.id+'|敏感词" style="padding:4px 10px;font-size:12px">驳回·敏感词</button>'+
+      '<button class="btn blu" data-rj="'+q.id+'|不像" style="padding:4px 10px;font-size:12px">驳回·不像</button>'+
+      '<button class="btn blu" data-rj="'+q.id+'|重复" style="padding:4px 10px;font-size:12px">驳回·重复</button>'+
+      '</div></div>';
+  });
+  if(done.length){
+    html+='<p class="small" style="margin-top:10px"><b>历史：</b>'+done.map(function(q){
+      return '《'+esc(q.ans)+'》'+(q.state==='ok'?'<span class="badge ok">通过</span>':'<span class="badge no">驳回·'+esc(q.reason||'')+'</span>');
+    }).join('　')+'</p>';
+  }
+  html+='<div class="mbtns"><button class="btn big" id="rvClose">关闭</button></div>';
+  root.innerHTML='';root.classList.add('on');
+  var m=document.createElement('div');m.className='modal sketch-border';
+  m.innerHTML=html;root.appendChild(m);
+  requestAnimationFrame(function(){wobbleAll(root)});
+  m.querySelectorAll('[data-ap]').forEach(function(b){
+    b.onclick=function(){approveQ(b.dataset.ap)};
+  });
+  m.querySelectorAll('[data-rj]').forEach(function(b){
+    b.onclick=function(){var pr=b.dataset.rj.split('|');rejectQ(pr[0],pr[1])};
+  });
+  $('rvClose').onclick=closeModal;
+}
+function approveQ(id){
+  var q=null;save.pendingQs.forEach(function(p){if(p.id===id&&p.state==='pending')q=p});
+  if(!q)return;
+  q.state='ok';
+  if(!q.rewarded){q.rewarded=true;addInk(20)}
+  save.approvedQs.push(q);persist();
+  toast('《'+q.ans+'》已进酒馆题池！奖励 +20 墨水',2200);
+  showReview();
+}
+function rejectQ(id,reason){
+  var q=null;save.pendingQs.forEach(function(p){if(p.id===id&&p.state==='pending')q=p});
+  if(!q)return;
+  q.state='no';q.reason=reason;persist();
+  toast('已驳回《'+q.ans+'》：'+reason,1800);
+  showReview();
+}
+$('tavReviewBtn').addEventListener('click',showReview);
+
+/* ============ 场景4：你画我猜馆 · AI 猜画（本地引擎，正式版接入多模态大模型） ============ */
+/* 归一化(0-1)参考涂鸦 → 512 画布空间 */
+function NX(strokes){return strokes.map(function(s){return {pts:s.pts.map(function(p){return {x:p.x*512,y:p.y*512}}),color:s.color,size:s.size}})}
+function refFlower(){
+  var a=[ST(ptsCircle(.5,.42,.026,10))];
+  for(var i=0;i<5;i++){var t=-Math.PI/2+i*Math.PI*2/5;
+    a.push(ST(ptsCircle(.5+Math.cos(t)*.054,.42+Math.sin(t)*.054,.026,10)))}
+  a.push(ST(ptsLine(.5,.468,.5,.66,4)));a.push(ST(ptsWav(.5,.57,.565,.61,.01,1,6)));
+  return a;
+}
+/* AI 词库画像：10 个参考涂鸦（太阳/章鱼/蛋糕/自行车/雨伞/鱼/花/房子/星星/蜗牛） */
+var AI_POOL=[
+  {w:'太阳',art:NX([ST(ptsCircle(.5,.42,.095,20))].concat(ptsRays(.5,.42,.13,.19,8).map(function(p){return ST(p)})))},
+  {w:'章鱼',art:NX([ST(ptsEllipse(.5,.38,.085,.075,20)),
+    ST(ptsWav(.44,.445,.40,.62,.02,1.5,10)),ST(ptsWav(.48,.45,.47,.64,.02,1.5,10)),
+    ST(ptsWav(.52,.45,.53,.64,.02,1.5,10)),ST(ptsWav(.56,.445,.60,.61,.02,1.5,10)),
+    ST(ptsDot(.47,.365)),ST(ptsDot(.535,.365))])},
+  {w:'蛋糕',art:NX([ST(ptsRect(.36,.52,.28,.22)),
+    ST(ptsWav(.36,.52,.64,.52,.02,3,18)),
+    ST(ptsLine(.5,.40,.5,.30,3)),ST(ptsDot(.5,.275)),
+    ST(ptsLine(.36,.62,.64,.62,2))])},
+  {w:'自行车',art:NX([ST(ptsCircle(.34,.62,.085,18)),ST(ptsCircle(.66,.62,.085,18)),
+    ST(ptsLine(.34,.62,.45,.47,3)),ST(ptsLine(.45,.47,.58,.47,3)),ST(ptsLine(.58,.47,.66,.62,2)),
+    ST(ptsLine(.45,.47,.42,.40,2)),ST(ptsLine(.40,.40,.46,.40,2))])},
+  {w:'雨伞',art:NX([ST(ptsCircle(.5,.48,.155,18,Math.PI,Math.PI*2)),
+    ST(ptsWav(.345,.48,.655,.48,.018,3,16)),
+    ST(ptsLine(.5,.325,.5,.28,2)),
+    ST(ptsLine(.5,.48,.5,.71,4)),
+    ST(ptsCircle(.455,.71,.045,8,0,Math.PI))])},
+  {w:'鱼',art:NX([ST(ptsEllipse(.5,.52,.12,.07,20)),
+    ST(ptsLine(.38,.52,.30,.45,3)),ST(ptsLine(.38,.52,.30,.59,3)),ST(ptsLine(.30,.45,.30,.59,2)),
+    ST(ptsDot(.565,.505)),ST(ptsWav(.52,.55,.58,.57,.006,1,6))])},
+  {w:'花',art:NX(refFlower())},
+  {w:'房子',art:NX([ST(ptsRect(.36,.5,.28,.24)),
+    ST(ptsLine(.32,.5,.5,.36,3)),ST(ptsLine(.5,.36,.68,.5,3)),ST(ptsLine(.32,.5,.68,.5,2)),
+    ST(ptsRect(.46,.60,.09,.14)),ST(ptsRect(.55,.55,.05,.05))])},
+  {w:'星星',art:NX([ST(ptsStar(.5,.45,.11,.048)),ST(ptsStar(.68,.32,.035,.015)),ST(ptsStar(.35,.30,.028,.012))])},
+  {w:'蜗牛',art:NX([ST(ptsSpiral(.52,.50)),
+    ST(ptsWav(.36,.62,.68,.62,.015,1.5,14)),
+    ST(ptsLine(.36,.62,.32,.54,2)),ST(ptsDot(.32,.525)),
+    ST(ptsLine(.38,.62,.365,.545,2)),ST(ptsDot(.355,.525))])}
+];
+/* 本地 AI 引擎：按笔画特征（笔画数/总点数/包围盒宽高比/墨量/用色数）与词库画像比对打分 */
+function featOf(strokes){
+  var n=strokes.length,tp=0,ink=0,cols={};
+  var minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+  strokes.forEach(function(s){
+    var pts=s.pts||s;tp+=pts.length;cols[s.color||INK]=1;
+    for(var i=0;i<pts.length;i++){
+      var x=pts[i].x,y=pts[i].y;
+      if(i){ink+=Math.hypot(x-px,y-py)}
+      var px=x,py=y;
+      if(x<minx)minx=x;if(x>maxx)maxx=x;if(y<miny)miny=y;if(y>maxy)maxy=y;
+    }
+  });
+  var w=Math.max(1,maxx-minx),h=Math.max(1,maxy-miny);
+  return {n:n,tp:tp,ar:clamp(w/h,0.25,4),ink:ink/512,nc:Object.keys(cols).length};
+}
+function aiRank(ft){
+  return AI_POOL.map(function(p){
+    var f=p.f;
+    var d=3*Math.abs(ft.n-f.n)/Math.max(f.n,1)
+      +1.5*Math.abs(ft.tp-f.tp)/Math.max(f.tp,1)
+      +2.5*Math.abs(ft.ar-f.ar)/Math.max(f.ar,.2)
+      +2*Math.abs(ft.ink-f.ink)/Math.max(f.ink,.05)
+      +1*Math.abs(ft.nc-f.nc)/Math.max(f.nc,1);
+    return {w:p.w,score:d};
+  }).sort(function(a,b){return a.score-b.score});
+}
+AI_POOL.forEach(function(p){p.f=featOf(p.art)});
+var HIT_COMMENTS=['一眼就是「{w}」，这特征抓得太准了！','线条奔放但灵魂到位，「{w}」没跑了！','构图、用色、气质——全都在说「{w}」。','我猜「{w}」的时候可一点都不犹豫！'];
+var MISS_TUCAO=['这更像一团有态度的线条……','我的大脑过热了，容我重启一下','是抽象派吗？我尊重，但猜不到','再多画几笔关键特征会更好认','我被灵魂画技彻底击败了'];
+/* 场景状态 */
+var gv={word:'',timer:0,left:0,to:[],miniRaf:0,thinkIv:0};
+var gvBoard=makeBoard($('gvCanvas'),'在这里画出它…');
+buildTools(gvBoard,{tools:$('gvTools'),colors:$('gvColors'),status:'gvStatus'});
+function enterGuess(){showScene('scene-guess');gvHome()}
+sceneStops['scene-guess']=gvStopAll;
+function gvStopAll(){
+  clearInterval(gv.timer);gv.timer=0;
+  gv.to.forEach(function(t){clearTimeout(t)});gv.to=[];
+  cancelAnimationFrame(gv.miniRaf);
+  if(gv.thinkIv){clearInterval(gv.thinkIv);gv.thinkIv=0}
+}
+function gvHome(){
+  gvStopAll();
+  $('gvIntro').hidden=false;$('gvPick').hidden=true;$('gvDraw').hidden=true;$('gvThink').hidden=true;
+  $('aiBubbles').innerHTML='';
+  updateHUD();
+}
+/* 好友局 / 实时匹配：占位入口（接入微信后开放） */
+(function(){
+  var tiers=document.querySelectorAll('#gvIntro .tier');
+  if(tiers[0]){tiers[0].style.cursor='pointer';tiers[0].addEventListener('click',function(){toast('好友局要接入微信后才能开黑～',1800)})}
+  if(tiers[2]){tiers[2].style.cursor='pointer';tiers[2].addEventListener('click',function(){toast('小镇居民满 1000 人后开放实时匹配',1800)})}
+})();
+$('gvStart').addEventListener('click',function(){
+  var picks=shuffle(AI_POOL).slice(0,3);
+  var box=$('gvCands');box.innerHTML='';
+  picks.forEach(function(p){
+    var b=document.createElement('button');b.className='btn big sketch-border';b.textContent=p.w;
+    b.onclick=function(){gvBegin(p.w)};
+    box.appendChild(b);
+  });
+  $('gvIntro').hidden=true;$('gvPick').hidden=false;
+  reframe();
+});
+function gvBegin(word){
+  gv.word=word;gv.left=20;
+  gvBoard.reset();
+  $('gvWord').textContent='请画：'+word;
+  $('gvPick').hidden=true;$('gvDraw').hidden=false;$('gvThink').hidden=true;
+  setBar('gvBar',1,false);
+  $('gvTime').textContent='20.0';
+  gvMiniLoop();
+  clearInterval(gv.timer);
+  gv.timer=setInterval(function(){
+    gv.left-=0.1;
+    if(gv.left<=0){gvSubmit(true);return}
+    var frac=gv.left/20;
+    setBar('gvBar',frac,frac<=0.3); // <30% 变红
+    $('gvTime').textContent=gv.left.toFixed(1);
+  },100);
+  reframe();
+}
+/* AI 视角镜像预览小窗 */
+function gvMiniLoop(){
+  cancelAnimationFrame(gv.miniRaf);
+  var cv=$('gvMini'),c=cv.getContext('2d');
+  function frame(){
+    if(curScene!=='scene-guess'||$('gvDraw').hidden)return;
+    c.save();c.translate(120,0);c.scale(-1,1);
+    drawStrokesScaled(c,gvBoard.getStrokes(),120,120);
+    c.restore();
+    gv.miniRaf=requestAnimationFrame(frame);
+  }
+  gv.miniRaf=requestAnimationFrame(frame);
+}
+$('gvSubmit').addEventListener('click',function(){gvSubmit(false)});
+function gvBubble(txt){
+  var b=document.createElement('div');b.className='ai-bubble sketch-border';b.textContent=txt;
+  $('aiBubbles').appendChild(b);
+  requestAnimationFrame(function(){b.classList.add('on');wobbleAll($('aiBubbles'))});
+}
+function gvSubmit(auto){
+  if($('gvDraw').hidden)return;
+  var strokes=gvBoard.getStrokes().slice();
+  if(!strokes.length&&!auto){
+    shakeEl($('gvSubmit'));toast('一张白纸 AI 可猜不出～先画几笔',1800);return;
+  }
+  clearInterval(gv.timer);gv.timer=0;
+  var img=$('gvCanvas').toDataURL('image/png');
+  $('gvDraw').hidden=true;$('gvThink').hidden=false;
+  $('aiBubbles').innerHTML='';
+  var n=strokes.length;
+  var rank=aiRank(featOf(strokes));
+  var hit=n>0&&Math.random()<(n>=4?0.75:0.30); // ≥4 笔 75% 命中，<4 笔 30%
+  var final;
+  if(hit)final={w:gv.word,conf:rndi(68,95)};
+  else{
+    var wrong=rank.filter(function(r){return r.w!==gv.word});
+    final={w:(wrong[0]||{w:'一团云'}).w,conf:rndi(42,66)};
+  }
+  $('aiBar').style.width='0%';
+  var p=0;gv.thinkIv=setInterval(function(){p=Math.min(100,p+2.2);$('aiBar').style.width=p+'%'},110);
+  var to=function(ms,fn){gv.to.push(setTimeout(function(){if(curScene==='scene-guess')fn()},ms))};
+  to(400,function(){gvBubble('嗯……先看看这些线条的脾气……')});
+  to(1700,function(){gvBubble('有点像「'+rank[Math.min(2,rank.length-1)].w+'」？不对不对……')});
+  to(3100,function(){gvBubble('等等，「'+rank[1].w+'」？越来越近了……')});
+  to(4700,function(){
+    if(gv.thinkIv){clearInterval(gv.thinkIv);gv.thinkIv=0}
+    $('aiBar').style.width='100%';
+    gvBubble('我确定了：是「'+final.w+'」！置信度 '+final.conf+'%');
+  });
+  to(6100,function(){gvResult(strokes,n,hit,final,img)});
+}
+function gvResult(strokes,n,hit,final,img){
+  gvStopAll();
+  var html,hadTitle=save.titles.indexOf('AI 审美官')>=0;
+  if(hit){
+    var gained=20+Math.round(Math.max(0,gv.left))*3; // 剩余时间越多分越高
+    save.skill+=gained;persist();
+    var cm=HIT_COMMENTS[rndi(0,HIT_COMMENTS.length-1)].split('{w}').join(gv.word);
+    html='<div class="share-card"><div class="paper-panel sketch-border" style="width:170px;height:170px;padding:6px">'+
+      '<img src="'+img+'" style="width:100%;height:100%;background:#fff"></div>'+
+      '<div style="max-width:250px;text-align:left"><p>AI 大声宣布：「<b class="blue">'+esc(final.w)+'</b>」！<br>置信度 <b>'+final.conf+'%</b></p>'+
+      '<p class="small" style="margin-top:6px">AI 点评：'+cm+'</p></div></div>'+
+      '<p style="text-align:center;font-weight:800;font-size:17px;margin-top:8px">画技分 <b class="accent">+'+gained+'</b>（累计 '+save.skill+'/100）</p>';
+    if(save.skill>=100)addTitle('AI 审美官');
+    if(save.skill>=100&&!hadTitle)html+='<p class="small" style="text-align:center">称号解锁：「AI 审美官」！</p>';
+    showModal({title:'AI 猜中啦！',html:html,buttons:[
+      {label:'再来一局',big:true,onClick:function(){gvHome()}},
+      {label:'回广场',blue:true,onClick:function(){goPlaza()}}]});
+  }else{
+    var stars=soulStars(Math.max(1,n)),s='';for(var i=0;i<stars;i++)s+='★';
+    var tc=!strokes.length?'白纸？这是极简主义吗？我拒绝评价。':MISS_TUCAO[rndi(0,MISS_TUCAO.length-1)];
+    html='<div class="share-card"><div class="paper-panel sketch-border" style="width:170px;height:170px;padding:6px">'+
+      '<img src="'+img+'" style="width:100%;height:100%;background:#fff"></div>'+
+      '<div style="max-width:250px;text-align:left"><p>AI 犹豫半天，答案是：「'+esc(final.w)+'」<br>'+
+      '<span class="small">（正确答案其实是你画的「'+esc(gv.word)+'」）</span></p>'+
+      '<p class="small" style="margin-top:6px">AI 吐槽：'+tc+'</p></div></div>'+
+      '<p style="text-align:center;font-weight:800;font-size:16px;margin-top:8px">灵魂度 <b class="accent">'+s+'</b>（'+n+' 笔）</p>'+
+      '<p class="small" style="text-align:center">笔数 ≥4 时 AI 命中率 75%，&lt;4 只有 30% —— 多画几笔关键特征！</p>';
+    showModal({title:'AI 没猜出来…',html:html,buttons:[
+      {label:'再来一局',big:true,onClick:function(){gvHome()}},
+      {label:'回广场',blue:true,onClick:function(){goPlaza()}}]});
+  }
+  updateHUD();
+}
+
+/* ============ 场景5：涂鸦跑酷（薄荷绿画廊跑道） ============ */
+var runCv=$('runCanvas');
+var run={raf:0,last:0,py:0,vy:0,jumps:0,dist:0,items:0,hearts:3,obs:[],drops:[],
+  vw:0,vh:0,   /* 逻辑视口尺寸 */
+  inv:0,spd:270,t:0,over:true,spawnIn:1};
+var RUN_CLOUDS=[{x:.15,y:70,s:1},{x:.5,y:110,s:.75},{x:.8,y:55,s:1.25}];
+function sizeRun(){
+  var st=$('stage');
+  run.vw=st.clientWidth;run.vh=st.clientHeight;
+  runCv.width=Math.round(run.vw*DPR);runCv.height=Math.round(run.vh*DPR);
+  runCv._lw=run.vw;runCv._lh=run.vh;
+}
+function enterRun(){
+  showScene('scene-run');
+  sizeRun();
+  run.py=0;run.vy=0;run.jumps=0;run.dist=0;run.items=0;run.hearts=3;
+  run.obs=[];run.drops=[];run.inv=0;run.spd=270;run.t=0;run.over=false;run.spawnIn=0.9;
+  run.last=performance.now();
+  runDrawHearts();
+  cancelAnimationFrame(run.raf);
+  run.raf=requestAnimationFrame(runLoop);
+  toast('空格 / 点击跳跃，可二段跳！',2000);
+}
+sceneStops['scene-run']=function(){run.over=true;cancelAnimationFrame(run.raf)};
+function runJump(){
+  if(curScene!=='scene-run'||run.over)return;
+  if(run.py<=0.5&&run.jumps===0){run.vy=-640;run.jumps=1}
+  else if(run.jumps<2){run.vy=-560;run.jumps=2}
+}
+function runDrawHearts(){
+  var h='';for(var i=0;i<3;i++)h+='<span'+(i<run.hearts?'':' class="off"')+'>♥</span>';
+  $('runHearts').innerHTML=h;
+}
+function runFinish(){
+  if(run.over)return;
+  run.over=true;cancelAnimationFrame(run.raf);
+  var meters=Math.floor(run.dist/50),score=meters+run.items*2;
+  var ink=Math.floor(score/15);
+  if(ink>0)addInk(ink);
+  var html='<p style="line-height:2;text-align:center">跑了 <b class="blue">'+meters+' m</b> · 收集墨滴 '+run.items+' 滴<br>'+
+    '得分 <b class="accent">'+score+'</b> → 墨水 <b class="accent">+'+ink+'</b><br>'+
+    '<span class="small">剩余爱心 '+run.hearts+'/3'+(run.hearts===0?'（居民们的画太热情了）':'')+'</span></p>';
+  showModal({title:'跑酷结算',html:html,buttons:[
+    {label:'再跑一次！',big:true,onClick:function(){enterRun()}},
+    {label:'回广场',blue:true,onClick:function(){goPlaza()}}]});
+}
+function runLoop(now){
+  if(curScene!=='scene-run'||run.over)return;
+  var dt=Math.min(0.05,(now-run.last)/1000);run.last=now;
+  var W=run.vw||runCv._lw||runCv.width,H=run.vh||runCv._lh||runCv.height,gy=H*0.78;
+  run.t+=dt;
+  run.spd=270+Math.min(210,run.dist/40);
+  run.dist+=run.spd*dt;
+  /* 跳跃物理（二段跳） */
+  run.vy+=1500*dt;run.py+=run.vy*dt;
+  if(run.py<=0){run.py=0;run.vy=0;run.jumps=0}
+  if(run.inv>0)run.inv-=dt;
+  /* 生成障碍与墨滴 */
+  run.spawnIn-=dt;
+  if(run.spawnIn<=0){
+    run.spawnIn=1.0+Math.random()*0.85;
+    run.obs.push({x:W+80,kind:Math.random()<0.72?'art':'rock',seed:rndi(1,99),fl:rndi(0,2)});
+  }
+  if(Math.random()<dt*0.55)run.drops.push({x:W+60,y:36+Math.random()*120,got:false});
+  /* 移动 + 碰撞 */
+  var px=180;
+  for(var i=run.obs.length-1;i>=0;i--){
+    var o=run.obs[i];o.x-=run.spd*dt;
+    if(o.x<-120){run.obs.splice(i,1);continue}
+    var oh=o.kind==='art'?64:30,ow=o.kind==='art'?58:46;
+    if(!o.hit&&run.inv<=0&&Math.abs(o.x-px)<ow/2+20&&run.py<oh-6){
+      o.hit=true;run.hearts--;run.inv=1.3;runDrawHearts();
+      if(run.hearts<=0){runFinish();return}
+    }
+  }
+  for(var j2=run.drops.length-1;j2>=0;j2--){
+    var d2=run.drops[j2];d2.x-=run.spd*dt;
+    if(d2.x<-40){run.drops.splice(j2,1);continue}
+    if(!d2.got&&Math.abs(d2.x-px)<30&&Math.abs(d2.y-(run.py+34))<44){d2.got=true;run.items++}
+  }
+  /* 绘制：番茄红太阳 + 淡蓝云（视差） */
+  var c=runCv.getContext('2d');
+  c.setTransform(DPR,0,0,DPR,0,0); // 高清：逻辑坐标 × DPR
+  c.clearRect(0,0,W,H);
+  c.strokeStyle=INK;c.lineWidth=2;
+  wCircle(c,W-110,84,32,7,'#E14B3B',2);
+  c.save();c.globalAlpha=.75;c.fillStyle='#E14B3B';
+  c.beginPath();c.arc(W-110,84,30,0,7);c.fill();c.restore();
+  for(var r2=0;r2<8;r2++){var a2=r2/8*Math.PI*2;
+    wLine(c,W-110+Math.cos(a2)*42,84+Math.sin(a2)*42,W-110+Math.cos(a2)*55,84+Math.sin(a2)*55,7+r2,1.5)}
+  RUN_CLOUDS.forEach(function(cl,ci){
+    var x=(cl.x*W-run.dist*0.18)%(W+260);if(x<-160)x+=W+260;
+    c.strokeStyle=INK;c.lineWidth=2;
+    wCircle(c,x,cl.y,18*cl.s,20+ci,'#D6E9F8',2.2);
+    wCircle(c,x+22*cl.s,cl.y+5*cl.s,13*cl.s,24+ci,'#D6E9F8',2);
+    wCircle(c,x-22*cl.s,cl.y+5*cl.s,13*cl.s,28+ci,'#D6E9F8',2);
+  });
+  /* 薄荷绿草地带 */
+  c.save();c.globalAlpha=.5;c.fillStyle='#BFE3C0';c.fillRect(0,gy,W,H-gy);c.restore();
+  c.strokeStyle=INK;c.lineWidth=2.2;wLine(c,0,gy,W,gy,101,1.8);
+  c.lineWidth=1.4;
+  for(var g2=Math.floor(run.dist/46)*46;g2<run.dist+W;g2+=46){
+    var gx2=g2-run.dist;
+    c.beginPath();c.moveTo(gx2,gy);c.lineTo(gx2-3+j(g2)*3,gy-7-j(g2+2)*3);
+    c.moveTo(gx2+4,gy);c.lineTo(gx2+5,gy-6-j(g2+5)*3);c.stroke();
+  }
+  /* 障碍：居民画作（画架+画框+迷你涂鸦）/ 石块 */
+  run.obs.forEach(function(o){
+    var ow2=o.kind==='art'?58:46,oh2=o.kind==='art'?64:30;
+    c.save();c.translate(o.x,gy);
+    c.strokeStyle=INK;c.lineWidth=2;
+    if(o.kind==='art'){
+      wLine(c,-20,0,-10,-oh2+10,o.seed,2);wLine(c,20,0,10,-oh2+10,o.seed+1,2);
+      wRect(c,-ow2/2,-oh2,ow2,oh2-8,o.seed+2,'#FFFFFF');
+      c.lineWidth=1.6;
+      if(o.fl===0){
+        wCircle(c,0,-oh2/2-4,8,o.seed+3,'#E9B824',1.5);
+        c.lineWidth=1.2;
+        for(var r3=0;r3<4;r3++){var a3=r3/4*Math.PI*2;
+          c.beginPath();c.moveTo(Math.cos(a3)*11,-oh2/2-4+Math.sin(a3)*11);
+          c.lineTo(Math.cos(a3)*15,-oh2/2-4+Math.sin(a3)*15);c.stroke()}
+      }else if(o.fl===1){
+        for(var p3=0;p3<5;p3++){var a4=p3/5*Math.PI*2-Math.PI/2;
+          c.beginPath();c.arc(Math.cos(a4)*5,-oh2/2-4+Math.sin(a4)*5,3,0,7);
+          c.fillStyle='#E087A6';c.fill();c.stroke()}
+        c.fillStyle='#E9B824';c.beginPath();c.arc(0,-oh2/2-4,2,0,7);c.fill();
+      }else{
+        c.beginPath();
+        for(var s5=0;s5<=10;s5++){var t5=-Math.PI/2+s5*Math.PI/5,rr=(s5%2)?4.5:10;
+          var xx=Math.cos(t5)*rr,yy=-oh2/2-4+Math.sin(t5)*rr;
+          if(s5)c.lineTo(xx,yy);else c.moveTo(xx,yy)}
+        c.closePath();c.fillStyle='#E9B824';c.fill();c.stroke();
+      }
+    }else{
+      c.beginPath();c.ellipse(0,-13,22,13,0,0,7);c.fillStyle='#BDB7AA';c.fill();c.stroke();
+      c.lineWidth=1.2;wLine(c,-8,-18,2,-14,o.seed+9,1);
+    }
+    c.restore();
+  });
+  /* 墨滴收集品 */
+  run.drops.forEach(function(d3){
+    if(d3.got)return;
+    var dx=d3.x,dy2=gy-d3.y;
+    c.strokeStyle=INK;c.lineWidth=1.6;
+    c.beginPath();c.moveTo(dx,dy2-11);
+    c.quadraticCurveTo(dx+7,dy2+2,dx,dy2+6);
+    c.quadraticCurveTo(dx-7,dy2+2,dx,dy2-11);
+    c.closePath();c.fillStyle='#3B6EA5';c.fill();c.stroke();
+  });
+  /* 主角（可带头像，挤压拉伸） */
+  c.save();c.translate(px,gy-run.py);
+  if(run.inv>0&&Math.floor(run.t*12)%2)c.globalAlpha=0.35;
+  var sq2=run.py>2?1.06:1+0.05*Math.sin(run.t*10);
+  c.scale(2-sq2,sq2);
+  c.strokeStyle=INK;c.lineWidth=2.2;
+  var leg=Math.sin(run.t*16)*6;
+  wLine(c,-8,-6,-12+(run.py>2?2:leg),0,81,1);
+  wLine(c,8,-6,12+(run.py>2?-2:-leg),0,82,1);
+  wCircle(c,0,-34,24,80,'#FFFFFF',2.5);
+  if(save.avatar&&avatarImg.complete&&avatarImg.naturalWidth){
+    c.save();c.beginPath();c.arc(0,-34,20,0,Math.PI*2);c.clip();
+    try{c.drawImage(avatarImg,-20,-54,40,40)}catch(e){}
+    c.restore();
+  }else{
+    c.fillStyle=INK;c.beginPath();c.arc(-7,-38,2.2,0,7);c.arc(7,-38,2.2,0,7);c.fill();
+    c.beginPath();c.arc(0,-31,6,0.3,Math.PI-0.3);c.stroke();
+  }
+  c.restore();
+  /* 记分板 */
+  var meters=Math.floor(run.dist/50);
+  $('runStats').textContent=meters+' m · 得分 '+(meters+run.items*2);
+  run.raf=requestAnimationFrame(runLoop);
+}
+runCv.addEventListener('pointerdown',function(){if(curScene==='scene-run')runJump()});
+(function(){var rb=document.querySelector('.run-end');if(rb)rb.addEventListener('click',runFinish)})();
+
+/* ============ 强制横屏 / 方向检测（手机竖屏锁定兜底） ============ */
+function isForceLand(){return document.body.classList.contains('force-land')}
+/* 统一指针坐标映射：正常模式直映；force-land(rotate 90°) 用转置映射（返回逻辑坐标，_lw/_lh 优先） */
+function mapClient(canvas,clientX,clientY){
+  var r=canvas.getBoundingClientRect();
+  var lw=canvas._lw||canvas.width,lh=canvas._lh||canvas.height;
+  if(isForceLand()){
+    return {x:(clientY-r.top)*(lw/r.height),y:(r.right-clientX)*(lh/r.width)};
+  }
+  return {x:(clientX-r.left)*(lw/r.width),y:(clientY-r.top)*(lh/r.height)};
+}
+function applyOrient(){
+  var st=$('stage'),mask=$('rotateMask');
+  if(document.body.classList.contains('force-land')){
+    if(window.innerWidth>window.innerHeight){applyForceLand(false)} // 真横屏已就绪→自动退出旋转
+    else{return}
+  }
+  var p=window.innerWidth<window.innerHeight;
+  mask.style.display=p?'flex':'none';
+  st.style.display=p?'none':'';
+  if(!p){sizePlaza();if(curScene==='scene-run')sizeRun()}
+  reframe();
+}
+function applyForceLand(on){
+  var st=$('stage'),mask=$('rotateMask'),ex=$('exitForce');
+  if(on){
+    document.body.classList.add('force-land');
+    st.style.width='100vh';st.style.height='100vw';
+    st.style.transform='translate(-50%,-50%) rotate(90deg)';
+    st.style.display='block';mask.style.display='none';ex.style.display='block';
+    try{var pr=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(pr&&pr.catch)pr.catch(function(){})}catch(e){}
+    try{var lk=screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape');if(lk&&lk.catch)lk.catch(function(){})}catch(e){}
+  }else{
+    document.body.classList.remove('force-land');
+    st.style.width='';st.style.height='';st.style.transform='';st.style.display='';
+    mask.style.display='';ex.style.display='none';
+  }
+  sizePlaza();if(curScene==='scene-run')sizeRun();
+  reframe();
+}
+$('forceLandBtn').addEventListener('click',function(){applyForceLand(true)});
+$('exitForce').addEventListener('click',function(){applyForceLand(false)});
+window.addEventListener('resize',applyOrient);
+window.addEventListener('orientationchange',applyOrient);
+(function(){
+  if(!window.matchMedia)return;
+  try{
+    var mq=window.matchMedia('(orientation:portrait)');
+    if(mq.addEventListener)mq.addEventListener('change',applyOrient);
+    else if(mq.addListener)mq.addListener(applyOrient);
+  }catch(e){}
+})();
+
+/* ============ 启动 ============ */
+updateHUD();
+if(save.avatar)avatarImg.src=save.avatar;
+window.addEventListener('resize',function(){sizePlaza();if(curScene==='scene-run')sizeRun();reframe()});
+applyOrient();
+showScene(save.seen?'scene-plaza':'scene-first');
+reframe();
+</script>
+</body>
+</html>
