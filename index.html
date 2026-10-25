@@ -12,8 +12,7 @@
     AI 猜画（本地引擎，正式版接入多模态大模型） ─
   ─────────────────────────────────────────────────────────────────────────
 -->
-<html lang="zh-CN">
-<head>
+<html lang="zh-CN"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-visual">
 <title>涂鸦小镇 Doodle Town v9</title>
@@ -262,9 +261,9 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   box-shadow:0 0 0 8px #FBF3E2,0 0 0 11px #2B2B2B;display:flex;flex-direction:column;align-items:center}
 .tav-rule{padding:4px 0 7px;text-align:center;color:#8a8378;flex:none;font-size:clamp(10px,1.3vh,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 10px}
 .tav-btop{padding-right:8px;position:relative}
-.tav-homemain .tav-btop .draw-top{margin-top:-9px;align-items:center} /* 与tag组同值补偿，字牌/返回键/鲜花鸡蛋同一水平线居中 */
+.draw-top.tav-btop{margin-top:-9px;align-items:center} /* 同元素选择器（tav-btop即draw-top）：整体上移补偿顶部padding，字牌/返回键与tag组同一水平线 */
 .tav-homemain{flex-direction:column;gap:4px;border:3px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22)}
-#tavProps{position:absolute;left:50%;top:0;bottom:0;margin-top:-9px;transform:translateX(-50%);display:flex;align-items:center;width:max-content}
+#tavProps{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);display:flex;align-items:center;width:max-content} /* tav-btop已整体上移，此处无需再补偿 */
 .tav-cards{display:flex;gap:5px;align-items:center;flex:none}
 .tav-cards b{display:inline-block;background:#fff;border:2.5px solid #2B2B2B;border-radius:9px;padding:2px 7px;font-size:17px;font-weight:800;line-height:1.35;box-shadow:2px 2px 0 rgba(43,43,43,.18)}
 .tav-cards b:nth-child(4n+1){transform:rotate(-4deg)}
@@ -412,20 +411,20 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 </style>
 </head>
 <body>
-<div id="stage">
+<div id="stage" style="">
 
   <!-- 场景0：首次画主角 -->
   <div class="scene" id="scene-first">
     <div class="scene-pad">
       <div class="draw-main">
-        <div class="canvas-wrap"><canvas id="firstCanvas" width="1024" height="768"></canvas></div>
+        <div class="canvas-wrap"><canvas id="firstCanvas" width="1024" height="768" style="touch-action: none; user-select: none;"></canvas></div>
         <aside class="side-col">
           <div class="draw-top" style="flex-direction:column;align-items:flex-start;gap:2px">
             <h1 class="hw uw" style="font-size:28px">画出你自己吧！</h1>
             <span class="sub small" style="font-size:12px">这只小家伙将替你在涂鸦小镇生活</span>
           </div>
-          <div class="ctrl-row" id="ftColors"></div>
-          <div class="ctrl-row" id="ftTools"></div>
+          <div class="ctrl-row" id="ftColors"><button class="swatch active" title="墨" style="background: rgb(43, 43, 43);"></button><button class="swatch" title="番茄红" style="background: rgb(225, 75, 59);"></button><button class="swatch" title="牛仔蓝" style="background: rgb(59, 110, 165);"></button><button class="swatch" title="芥黄" style="background: rgb(242, 177, 52);"></button><button class="swatch" title="草绿" style="background: rgb(78, 155, 94);"></button><button class="swatch" title="棕" style="background: rgb(139, 90, 43);"></button><button class="swatch" title="橘" style="background: rgb(232, 122, 51);"></button><button class="swatch" title="紫" style="background: rgb(123, 94, 167);"></button><button class="swatch" title="白" style="background: rgb(255, 255, 255);"></button><button class="swatch swatch-rainbow" title="调色盘"></button></div>
+          <div class="ctrl-row" id="ftTools"><div class="tool-row ico-row"><button class="btn icobtn active" data-t="brush" title="画笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 17.2 L14.6 7.6 L17.6 10.6 L8 20.2 L4.4 20.8 Z"></path><path d="M13.2 9 L16.2 12"></path></svg><span>画笔</span></button><button class="btn icobtn" data-t="crayon" title="蜡笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M8.2 20 L8.2 8.6 Q8.2 5.6 10.6 3.8 Q13 5.6 13 8.6 L13 20 Z"></path><path d="M8.2 15.4 L13 15.4"></path><path d="M5.4 20.4 L15.8 20.4"></path></svg><span>蜡笔</span></button><button class="btn icobtn" data-t="acrylic" title="丙烯"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M4.6 15.6 Q11.4 8.2 19.6 6.4" stroke-width="4.2"></path><path d="M17.6 12.2 q1.7 2.3 0 3.5 q-1.7-1.2 0-3.5"></path></svg><span>丙烯</span></button><button class="btn icobtn" data-t="marker" title="马克笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6.2 15.8 L6.2 9.4 L11 4 L13.4 6.4 L8.6 11.8"></path><path d="M11 4 L15.6 8.6 L9 17.4 L4.4 20.4 L6.2 15.8 Z"></path><path d="M4.4 20.4 L18 20.4"></path></svg><span>马克笔</span></button></div><div class="tool-row ico-row"><button class="btn icobtn" data-t="spray" title="喷枪"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><circle cx="8" cy="14.6" r="3.4"></circle><path d="M13.4 6.2 L17.8 10.6"></path><path d="M14.6 3.4 L15 4.6 M17.4 4.2 L16.8 5.3 M19.4 6.8 L18.2 7 M18.6 9.4 L17.8 8.4" stroke-width="1.3"></path><circle cx="7.2" cy="13.8" r=".7" fill="currentColor" stroke="none"></circle></svg><span>喷枪</span></button><button class="btn icobtn" data-t="fill" title="填色"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M10.4 3.2 L17.4 10.2 L11 16.6 Q9.2 18.4 7.4 16.6 L3.8 13 Q2 11.2 3.8 9.4 Z"></path><path d="M13.2 5.4 L8 10.6"></path><path d="M19.2 13.6 Q20.8 16 19.2 17.4 Q17.6 18.8 16.4 17 Q15.4 15.4 16.6 14 Z"></path></svg><span>填色</span></button><button class="btn icobtn" data-t="pick" title="取色"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.8 3.6 L18.4 7.2 L15.4 10.2 L11.8 6.6 Z"></path><path d="M12.8 7.6 L5 15.4 L3.8 18.8 L7.2 17.4 L15 9.6"></path></svg><span>取色</span></button><button class="btn icobtn" data-t="eraser" title="橡皮"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5.2 14.6 L11.4 8.4 L17.4 12.6 L12.6 18.8 Z"></path><path d="M8.8 11.6 L14.4 15.6"></path><path d="M4.6 20.6 L18.6 20.6"></path></svg><span>橡皮</span></button><button class="btn blue icobtn" data-t="undo" title="撤销"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M7.4 6.6 L4 10 L7.4 13.4"></path><path d="M4.4 10 L12.6 10 Q17.8 10 17.8 14.4 Q17.8 18 14.2 18.6"></path></svg><span>撤销</span></button><button class="btn blue icobtn" data-t="redo" title="重做"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.6 6.6 L18 10 L14.6 13.4"></path><path d="M17.6 10 L9.4 10 Q4.2 10 4.2 14.4 Q4.2 18 7.8 18.6"></path></svg><span>重做</span></button><button class="btn blue icobtn" data-t="clear" title="清空"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6 L16 16"></path><path d="M16 6 L6 16"></path></svg><span>清空</span></button></div><div class="size-slider"><input type="range" min="2" max="22" step="1"><span class="ss-val">5px</span></div></div>
           <div class="status-line" id="ftStatus">选好颜色，开始画你的主角！</div>
           <div style="text-align:left;flex:0 0 auto">
             <button class="btn big" id="firstDone">完成，入住小镇！</button>
@@ -437,18 +436,18 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 
   <!-- 场景1：小镇广场 -->
   <div class="scene" id="scene-plaza">
-    <canvas id="plazaCanvas"></canvas>
+    <canvas id="plazaCanvas" width="852" height="393" style=""></canvas>
     <div class="hud">
       <div style="display:flex;gap:10px">
-        <div class="tag sketch-border">墨水 <b id="hudInk">0</b></div>
-        <div class="tag sketch-border">称号：<b id="hudTitle">路人画家</b></div>
+        <div class="tag sketch-border" data-w="72x32">墨水 <b id="hudInk">0</b><svg class="wob-svg" preserveAspectRatio="none" viewBox="0 0 72 32"><path d="M-4.0 0.0L35.2 -0.6L76.0 0.0 M72.0 -4.0L71.7 14.8L72.0 36.0 M76.0 32.0L34.7 30.6L-4.0 32.0 M0.0 36.0L0.3 14.4L0.0 -4.0" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"></path><path d="M3.0 3.0L36.9 3.9L69.0 3.0 M69.0 3.0L70.2 15.8L69.0 29.0 M69.0 29.0L37.0 30.1L3.0 29.0 M3.0 29.0L2.9 14.3L3.0 3.0" fill="none" stroke="#2B2B2B" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg></div>
+        <div class="tag sketch-border" data-w="133x32">称号：<b id="hudTitle">路人画家</b><svg class="wob-svg" preserveAspectRatio="none" viewBox="0 0 133 32"><path d="M-4.0 0.0L30.4 -0.6L65.1 1.0L103.4 -1.5L137.0 0.0 M133.0 -4.0L132.7 14.8L133.0 36.0 M137.0 32.0L100.4 30.6L65.5 31.9L31.1 33.2L-4.0 32.0 M0.0 36.0L0.3 14.4L0.0 -4.0" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"></path><path d="M3.0 3.0L35.6 3.9L67.7 3.5L99.6 3.3L130.0 3.0 M130.0 3.0L131.2 15.8L130.0 29.0 M130.0 29.0L99.2 30.1L67.7 28.5L36.3 29.7L3.0 29.0 M3.0 29.0L2.9 14.3L3.0 3.0" fill="none" stroke="#2B2B2B" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg></div>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start">
-        <button class="btn sketch-border" id="decoBtn" style="pointer-events:auto;padding:6px 14px;font-size:14px;display:inline-flex;align-items:center;gap:5px"></button>
-        <div class="tag sketch-border small">涂鸦小镇 · 广场</div>
+        <button class="btn sketch-border" id="decoBtn" style="pointer-events:auto;padding:6px 14px;font-size:14px;display:inline-flex;align-items:center;gap:5px" data-w="83x31"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 3.6 C6.4 3.6 3.2 6.9 3.2 11 C3.2 15.1 6.6 18.4 10.8 18.4 C12 18.4 12.7 17.6 12.7 16.8 C12.7 16 12 15.6 12 14.8 C12 13.9 12.7 13.3 13.7 13.3 L15.9 13.3 C18.8 13.3 20.8 11.2 20.8 9.2 C20.8 6.1 16.6 3.6 11 3.6 Z"></path><circle cx="7.2" cy="9.2" r="1.05" fill="currentColor" stroke="none"></circle><circle cx="11" cy="7.2" r="1.05" fill="currentColor" stroke="none"></circle><circle cx="15" cy="8.6" r="1.05" fill="currentColor" stroke="none"></circle></svg><span>装修</span><svg class="wob-svg" preserveAspectRatio="none" viewBox="0 0 83 31"><path d="M-4.0 0.0L26.8 1.0L56.5 -0.5L87.0 0.0 M83.0 -4.0L82.9 13.8L83.0 35.0 M87.0 31.0L56.1 30.0L26.4 31.1L-4.0 31.0 M0.0 35.0L-0.2 17.1L0.0 -4.0" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"></path><path d="M3.0 3.0L40.5 3.9L80.0 3.0 M80.0 3.0L81.6 16.4L80.0 28.0 M80.0 28.0L41.5 26.7L3.0 28.0 M3.0 28.0L2.3 15.1L3.0 3.0" fill="none" stroke="#2B2B2B" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg></button>
+        <div class="tag sketch-border small" data-w="134x32">涂鸦小镇 · 广场<svg class="wob-svg" preserveAspectRatio="none" viewBox="0 0 134 32"><path d="M-4.0 0.0L30.7 -0.6L65.6 1.0L104.1 -1.5L138.0 0.0 M134.0 -4.0L133.7 14.8L134.0 36.0 M138.0 32.0L101.2 30.6L66.0 31.9L31.4 33.2L-4.0 32.0 M0.0 36.0L0.3 14.4L0.0 -4.0" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"></path><path d="M3.0 3.0L35.9 3.9L68.2 3.5L100.3 3.3L131.0 3.0 M131.0 3.0L132.2 15.8L131.0 29.0 M131.0 29.0L100.0 30.1L68.2 28.5L36.5 29.7L3.0 29.0 M3.0 29.0L2.9 14.3L3.0 3.0" fill="none" stroke="#2B2B2B" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg></div>
       </div>
     </div>
-    <button class="btn" id="hiBtn">击掌！</button>
+    <button class="btn" id="hiBtn" data-npc="小葵" style="display: none;">和小葵击掌 +1墨水</button>
     <div id="plazaHint"></div>
   </div>
 
@@ -456,19 +455,19 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   <div class="scene" id="scene-studio">
     <div class="scene-pad">
       <div class="draw-main">
-        <div class="canvas-wrap"><canvas id="studioCanvas" width="1024" height="768"></canvas></div>
+        <div class="canvas-wrap"><canvas id="studioCanvas" width="1024" height="768" style="touch-action: none; user-select: none;"></canvas></div>
         <aside class="studio-side">
           <div class="draw-top" style="flex-wrap:wrap">
             <button class="btn blu back-btn">返回 →</button>
             <h2 class="hw uw" id="studioTitle" style="font-size:20px">小镇画室</h2>
           </div>
-          <div class="status-line" id="stStatus"></div>
+          <div class="status-line" id="stStatus"><i class="cdot" style="background:#2B2B2B"></i>画笔 · 墨 · 5px</div>
           <div class="tool-card">
-            <div class="tool-row" id="stBrushes"></div>
-            <div class="tool-row" id="stSizes"></div>
-            <div class="tool-row" id="stLayers"></div>
-            <div class="tool-row" id="stColors"></div>
-            <div class="tool-row" id="stActions"></div>
+            <div class="tool-row" id="stBrushes"><div class="tool-row ico-row"><button class="btn icobtn active" data-t="brush" title="画笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 17.2 L14.6 7.6 L17.6 10.6 L8 20.2 L4.4 20.8 Z"></path><path d="M13.2 9 L16.2 12"></path></svg><span>画笔</span></button><button class="btn icobtn" data-t="crayon" title="蜡笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M8.2 20 L8.2 8.6 Q8.2 5.6 10.6 3.8 Q13 5.6 13 8.6 L13 20 Z"></path><path d="M8.2 15.4 L13 15.4"></path><path d="M5.4 20.4 L15.8 20.4"></path></svg><span>蜡笔</span></button><button class="btn icobtn" data-t="acrylic" title="丙烯"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M4.6 15.6 Q11.4 8.2 19.6 6.4" stroke-width="4.2"></path><path d="M17.6 12.2 q1.7 2.3 0 3.5 q-1.7-1.2 0-3.5"></path></svg><span>丙烯</span></button><button class="btn icobtn" data-t="marker" title="马克笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6.2 15.8 L6.2 9.4 L11 4 L13.4 6.4 L8.6 11.8"></path><path d="M11 4 L15.6 8.6 L9 17.4 L4.4 20.4 L6.2 15.8 Z"></path><path d="M4.4 20.4 L18 20.4"></path></svg><span>马克笔</span></button></div><div class="tool-row ico-row"><button class="btn icobtn" data-t="spray" title="喷枪"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><circle cx="8" cy="14.6" r="3.4"></circle><path d="M13.4 6.2 L17.8 10.6"></path><path d="M14.6 3.4 L15 4.6 M17.4 4.2 L16.8 5.3 M19.4 6.8 L18.2 7 M18.6 9.4 L17.8 8.4" stroke-width="1.3"></path><circle cx="7.2" cy="13.8" r=".7" fill="currentColor" stroke="none"></circle></svg><span>喷枪</span></button><button class="btn icobtn" data-t="fill" title="填色"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M10.4 3.2 L17.4 10.2 L11 16.6 Q9.2 18.4 7.4 16.6 L3.8 13 Q2 11.2 3.8 9.4 Z"></path><path d="M13.2 5.4 L8 10.6"></path><path d="M19.2 13.6 Q20.8 16 19.2 17.4 Q17.6 18.8 16.4 17 Q15.4 15.4 16.6 14 Z"></path></svg><span>填色</span></button><button class="btn icobtn" data-t="pick" title="取色"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.8 3.6 L18.4 7.2 L15.4 10.2 L11.8 6.6 Z"></path><path d="M12.8 7.6 L5 15.4 L3.8 18.8 L7.2 17.4 L15 9.6"></path></svg><span>取色</span></button><button class="btn icobtn" data-t="eraser" title="橡皮"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5.2 14.6 L11.4 8.4 L17.4 12.6 L12.6 18.8 Z"></path><path d="M8.8 11.6 L14.4 15.6"></path><path d="M4.6 20.6 L18.6 20.6"></path></svg><span>橡皮</span></button></div></div>
+            <div class="tool-row" id="stSizes"><div class="size-slider"><input type="range" min="2" max="22" step="1"><span class="ss-val">5px</span></div></div>
+            <div class="tool-row" id="stLayers"><div class="layer-th active"><canvas width="36" height="36"></canvas><span class="l-eye"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M2.8 11 Q11 4.4 19.2 11 Q11 17.6 2.8 11 Z"></path><circle cx="11" cy="11" r="2.6"></circle></svg></span></div><div class="layer-th"><canvas width="36" height="36"></canvas><span class="l-eye"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M2.8 11 Q11 4.4 19.2 11 Q11 17.6 2.8 11 Z"></path><circle cx="11" cy="11" r="2.6"></circle></svg></span></div><button class="btn l-op" title="新建图层">＋</button><button class="btn l-op" title="删除当前图层"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6 L16 16"></path><path d="M16 6 L6 16"></path></svg></button></div>
+            <div class="tool-row" id="stColors"><button class="swatch active" title="墨" style="background: rgb(43, 43, 43);"></button><button class="swatch" title="番茄红" style="background: rgb(225, 75, 59);"></button><button class="swatch" title="牛仔蓝" style="background: rgb(59, 110, 165);"></button><button class="swatch" title="芥黄" style="background: rgb(242, 177, 52);"></button><button class="swatch" title="草绿" style="background: rgb(78, 155, 94);"></button><button class="swatch" title="棕" style="background: rgb(139, 90, 43);"></button><button class="swatch" title="橘" style="background: rgb(232, 122, 51);"></button><button class="swatch" title="紫" style="background: rgb(123, 94, 167);"></button><button class="swatch" title="白" style="background: rgb(255, 255, 255);"></button><button class="swatch swatch-rainbow" title="调色盘"></button></div>
+            <div class="tool-row" id="stActions"><button class="btn blue icobtn" data-t="undo" title="撤销"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M7.4 6.6 L4 10 L7.4 13.4"></path><path d="M4.4 10 L12.6 10 Q17.8 10 17.8 14.4 Q17.8 18 14.2 18.6"></path></svg><span>撤销</span></button><button class="btn blue icobtn" data-t="redo" title="重做"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.6 6.6 L18 10 L14.6 13.4"></path><path d="M17.6 10 L9.4 10 Q4.2 10 4.2 14.4 Q4.2 18 7.8 18.6"></path></svg><span>重做</span></button><button class="btn blue icobtn" data-t="clear" title="清空"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6 L16 16"></path><path d="M16 6 L6 16"></path></svg><span>清空</span></button></div>
           </div>
           <div style="text-align:left;flex:0 0 auto"><button class="btn big" id="studioDone">保存形象</button></div>
         </aside>
@@ -496,16 +495,16 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <span class="tape" style="left:50%;margin-left:-46px;top:-12px"></span>
           <p style="line-height:2;font-size:16px">画室的烘干机升级时<b class="accent">失忆</b>了……<br>
           只有真正的神笔才能认出自己画过什么！</p>
-          <p class="hw" style="font-size:24px;margin:8px 0 2px" ><span class="accent">5 秒！画出它！</span></p>
+          <p class="hw" style="font-size:24px;margin:8px 0 2px"><span class="accent">5 秒！画出它！</span></p>
           <p class="small" style="font-size:13px">来不及思考，凭直觉画！每个词只有 5 秒，时间到强制切词。</p>
           <p class="small">连画 5 个词 → 烘干 → 凭记忆鉴定，答对有奖。跳过 -5 分。</p>
           <div class="mbtns"><button class="btn big" id="memStart">开始配题</button></div>
         </div>
       </div>
 
-      <div id="memDraw" hidden class="draw-stage">
+      <div id="memDraw" hidden="" class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="memCanvas" width="1024" height="768"></canvas></div>
+          <div class="canvas-wrap"><canvas id="memCanvas" width="1024" height="768" style="touch-action: none; user-select: none;"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn">返回 →</button>
@@ -516,17 +515,17 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <button class="btn" id="memSkip">跳过(-5分)</button>
             </div>
             <div class="tool-card">
-              <div class="tool-row" id="memBrushes"></div>
-              <div class="tool-row" id="memSizes"></div>
-              <div class="tool-row" id="memColors"></div>
-              <div class="tool-row" id="memActions"></div>
+              <div class="tool-row" id="memBrushes"><div class="tool-row ico-row"><button class="btn icobtn active" data-t="brush" title="画笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 17.2 L14.6 7.6 L17.6 10.6 L8 20.2 L4.4 20.8 Z"></path><path d="M13.2 9 L16.2 12"></path></svg><span>画笔</span></button><button class="btn icobtn" data-t="crayon" title="蜡笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M8.2 20 L8.2 8.6 Q8.2 5.6 10.6 3.8 Q13 5.6 13 8.6 L13 20 Z"></path><path d="M8.2 15.4 L13 15.4"></path><path d="M5.4 20.4 L15.8 20.4"></path></svg><span>蜡笔</span></button><button class="btn icobtn" data-t="acrylic" title="丙烯"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M4.6 15.6 Q11.4 8.2 19.6 6.4" stroke-width="4.2"></path><path d="M17.6 12.2 q1.7 2.3 0 3.5 q-1.7-1.2 0-3.5"></path></svg><span>丙烯</span></button><button class="btn icobtn" data-t="eraser" title="橡皮"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5.2 14.6 L11.4 8.4 L17.4 12.6 L12.6 18.8 Z"></path><path d="M8.8 11.6 L14.4 15.6"></path><path d="M4.6 20.6 L18.6 20.6"></path></svg><span>橡皮</span></button></div><div class="tool-row ico-row"></div></div>
+              <div class="tool-row" id="memSizes"><div class="size-slider"><input type="range" min="2" max="22" step="1"><span class="ss-val">5px</span></div></div>
+              <div class="tool-row" id="memColors"><button class="swatch active" title="墨" style="background: rgb(43, 43, 43);"></button><button class="swatch" title="番茄红" style="background: rgb(225, 75, 59);"></button><button class="swatch" title="牛仔蓝" style="background: rgb(59, 110, 165);"></button><button class="swatch" title="芥黄" style="background: rgb(242, 177, 52);"></button><button class="swatch" title="草绿" style="background: rgb(78, 155, 94);"></button><button class="swatch" title="棕" style="background: rgb(139, 90, 43);"></button><button class="swatch" title="橘" style="background: rgb(232, 122, 51);"></button><button class="swatch" title="紫" style="background: rgb(123, 94, 167);"></button><button class="swatch" title="白" style="background: rgb(255, 255, 255);"></button><button class="swatch swatch-rainbow" title="调色盘"></button></div>
+              <div class="tool-row" id="memActions"><button class="btn blue icobtn" data-t="undo" title="撤销"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M7.4 6.6 L4 10 L7.4 13.4"></path><path d="M4.4 10 L12.6 10 Q17.8 10 17.8 14.4 Q17.8 18 14.2 18.6"></path></svg><span>撤销</span></button><button class="btn blue icobtn" data-t="redo" title="重做"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.6 6.6 L18 10 L14.6 13.4"></path><path d="M17.6 10 L9.4 10 Q4.2 10 4.2 14.4 Q4.2 18 7.8 18.6"></path></svg><span>重做</span></button><button class="btn blue icobtn" data-t="clear" title="清空"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6 L16 16"></path><path d="M16 6 L6 16"></path></svg><span>清空</span></button></div>
             </div>
             <div class="status-line" id="memStatus">5 秒凭直觉画，答对 +10 分！</div>
           </aside>
         </div>
       </div>
 
-      <div id="memDry" hidden class="colflow" style="align-items:center;justify-content:center;gap:14px">
+      <div id="memDry" hidden="" class="colflow" style="align-items:center;justify-content:center;gap:14px">
         <div class="draw-top" style="width:100%;justify-content:flex-start">
           <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
@@ -539,7 +538,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         </div>
       </div>
 
-      <div id="memJudge" hidden class="colflow">
+      <div id="memJudge" hidden="" class="colflow">
         <div class="draw-top" style="justify-content:flex-start">
           <button class="btn blu back-btn">返回 →</button>
           <b id="jdIdx">鉴定 1/5</b>
@@ -556,16 +555,16 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <span class="tool-label" style="margin-bottom:6px">这幅画的是什么？</span>
             <div class="qrow">
               <input id="jdInput" class="qinput sketch-border" style="flex:1" placeholder="输入你的答案…" maxlength="20">
-              <button class="mic-btn" data-voice="jdInput" title="语音输入" aria-label="语音输入"></button>
+              <button class="mic-btn" data-voice="jdInput" title="语音输入" aria-label="语音输入"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
             </div>
             <div id="jdFb"></div>
             <div class="mbtns" style="margin-top:8px"><button class="btn big" id="jdSubmit">提交答案</button></div>
-            <div><button class="btn blu" id="jdNext" disabled>下一幅 →</button></div>
+            <div><button class="btn blu" id="jdNext" disabled="">下一幅 →</button></div>
           </div>
         </div>
       </div>
 
-      <div id="memResult" hidden class="colflow" style="gap:10px;align-items:center;justify-content:center">
+      <div id="memResult" hidden="" class="colflow" style="gap:10px;align-items:center;justify-content:center">
         <div class="draw-top" style="width:100%;justify-content:flex-start">
           <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
@@ -584,7 +583,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   </div>
 
   <!-- 场景3：猜谜酒馆 -->
-  <div class="scene" id="scene-tavern">
+  <div class="scene on" id="scene-tavern">
     <div class="scene-pad">
       <div class="draw-top nav-top">
         <button class="btn blu back-btn">返回 →</button>
@@ -594,61 +593,61 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       </div>
 
       <!-- 酒馆大厅（B 版·谜题墙上挂）：黑墨外框 / 字牌顶栏 / 中央吊挂画框 / 左掌柜 / 右入口 -->
-      <div id="tavHome" hidden class="draw-stage">
+      <div id="tavHome" class="draw-stage">
         <div class="draw-main tav-homemain">
         <div class="draw-top tav-btop" style="width:100%;justify-content:flex-start;flex-wrap:nowrap;min-width:0">
           <div class="tav-cards"><b>猜</b><b>谜</b><b>酒</b><b>馆</b></div>
           <span class="sub small" style="margin-left:8px;white-space:nowrap">掌柜老墨的手绘谜题</span>
           <span class="sp"></span>
           <button class="btn blu back-btn" style="flex:none;position:static">返回 →</button>
-          <div class="prop-row" id="tavProps" style="flex:none"></div>
+          <div class="prop-row" id="tavProps" style="flex:none"><span class="tag" style="padding:3px 12px;font-size:13px"><svg width="16" height="16" style="vertical-align:-3px" viewBox="0 0 20 20"><g stroke="#2B2B2B" stroke-width="1.4" fill="#E087A6"><circle cx="10" cy="5.4" r="3"></circle><circle cx="14.3" cy="8.5" r="3"></circle><circle cx="12.7" cy="13.6" r="3"></circle><circle cx="7.3" cy="13.6" r="3"></circle><circle cx="5.7" cy="8.5" r="3"></circle></g><circle cx="10" cy="10" r="2.2" fill="#E9B824" stroke="#2B2B2B" stroke-width="1.2"></circle></svg><b>3</b></span><span class="tag" style="padding:3px 12px;font-size:13px;margin-left:8px"><svg width="16" height="16" style="vertical-align:-3px" viewBox="0 0 20 20"><path d="M10 2 C13.6 2 15.6 8 15.6 12 C15.6 15.6 13 17.6 10 17.6 C7 17.6 4.4 15.6 4.4 12 C4.4 8 6.4 2 10 2 Z" fill="#FBF3E2" stroke="#2B2B2B" stroke-width="1.6"></path><path d="M7 12 q3 2.4 6 0" fill="none" stroke="#2B2B2B" stroke-width="1.2"></path></svg><b>3</b></span><button class="tag" id="adBtn" style="padding:3px 10px;font-size:12px;margin-left:8px;cursor:pointer">看广告 +3/+3</button><button class="tag" id="claimBtn" style="padding:3px 10px;font-size:12px;cursor:pointer">每日领取 +2/+2</button></div>
         </div>
         <div style="flex:1;display:flex;align-items:stretch;min-height:0;gap:6px;padding:2px 8px 0">
           <div id="tavColL" style="flex:none;width:clamp(78px,12vw,140px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0">
             <svg id="tavKeeperSvg" viewBox="0 0 330 440" style="width:auto;max-width:min(120px,80%);max-height:34vh;flex:none">
               <defs>
-                <linearGradient id="kvRobe" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#566884"/><stop offset="100%" stop-color="#3D4D66"/></linearGradient>
-                <radialGradient id="kvSkin" cx="50%" cy="40%" r="70%"><stop offset="0%" stop-color="#FDF3E0"/><stop offset="100%" stop-color="#F1DDC0"/></radialGradient>
-                <radialGradient id="kvBlush" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#F2A49A" stop-opacity=".7"/><stop offset="100%" stop-color="#F2A49A" stop-opacity="0"/></radialGradient>
+                <linearGradient id="kvRobe" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#566884"></stop><stop offset="100%" stop-color="#3D4D66"></stop></linearGradient>
+                <radialGradient id="kvSkin" cx="50%" cy="40%" r="70%"><stop offset="0%" stop-color="#FDF3E0"></stop><stop offset="100%" stop-color="#F1DDC0"></stop></radialGradient>
+                <radialGradient id="kvBlush" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#F2A49A" stop-opacity=".7"></stop><stop offset="100%" stop-color="#F2A49A" stop-opacity="0"></stop></radialGradient>
               </defs>
-              <ellipse cx="165" cy="420" rx="92" ry="13" fill="#2B2B2B" opacity=".10"/>
-              <path d="M108,214 Q165,196 222,214 L242,330 Q246,376 234,404 L96,404 Q84,376 88,330 Z" fill="url(#kvRobe)" stroke="#2B2B2B" stroke-width="7" stroke-linejoin="round"/>
-              <path d="M132,214 L165,262 L198,214 L184,208 L165,240 L146,208 Z" fill="#FDF8EC" stroke="#2B2B2B" stroke-width="6" stroke-linejoin="round"/>
-              <circle cx="165" cy="286" r="5.6" fill="#FDF8EC" stroke="#2B2B2B" stroke-width="4.4"/>
-              <circle cx="165" cy="316" r="5.6" fill="#FDF8EC" stroke="#2B2B2B" stroke-width="4.4"/>
-              <path d="M104,238 Q76,258 82,296 Q96,318 124,308 Q134,278 122,246" fill="#4A5C78" stroke="#2B2B2B" stroke-width="7" stroke-linejoin="round"/>
-              <path d="M218,240 Q248,258 250,290 Q246,310 222,308 Q210,276 214,248 Z" fill="#4A5C78" stroke="#2B2B2B" stroke-width="7" stroke-linejoin="round"/>
+              <ellipse cx="165" cy="420" rx="92" ry="13" fill="#2B2B2B" opacity=".10"></ellipse>
+              <path d="M108,214 Q165,196 222,214 L242,330 Q246,376 234,404 L96,404 Q84,376 88,330 Z" fill="url(#kvRobe)" stroke="#2B2B2B" stroke-width="7" stroke-linejoin="round"></path>
+              <path d="M132,214 L165,262 L198,214 L184,208 L165,240 L146,208 Z" fill="#FDF8EC" stroke="#2B2B2B" stroke-width="6" stroke-linejoin="round"></path>
+              <circle cx="165" cy="286" r="5.6" fill="#FDF8EC" stroke="#2B2B2B" stroke-width="4.4"></circle>
+              <circle cx="165" cy="316" r="5.6" fill="#FDF8EC" stroke="#2B2B2B" stroke-width="4.4"></circle>
+              <path d="M104,238 Q76,258 82,296 Q96,318 124,308 Q134,278 122,246" fill="#4A5C78" stroke="#2B2B2B" stroke-width="7" stroke-linejoin="round"></path>
+              <path d="M218,240 Q248,258 250,290 Q246,310 222,308 Q210,276 214,248 Z" fill="#4A5C78" stroke="#2B2B2B" stroke-width="7" stroke-linejoin="round"></path>
               <g transform="translate(258,196) rotate(16)">
-                <rect x="-5" y="-58" width="10" height="80" rx="4.5" fill="#C9905A" stroke="#2B2B2B" stroke-width="5"/>
-                <path d="M-9,24 Q0,50 9,24 Q5,17 0,17 Q-5,17 -9,24 Z" fill="#3A4252" stroke="#2B2B2B" stroke-width="5"/>
+                <rect x="-5" y="-58" width="10" height="80" rx="4.5" fill="#C9905A" stroke="#2B2B2B" stroke-width="5"></rect>
+                <path d="M-9,24 Q0,50 9,24 Q5,17 0,17 Q-5,17 -9,24 Z" fill="#3A4252" stroke="#2B2B2B" stroke-width="5"></path>
               </g>
-              <ellipse cx="165" cy="150" rx="80" ry="74" fill="url(#kvSkin)" stroke="#2B2B2B" stroke-width="7"/>
-              <path d="M92,116 Q95,52 165,48 Q235,52 238,116 Q202,104 165,104 Q128,104 92,116 Z" fill="#46586E" stroke="#2B2B2B" stroke-width="7"/>
-              <circle cx="165" cy="44" r="10" fill="#E8B04B" stroke="#2B2B2B" stroke-width="5"/>
-              <rect x="155" y="92" width="20" height="14" rx="3" fill="#E8B04B" stroke="#2B2B2B" stroke-width="4.4"/>
-              <ellipse cx="86" cy="156" rx="11" ry="15" fill="#F1DDC0" stroke="#2B2B2B" stroke-width="6"/>
-              <ellipse cx="244" cy="156" rx="11" ry="15" fill="#F1DDC0" stroke="#2B2B2B" stroke-width="6"/>
-              <circle cx="137" cy="146" r="13" fill="#2E3138"/><circle cx="140" cy="142" r="4.8" fill="#fff"/>
-              <circle cx="193" cy="146" r="13" fill="#2E3138"/><circle cx="196" cy="142" r="4.8" fill="#fff"/>
-              <path d="M160,164 Q165,172 170,164" stroke="#C89B6C" stroke-width="6" fill="none" stroke-linecap="round"/>
-              <ellipse cx="112" cy="172" rx="16" ry="10" fill="url(#kvBlush)"/><ellipse cx="218" cy="172" rx="16" ry="10" fill="url(#kvBlush)"/>
-              <path d="M153,184 Q165,196 177,184" stroke="#2B2B2B" stroke-width="7" fill="none" stroke-linecap="round"/>
-              <ellipse cx="132" cy="408" rx="24" ry="11" fill="#2E3138" stroke="#2B2B2B" stroke-width="6"/>
-              <ellipse cx="198" cy="408" rx="24" ry="11" fill="#2E3138" stroke="#2B2B2B" stroke-width="6"/>
+              <ellipse cx="165" cy="150" rx="80" ry="74" fill="url(#kvSkin)" stroke="#2B2B2B" stroke-width="7"></ellipse>
+              <path d="M92,116 Q95,52 165,48 Q235,52 238,116 Q202,104 165,104 Q128,104 92,116 Z" fill="#46586E" stroke="#2B2B2B" stroke-width="7"></path>
+              <circle cx="165" cy="44" r="10" fill="#E8B04B" stroke="#2B2B2B" stroke-width="5"></circle>
+              <rect x="155" y="92" width="20" height="14" rx="3" fill="#E8B04B" stroke="#2B2B2B" stroke-width="4.4"></rect>
+              <ellipse cx="86" cy="156" rx="11" ry="15" fill="#F1DDC0" stroke="#2B2B2B" stroke-width="6"></ellipse>
+              <ellipse cx="244" cy="156" rx="11" ry="15" fill="#F1DDC0" stroke="#2B2B2B" stroke-width="6"></ellipse>
+              <circle cx="137" cy="146" r="13" fill="#2E3138"></circle><circle cx="140" cy="142" r="4.8" fill="#fff"></circle>
+              <circle cx="193" cy="146" r="13" fill="#2E3138"></circle><circle cx="196" cy="142" r="4.8" fill="#fff"></circle>
+              <path d="M160,164 Q165,172 170,164" stroke="#C89B6C" stroke-width="6" fill="none" stroke-linecap="round"></path>
+              <ellipse cx="112" cy="172" rx="16" ry="10" fill="url(#kvBlush)"></ellipse><ellipse cx="218" cy="172" rx="16" ry="10" fill="url(#kvBlush)"></ellipse>
+              <path d="M153,184 Q165,196 177,184" stroke="#2B2B2B" stroke-width="7" fill="none" stroke-linecap="round"></path>
+              <ellipse cx="132" cy="408" rx="24" ry="11" fill="#2E3138" stroke="#2B2B2B" stroke-width="6"></ellipse>
+              <ellipse cx="198" cy="408" rx="24" ry="11" fill="#2E3138" stroke="#2B2B2B" stroke-width="6"></ellipse>
             </svg>
             <b style="font-size:clamp(12px,1.5vw,15px)">掌柜 · 老墨</b>
           </div>
-          <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0">
+          <div style="flex: 1 1 0%; display: flex; flex-direction: column; align-items: center; min-width: 0px; position: relative; width: 349.729px; height: 313.667px; transform: matrix(1, 0, 0, 1, 10.5938, 0);">
             <div class="tav-rope" style="flex:none;height:clamp(20px,4vh,44px)"></div>
             <div class="tav-frame" style="width:min(100%,calc(52vh*1.5));max-width:96%;aspect-ratio:1.5;padding:clamp(8px,1.4vw,14px) clamp(18px,3vw,34px);transform:rotate(-.6deg);justify-content:center;flex:none">
               <canvas id="tavPreview" width="640" height="480" style="flex:1;min-height:0;width:auto;max-width:100%;object-fit:contain;border:none;border-radius:6px;background:#fff"></canvas>
               <div class="small" style="margin-top:6px;font-weight:800;font-size:clamp(9px,1.3vw,13px);white-space:nowrap;overflow:hidden;max-width:100%">今日一幅 · 每日轮换 · 镇民投稿精选</div>
-              <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(9px,1.2vw,12px);white-space:nowrap;overflow:hidden;max-width:100%"></div>
+              <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(9px,1.2vw,12px);white-space:nowrap;overflow:hidden;max-width:100%">给谜题图送花，老墨记在流水账上</div>
             </div>
-            <div class="tav-rule small" style="margin-top:6px;max-width:96%">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1 分 = 1 墨水</div>
+            <div class="tav-rule small" style="margin-top: 6px; max-width: 96%;">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1 分 = 1 墨水</div>
             <div style="flex:1 1 0;min-height:0"></div>
           </div>
-          <div id="tavColR" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,1.4vh,14px)">
+          <div id="tavColR" style="flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 1.4vh, 14px);">
             <button class="btn big" id="tavStart" style="width:min(200px,100%);font-size:clamp(13px,1.7vw,17px);padding:clamp(7px,1.2vh,11px) 10px">开始今日特调</button>
             <button class="btn" id="tavLanternBtn" style="width:min(200px,100%);background:#FBEFD8;font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">🏮 灯谜会</button>
             <button class="btn blu" id="tavCreateBtn" style="width:min(200px,100%);font-size:clamp(12px,1.5vw,15px);padding:clamp(6px,1vh,9px) 10px">我来出题</button>
@@ -659,7 +658,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       </div>
 
       <!-- 答题（A 版·老墨的吧台）：左画右答 -->
-      <div id="tavPlay" hidden class="apw">
+      <div id="tavPlay" hidden="" class="apw">
         <div class="apw-left">
           <div class="draw-top" style="gap:8px;flex-wrap:nowrap;min-width:0">
             <span class="stamp" id="tavCat" style="background:#F2C94C">成语</span>
@@ -678,7 +677,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <div class="bar" style="margin:8px 0"><i id="tavBar"></i></div>
             <div class="qrow" style="gap:8px">
               <input id="tavInput" class="qinput" style="flex:1;min-width:0" placeholder="输入你的答案…" maxlength="24">
-              <button class="mic-btn" data-voice="tavInput" title="语音输入" aria-label="语音输入"></button>
+              <button class="mic-btn" data-voice="tavInput" title="语音输入" aria-label="语音输入"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
               <button class="btn" id="tavSend" style="flex:none;padding:9px 18px;font-size:16px">提交</button>
             </div>
             <div id="tavFb" style="min-height:18px;font-weight:700;font-size:13px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
@@ -698,9 +697,9 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       </div>
 
       <!-- 我来出题：类别与答案卡 / 画布 / 工具条 / 提交 -->
-      <div id="tavCreate" hidden class="draw-stage">
+      <div id="tavCreate" hidden="" class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="ctCanvas" width="1024" height="768"></canvas></div>
+          <div class="canvas-wrap"><canvas id="ctCanvas" width="1024" height="768" style="touch-action: none; user-select: none;"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn" id="ctBack">返回 →</button>
@@ -710,26 +709,26 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <div class="tool-card">
               <span class="tool-label">类别</span>
               <div class="tool-row">
-                <span id="ctCats" style="display:flex;gap:6px;flex-wrap:wrap"></span>
-                <input id="ctCustomCat" class="qinput sketch-border" style="flex:0 0 92px;padding:5px 8px;font-size:13px" placeholder="自定义标签" maxlength="6" hidden>
-                <button class="mic-btn" data-voice="ctCustomCat" title="语音输入" aria-label="语音输入" hidden></button>
+                <span id="ctCats" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">成语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歇后语</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">歌名</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">古诗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">热梗</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">台词</button><button class="btn sketch-border" style="padding: 4px 10px; font-size: 13px;">自定义</button></span>
+                <input id="ctCustomCat" class="qinput sketch-border" style="flex:0 0 92px;padding:5px 8px;font-size:13px" placeholder="自定义标签" maxlength="6" hidden="">
+                <button class="mic-btn" data-voice="ctCustomCat" title="语音输入" aria-label="语音输入" hidden=""><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
               </div>
               <span class="tool-label">答案与提示</span>
               <div class="qrow">
                 <input id="ctAns" class="qinput sketch-border" style="padding:5px 10px;font-size:14px" placeholder="答案（必填）" maxlength="20">
-                <button class="mic-btn" data-voice="ctAns" title="语音输入" aria-label="语音输入"></button>
+                <button class="mic-btn" data-voice="ctAns" title="语音输入" aria-label="语音输入"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
               </div>
               <div class="qrow">
                 <input id="ctHint" class="qinput sketch-border" style="padding:5px 10px;font-size:14px" placeholder="提示（选填，如：首字X）" maxlength="16">
-                <button class="mic-btn" data-voice="ctHint" title="语音输入" aria-label="语音输入"></button>
+                <button class="mic-btn" data-voice="ctHint" title="语音输入" aria-label="语音输入"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
               </div>
             </div>
             <div class="tool-card">
-              <div class="tool-row" id="ctBrushes"></div>
-              <div class="tool-row" id="ctSizes"></div>
-              <div class="tool-row" id="ctLayers"></div>
-              <div class="tool-row" id="ctColors"></div>
-              <div class="tool-row" id="ctActions"></div>
+              <div class="tool-row" id="ctBrushes"><div class="tool-row ico-row"><button class="btn icobtn active" data-t="brush" title="画笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 17.2 L14.6 7.6 L17.6 10.6 L8 20.2 L4.4 20.8 Z"></path><path d="M13.2 9 L16.2 12"></path></svg><span>画笔</span></button><button class="btn icobtn" data-t="crayon" title="蜡笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M8.2 20 L8.2 8.6 Q8.2 5.6 10.6 3.8 Q13 5.6 13 8.6 L13 20 Z"></path><path d="M8.2 15.4 L13 15.4"></path><path d="M5.4 20.4 L15.8 20.4"></path></svg><span>蜡笔</span></button><button class="btn icobtn" data-t="acrylic" title="丙烯"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M4.6 15.6 Q11.4 8.2 19.6 6.4" stroke-width="4.2"></path><path d="M17.6 12.2 q1.7 2.3 0 3.5 q-1.7-1.2 0-3.5"></path></svg><span>丙烯</span></button><button class="btn icobtn" data-t="marker" title="马克笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6.2 15.8 L6.2 9.4 L11 4 L13.4 6.4 L8.6 11.8"></path><path d="M11 4 L15.6 8.6 L9 17.4 L4.4 20.4 L6.2 15.8 Z"></path><path d="M4.4 20.4 L18 20.4"></path></svg><span>马克笔</span></button></div><div class="tool-row ico-row"><button class="btn icobtn" data-t="spray" title="喷枪"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><circle cx="8" cy="14.6" r="3.4"></circle><path d="M13.4 6.2 L17.8 10.6"></path><path d="M14.6 3.4 L15 4.6 M17.4 4.2 L16.8 5.3 M19.4 6.8 L18.2 7 M18.6 9.4 L17.8 8.4" stroke-width="1.3"></path><circle cx="7.2" cy="13.8" r=".7" fill="currentColor" stroke="none"></circle></svg><span>喷枪</span></button><button class="btn icobtn" data-t="fill" title="填色"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M10.4 3.2 L17.4 10.2 L11 16.6 Q9.2 18.4 7.4 16.6 L3.8 13 Q2 11.2 3.8 9.4 Z"></path><path d="M13.2 5.4 L8 10.6"></path><path d="M19.2 13.6 Q20.8 16 19.2 17.4 Q17.6 18.8 16.4 17 Q15.4 15.4 16.6 14 Z"></path></svg><span>填色</span></button><button class="btn icobtn" data-t="pick" title="取色"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.8 3.6 L18.4 7.2 L15.4 10.2 L11.8 6.6 Z"></path><path d="M12.8 7.6 L5 15.4 L3.8 18.8 L7.2 17.4 L15 9.6"></path></svg><span>取色</span></button><button class="btn icobtn" data-t="eraser" title="橡皮"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5.2 14.6 L11.4 8.4 L17.4 12.6 L12.6 18.8 Z"></path><path d="M8.8 11.6 L14.4 15.6"></path><path d="M4.6 20.6 L18.6 20.6"></path></svg><span>橡皮</span></button></div></div>
+              <div class="tool-row" id="ctSizes"><div class="size-slider"><input type="range" min="2" max="22" step="1"><span class="ss-val">5px</span></div></div>
+              <div class="tool-row" id="ctLayers"><div class="layer-th active"><canvas width="36" height="36"></canvas><span class="l-eye"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M2.8 11 Q11 4.4 19.2 11 Q11 17.6 2.8 11 Z"></path><circle cx="11" cy="11" r="2.6"></circle></svg></span></div><div class="layer-th"><canvas width="36" height="36"></canvas><span class="l-eye"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M2.8 11 Q11 4.4 19.2 11 Q11 17.6 2.8 11 Z"></path><circle cx="11" cy="11" r="2.6"></circle></svg></span></div><button class="btn l-op" title="新建图层">＋</button><button class="btn l-op" title="删除当前图层"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6 L16 16"></path><path d="M16 6 L6 16"></path></svg></button></div>
+              <div class="tool-row" id="ctColors"><button class="swatch active" title="墨" style="background: rgb(43, 43, 43);"></button><button class="swatch" title="番茄红" style="background: rgb(225, 75, 59);"></button><button class="swatch" title="牛仔蓝" style="background: rgb(59, 110, 165);"></button><button class="swatch" title="芥黄" style="background: rgb(242, 177, 52);"></button><button class="swatch" title="草绿" style="background: rgb(78, 155, 94);"></button><button class="swatch" title="棕" style="background: rgb(139, 90, 43);"></button><button class="swatch" title="橘" style="background: rgb(232, 122, 51);"></button><button class="swatch" title="紫" style="background: rgb(123, 94, 167);"></button><button class="swatch" title="白" style="background: rgb(255, 255, 255);"></button><button class="swatch swatch-rainbow" title="调色盘"></button></div>
+              <div class="tool-row" id="ctActions"><button class="btn blue icobtn" data-t="undo" title="撤销"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M7.4 6.6 L4 10 L7.4 13.4"></path><path d="M4.4 10 L12.6 10 Q17.8 10 17.8 14.4 Q17.8 18 14.2 18.6"></path></svg><span>撤销</span></button><button class="btn blue icobtn" data-t="redo" title="重做"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.6 6.6 L18 10 L14.6 13.4"></path><path d="M17.6 10 L9.4 10 Q4.2 10 4.2 14.4 Q4.2 18 7.8 18.6"></path></svg><span>重做</span></button><button class="btn blue icobtn" data-t="clear" title="清空"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6 L16 16"></path><path d="M16 6 L6 16"></path></svg><span>清空</span></button></div>
             </div>
             <div class="status-line" id="ctStatus" style="min-height:16px">画 2~4 个涂鸦素材暗示答案</div>
             <div style="flex:0 0 auto"><button class="btn big" id="ctSubmit" style="width:100%;padding-top:7px;padding-bottom:7px">提交投稿</button></div>
@@ -738,7 +737,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
       </div>
 
       <!-- 灯谜会 · 夜间市集板块（独立于看图猜谜） -->
-      <div id="tavLantern" hidden class="colflow" style="gap:0">
+      <div id="tavLantern" hidden="" class="colflow" style="gap:0">
         <div class="draw-top lt-top" style="width:100%;justify-content:flex-start;gap:10px">
           <button class="btn lt-back" id="ltBack">返回大厅 →</button>
           <h2 class="hw uw" style="font-size:20px;color:#F5E9C8">🏮 灯谜会 · 夜市</h2>
@@ -749,29 +748,29 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         <div class="lt-sky" style="flex:1;position:relative;min-height:0">
           <svg viewBox="0 0 128 56" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;opacity:.95">
             <defs>
-              <radialGradient id="ltGR" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#FDFBF2"/><stop offset="55%" stop-color="#F1EEE0"/><stop offset="100%" stop-color="#D9E2DC"/></radialGradient>
-              <radialGradient id="ltGG" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#FBF7E6"/><stop offset="60%" stop-color="#EFE7C8"/><stop offset="100%" stop-color="#D8CBA0"/></radialGradient>
+              <radialGradient id="ltGR" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#FDFBF2"></stop><stop offset="55%" stop-color="#F1EEE0"></stop><stop offset="100%" stop-color="#D9E2DC"></stop></radialGradient>
+              <radialGradient id="ltGG" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#FBF7E6"></stop><stop offset="60%" stop-color="#EFE7C8"></stop><stop offset="100%" stop-color="#D8CBA0"></stop></radialGradient>
             </defs>
-            <path d="M112,6.5 a8.8,8.8 0 1,0 7.4,14 a7,7 0 1,1 -7.4,-14 Z" fill="#F2E3B0" stroke="#141821" stroke-width="1.7"/>
-            <path d="M101,2.5 l-4,-2 M102,20.5 l-4,2 M123,8.5 l4,-1.4" stroke="#F2E3B0" stroke-width="1.3" stroke-linecap="round" opacity=".6" fill="none"/>
+            <path d="M112,6.5 a8.8,8.8 0 1,0 7.4,14 a7,7 0 1,1 -7.4,-14 Z" fill="#F2E3B0" stroke="#141821" stroke-width="1.7"></path>
+            <path d="M101,2.5 l-4,-2 M102,20.5 l-4,2 M123,8.5 l4,-1.4" stroke="#F2E3B0" stroke-width="1.3" stroke-linecap="round" opacity=".6" fill="none"></path>
             <g fill="#F5E9C8" stroke="#141821" stroke-width=".5">
-              <path d="M16,11 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"/>
-              <path d="M36,6 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"/>
-              <path d="M56,15 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"/>
-              <path d="M76,7 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"/>
-              <path d="M92,21 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"/>
-              <path d="M8,26 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"/>
+              <path d="M16,11 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"></path>
+              <path d="M36,6 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"></path>
+              <path d="M56,15 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"></path>
+              <path d="M76,7 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"></path>
+              <path d="M92,21 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"></path>
+              <path d="M8,26 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"></path>
             </g>
-            <path d="M18,33 q-4.8,0 -4.8,-4.4 q0,-4.4 5.4,-4.4 q1.2,-4.4 6.4,-3.8 q5.2,-3.4 8.6,1 q5.4,-1 5.4,4.4 q0,4.6 -4.4,4.6 Z" fill="#39445C" stroke="#141821" stroke-width="1.4"/>
-            <path d="M60,27 q-4,0 -4,-3.8 q0,-3.8 4.6,-3.8 q1,-3.8 5.4,-3.1 q4.4,-2.9 7.3,1 q4.6,-1 4.6,3.8 q0,3.9 -3.8,3.9 Z" fill="#39445C" stroke="#141821" stroke-width="1.3"/>
+            <path d="M18,33 q-4.8,0 -4.8,-4.4 q0,-4.4 5.4,-4.4 q1.2,-4.4 6.4,-3.8 q5.2,-3.4 8.6,1 q5.4,-1 5.4,4.4 q0,4.6 -4.4,4.6 Z" fill="#39445C" stroke="#141821" stroke-width="1.4"></path>
+            <path d="M60,27 q-4,0 -4,-3.8 q0,-3.8 4.6,-3.8 q1,-3.8 5.4,-3.1 q4.4,-2.9 7.3,1 q4.6,-1 4.6,3.8 q0,3.9 -3.8,3.9 Z" fill="#39445C" stroke="#141821" stroke-width="1.3"></path>
             <g stroke="#141821" stroke-width="1.5" fill="none" opacity=".85">
-              <path d="M14,56 C20,40 16,30 26,22 M14,56 C22,44 34,40 40,30"/>
-              <path d="M114,56 C108,42 112,32 102,24 M114,56 C106,44 94,40 88,30"/>
+              <path d="M14,56 C20,40 16,30 26,22 M14,56 C22,44 34,40 40,30"></path>
+              <path d="M114,56 C108,42 112,32 102,24 M114,56 C106,44 94,40 88,30"></path>
             </g>
-            <g fill="#E8927C" opacity=".8"><circle cx="26" cy="22" r="1.3"/><circle cx="23.5" cy="26.5" r="1"/><circle cx="40" cy="30" r="1.3"/><circle cx="102" cy="24" r="1.3"/><circle cx="99.5" cy="28.5" r="1"/><circle cx="88" cy="30" r="1.3"/></g>
-            <path d="M0,48.5 q8,-4.5 16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 L128,56 L0,56 Z" fill="#14181F" stroke="#141821" stroke-width="1"/>
+            <g fill="#E8927C" opacity=".8"><circle cx="26" cy="22" r="1.3"></circle><circle cx="23.5" cy="26.5" r="1"></circle><circle cx="40" cy="30" r="1.3"></circle><circle cx="102" cy="24" r="1.3"></circle><circle cx="99.5" cy="28.5" r="1"></circle><circle cx="88" cy="30" r="1.3"></circle></g>
+            <path d="M0,48.5 q8,-4.5 16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 t16,0 L128,56 L0,56 Z" fill="#14181F" stroke="#141821" stroke-width="1"></path>
             <g fill="#2A3140" stroke="#141821" stroke-width=".8">
-              <circle cx="8" cy="49.5" r="1.4"/><circle cx="24" cy="49.5" r="1.4"/><circle cx="40" cy="49.5" r="1.4"/><circle cx="56" cy="49.5" r="1.4"/><circle cx="72" cy="49.5" r="1.4"/><circle cx="88" cy="49.5" r="1.4"/><circle cx="104" cy="49.5" r="1.4"/><circle cx="120" cy="49.5" r="1.4"/>
+              <circle cx="8" cy="49.5" r="1.4"></circle><circle cx="24" cy="49.5" r="1.4"></circle><circle cx="40" cy="49.5" r="1.4"></circle><circle cx="56" cy="49.5" r="1.4"></circle><circle cx="72" cy="49.5" r="1.4"></circle><circle cx="88" cy="49.5" r="1.4"></circle><circle cx="104" cy="49.5" r="1.4"></circle><circle cx="120" cy="49.5" r="1.4"></circle>
             </g>
           </svg>
           <div id="ltHome" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2vh,18px);padding:8px 14px">
@@ -781,7 +780,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <button class="btn" id="ltNext" style="font-size:13px;padding:5px 14px;background:#FBEFD8">换一批 ↓</button>
             </div>
           </div>
-          <div id="ltSolve" hidden style="position:absolute;inset:0;display:flex;min-height:0">
+          <div id="ltSolve" hidden="" style="position:absolute;inset:0;display:flex;min-height:0">
             <div style="width:40%;display:flex;align-items:center;justify-content:center;padding:10px 6px 10px 14px;min-width:0">
               <div id="ltBig" style="width:min(280px,86%)"></div>
             </div>
@@ -796,18 +795,18 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <div class="card sketch-border" style="padding:10px 14px;max-width:520px">
                 <div class="qrow" style="gap:8px">
                   <input id="ltInput" class="qinput sketch-border" style="flex:1;min-width:0" placeholder="写出谜底…" maxlength="12">
-                  <button class="mic-btn" data-voice="ltInput" title="语音输入" aria-label="语音输入"></button>
+                  <button class="mic-btn" data-voice="ltInput" title="语音输入" aria-label="语音输入"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
                   <button class="btn big" id="ltSend" style="padding:8px 20px;font-size:15px">揭灯</button>
                 </div>
               </div>
             </div>
           </div>
-          <div id="ltSky" hidden style="position:absolute;inset:0">
+          <div id="ltSky" hidden="" style="position:absolute;inset:0">
             <canvas id="ltSkyCv" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
             <div style="position:absolute;left:0;right:0;top:12%;text-align:center;pointer-events:none">
               <b style="font-size:clamp(16px,3vh,22px);color:#F5E9C8;text-shadow:0 2px 8px rgba(0,0,0,.6)">本轮全对 · 满天孔明灯为你放飞</b>
             </div>
-            <button class="btn big" id="ltSkyBack" hidden style="position:absolute;left:50%;transform:translateX(-50%);bottom:8%">继续夜游 →</button>
+            <button class="btn big" id="ltSkyBack" hidden="" style="position:absolute;left:50%;transform:translateX(-50%);bottom:8%">继续夜游 →</button>
           </div>
         </div>
       </div>
@@ -831,7 +830,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <span class="tag sketch-border">画技分 <b>0</b>/100</span>
         </div>
         <div class="tiers">
-          <div class="tier paper-panel sketch-border">
+          <div class="tier paper-panel sketch-border" style="cursor: pointer;">
             <h4>好友局</h4>
             <span class="small">[锁] 邀请好友功能<br>接入微信后开放</span>
           </div>
@@ -841,13 +840,13 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <span class="small" style="opacity:.6">本地 AI 引擎 · 正式版接入多模态大模型</span>
             <button class="btn big" id="gvStart">开始 AI 猜画</button>
           </div>
-          <div class="tier paper-panel sketch-border">
+          <div class="tier paper-panel sketch-border" style="cursor: pointer;">
             <h4>实时匹配</h4>
             <span class="small">[锁] 小镇居民<br>满 1000 人开放</span>
           </div>
         </div>
       </div>
-      <div id="gvPick" hidden style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+      <div id="gvPick" hidden="" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
         <div class="draw-top" style="width:100%;justify-content:flex-start">
           <button class="btn blu back-btn">返回 →</button>
           <h2 class="hw uw" style="font-size:22px">你画我猜馆</h2>
@@ -860,9 +859,9 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <p class="small" style="margin-top:10px">AI 只看你的线条猜词 —— 大胆下笔！</p>
         </div>
       </div>
-      <div id="gvDraw" hidden class="draw-stage">
+      <div id="gvDraw" hidden="" class="draw-stage">
         <div class="draw-main">
-          <div class="canvas-wrap"><canvas id="gvCanvas" width="1024" height="768"></canvas></div>
+          <div class="canvas-wrap"><canvas id="gvCanvas" width="1024" height="768" style="touch-action: none; user-select: none;"></canvas></div>
           <aside class="side-col">
             <div class="draw-top" style="flex-wrap:wrap;gap:8px">
               <button class="btn blu back-btn">返回 →</button>
@@ -877,19 +876,19 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <div class="mini-frame"><canvas id="gvMini" width="120" height="120"></canvas></div>
               <span class="small" style="text-align:center">AI 视角<br>镜像预览</span>
             </div>
-            <div class="ctrl-row" id="gvColors"></div>
-            <div class="ctrl-row" id="gvLayers"></div>
-            <div class="ctrl-row" id="gvTools"></div>
-            <div class="status-line" id="gvStatus"></div>
+            <div class="ctrl-row" id="gvColors"><button class="swatch active" title="墨" style="background: rgb(43, 43, 43);"></button><button class="swatch" title="番茄红" style="background: rgb(225, 75, 59);"></button><button class="swatch" title="牛仔蓝" style="background: rgb(59, 110, 165);"></button><button class="swatch" title="芥黄" style="background: rgb(242, 177, 52);"></button><button class="swatch" title="草绿" style="background: rgb(78, 155, 94);"></button><button class="swatch" title="棕" style="background: rgb(139, 90, 43);"></button><button class="swatch" title="橘" style="background: rgb(232, 122, 51);"></button><button class="swatch" title="紫" style="background: rgb(123, 94, 167);"></button><button class="swatch" title="白" style="background: rgb(255, 255, 255);"></button><button class="swatch swatch-rainbow" title="调色盘"></button></div>
+            <div class="ctrl-row" id="gvLayers"><div class="layer-th active"><canvas width="36" height="36"></canvas><span class="l-eye"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M2.8 11 Q11 4.4 19.2 11 Q11 17.6 2.8 11 Z"></path><circle cx="11" cy="11" r="2.6"></circle></svg></span></div><div class="layer-th"><canvas width="36" height="36"></canvas><span class="l-eye"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M2.8 11 Q11 4.4 19.2 11 Q11 17.6 2.8 11 Z"></path><circle cx="11" cy="11" r="2.6"></circle></svg></span></div><button class="btn l-op" title="新建图层">＋</button><button class="btn l-op" title="删除当前图层"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6 L16 16"></path><path d="M16 6 L6 16"></path></svg></button></div>
+            <div class="ctrl-row" id="gvTools"><div class="tool-row ico-row"><button class="btn icobtn active" data-t="brush" title="画笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 17.2 L14.6 7.6 L17.6 10.6 L8 20.2 L4.4 20.8 Z"></path><path d="M13.2 9 L16.2 12"></path></svg><span>画笔</span></button><button class="btn icobtn" data-t="crayon" title="蜡笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M8.2 20 L8.2 8.6 Q8.2 5.6 10.6 3.8 Q13 5.6 13 8.6 L13 20 Z"></path><path d="M8.2 15.4 L13 15.4"></path><path d="M5.4 20.4 L15.8 20.4"></path></svg><span>蜡笔</span></button><button class="btn icobtn" data-t="acrylic" title="丙烯"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M4.6 15.6 Q11.4 8.2 19.6 6.4" stroke-width="4.2"></path><path d="M17.6 12.2 q1.7 2.3 0 3.5 q-1.7-1.2 0-3.5"></path></svg><span>丙烯</span></button><button class="btn icobtn" data-t="marker" title="马克笔"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6.2 15.8 L6.2 9.4 L11 4 L13.4 6.4 L8.6 11.8"></path><path d="M11 4 L15.6 8.6 L9 17.4 L4.4 20.4 L6.2 15.8 Z"></path><path d="M4.4 20.4 L18 20.4"></path></svg><span>马克笔</span></button></div><div class="tool-row ico-row"><button class="btn icobtn" data-t="spray" title="喷枪"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><circle cx="8" cy="14.6" r="3.4"></circle><path d="M13.4 6.2 L17.8 10.6"></path><path d="M14.6 3.4 L15 4.6 M17.4 4.2 L16.8 5.3 M19.4 6.8 L18.2 7 M18.6 9.4 L17.8 8.4" stroke-width="1.3"></path><circle cx="7.2" cy="13.8" r=".7" fill="currentColor" stroke="none"></circle></svg><span>喷枪</span></button><button class="btn icobtn" data-t="fill" title="填色"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M10.4 3.2 L17.4 10.2 L11 16.6 Q9.2 18.4 7.4 16.6 L3.8 13 Q2 11.2 3.8 9.4 Z"></path><path d="M13.2 5.4 L8 10.6"></path><path d="M19.2 13.6 Q20.8 16 19.2 17.4 Q17.6 18.8 16.4 17 Q15.4 15.4 16.6 14 Z"></path></svg><span>填色</span></button><button class="btn icobtn" data-t="pick" title="取色"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.8 3.6 L18.4 7.2 L15.4 10.2 L11.8 6.6 Z"></path><path d="M12.8 7.6 L5 15.4 L3.8 18.8 L7.2 17.4 L15 9.6"></path></svg><span>取色</span></button><button class="btn icobtn" data-t="eraser" title="橡皮"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M5.2 14.6 L11.4 8.4 L17.4 12.6 L12.6 18.8 Z"></path><path d="M8.8 11.6 L14.4 15.6"></path><path d="M4.6 20.6 L18.6 20.6"></path></svg><span>橡皮</span></button><button class="btn blue icobtn" data-t="undo" title="撤销"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M7.4 6.6 L4 10 L7.4 13.4"></path><path d="M4.4 10 L12.6 10 Q17.8 10 17.8 14.4 Q17.8 18 14.2 18.6"></path></svg><span>撤销</span></button><button class="btn blue icobtn" data-t="redo" title="重做"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M14.6 6.6 L18 10 L14.6 13.4"></path><path d="M17.6 10 L9.4 10 Q4.2 10 4.2 14.4 Q4.2 18 7.8 18.6"></path></svg><span>重做</span></button><button class="btn blue icobtn" data-t="clear" title="清空"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6 L16 16"></path><path d="M16 6 L6 16"></path></svg><span>清空</span></button></div><div class="size-slider"><input type="range" min="2" max="22" step="1"><span class="ss-val">5px</span></div></div>
+            <div class="status-line" id="gvStatus"><i class="cdot" style="background:#2B2B2B"></i>画笔 · 墨 · 5px</div>
           </aside>
         </div>
       </div>
-      <div id="gvThink" hidden class="colflow">
+      <div id="gvThink" hidden="" class="colflow">
         <div id="aiWrap">
           <svg id="aiBrain" viewBox="0 0 100 100">
-            <path d="M32 18 C18 20 12 34 18 44 C10 50 12 66 24 70 C24 82 38 88 48 82 C58 90 74 84 76 72 C88 68 92 52 84 44 C90 32 80 18 66 20 C60 10 42 10 38 20 Z" fill="#F2EDDF" stroke="#2B2B2B" stroke-width="3" stroke-linejoin="round"/>
-            <path d="M50 16 C46 34 54 44 48 56 C44 66 52 78 50 86" fill="none" stroke="#2B2B2B" stroke-width="2.4"/>
-            <path d="M26 40 q8 -4 14 2 M60 28 q8 2 10 10 M28 62 q8 6 16 2 M66 60 q6 8 -2 14" fill="none" stroke="#E14B3B" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M32 18 C18 20 12 34 18 44 C10 50 12 66 24 70 C24 82 38 88 48 82 C58 90 74 84 76 72 C88 68 92 52 84 44 C90 32 80 18 66 20 C60 10 42 10 38 20 Z" fill="#F2EDDF" stroke="#2B2B2B" stroke-width="3" stroke-linejoin="round"></path>
+            <path d="M50 16 C46 34 54 44 48 56 C44 66 52 78 50 86" fill="none" stroke="#2B2B2B" stroke-width="2.4"></path>
+            <path d="M26 40 q8 -4 14 2 M60 28 q8 2 10 10 M28 62 q8 6 16 2 M66 60 q6 8 -2 14" fill="none" stroke="#E14B3B" stroke-width="2.2" stroke-linecap="round"></path>
           </svg>
           <b class="hw" style="font-size:20px">AI 大脑思考中……</b>
           <div id="aiBarWrap" class="bar sketch-border"><i id="aiBar" style="background:#3B6EA5"></i></div>
@@ -910,11 +909,11 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
     <div id="runHint">点击 / 空格 跳跃（可二段跳）· 撞上居民画作不会倒下，只会掉心</div>
   </div>
 
-  <div id="toast" class="sketch-border"></div>
+  <div id="toast" class="sketch-border" data-w="48x20"><svg class="wob-svg" preserveAspectRatio="none" viewBox="0 0 48 20"><path d="M-4.0 0.0L22.5 -1.6L52.0 0.0 M48.0 -4.0L46.8 10.2L48.0 24.0 M52.0 20.0L24.8 19.6L-4.0 20.0 M0.0 24.0L-0.0 9.2L0.0 -4.0" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"></path><path d="M3.0 3.0L24.7 3.5L45.0 3.0 M45.0 3.0L45.2 8.5L45.0 17.0 M45.0 17.0L22.6 17.1L3.0 17.0 M3.0 17.0L1.9 9.5L3.0 3.0" fill="none" stroke="#2B2B2B" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg></div>
   <div id="modalRoot"></div>
 </div>
 
-<button id="exitForce" class="btn sketch-border">退出强制横屏</button>
+<button id="exitForce" class="btn sketch-border" data-w="102x28" style="display: none;">退出强制横屏<svg class="wob-svg" preserveAspectRatio="none" viewBox="0 0 102 28"><path d="M-4.0 0.0L32.7 0.9L68.2 -1.0L106.0 0.0 M102.0 -4.0L102.5 15.0L102.0 32.0 M106.0 28.0L70.7 29.0L33.9 27.0L-4.0 28.0 M0.0 32.0L0.4 13.0L0.0 -4.0" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"></path><path d="M3.0 3.0L36.2 3.3L67.8 1.5L99.0 3.0 M99.0 3.0L99.9 15.1L99.0 25.0 M99.0 25.0L67.7 24.5L36.3 25.8L3.0 25.0 M3.0 25.0L1.6 15.4L3.0 3.0" fill="none" stroke="#2B2B2B" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg></button>
 
 <!-- 圆圈式调色盘：HSV 色轮（角度=色相 半径=饱和度）+ 明度滑杆 -->
 <div id="cwMask" style="display:none">
@@ -930,11 +929,11 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
   </div>
 </div>
 
-<div id="rotateMask">
+<div id="rotateMask" style="display: none;">
   <svg width="72" height="72" viewBox="0 0 72 72">
-    <rect x="24" y="10" width="24" height="52" rx="4" fill="none" stroke="#2B2B2B" stroke-width="3"/>
-    <line x1="32" y1="56" x2="40" y2="56" stroke="#2B2B2B" stroke-width="3"/>
-    <path d="M8 36 q6 -8 12 0" fill="none" stroke="#E14B3B" stroke-width="3"/>
+    <rect x="24" y="10" width="24" height="52" rx="4" fill="none" stroke="#2B2B2B" stroke-width="3"></rect>
+    <line x1="32" y1="56" x2="40" y2="56" stroke="#2B2B2B" stroke-width="3"></line>
+    <path d="M8 36 q6 -8 12 0" fill="none" stroke="#E14B3B" stroke-width="3"></path>
   </svg>
   <div>请旋转手机</div>
   <span class="small">涂鸦小镇是横屏游戏哦～</span>
@@ -4263,5 +4262,6 @@ applyOrient();
 showScene(save.seen?'scene-plaza':'scene-first');
 reframe();
 </script>
-</body>
-</html>
+
+
+</body></html>
