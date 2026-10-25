@@ -241,9 +241,9 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 #dryMachine{position:absolute;left:50%;top:0;transform:translateX(-50%);width:130px;height:130px;
   display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
 #jdArea{flex:1;display:flex;gap:18px;min-height:0;align-items:stretch}
-.jd-left{flex:0 0 34%;display:flex;flex-direction:column;gap:8px;min-height:0}
-.jd-left canvas{flex:1;min-height:0;width:100%;background:#fff}
-.jd-right{flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center;min-width:0}
+.jd-left{flex:1 1 62%;display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}
+.jd-left canvas{flex:1;min-height:0;width:100%;background:#fff;object-fit:contain}
+.jd-right{flex:0 0 33%;display:flex;flex-direction:column;gap:12px;justify-content:center;min-width:0}
 #jdFb{font-size:18px;font-weight:800;min-height:24px}
 #resList{max-height:170px;overflow:auto;line-height:1.9;text-align:left}
 
@@ -408,8 +408,8 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <span class="tape" style="left:50%;margin-left:-46px;top:-12px"></span>
           <p style="line-height:2;font-size:16px">画室的烘干机升级时<b class="accent">失忆</b>了……<br>
           只有真正的神笔才能认出自己画过什么！</p>
-          <p class="hw" style="font-size:24px;margin:8px 0 2px" ><span class="accent">3 秒！画出它！</span></p>
-          <p class="small" style="font-size:13px">来不及思考，凭直觉画！每个词只有 3 秒，时间到强制切词。</p>
+          <p class="hw" style="font-size:24px;margin:8px 0 2px" ><span class="accent">5 秒！画出它！</span></p>
+          <p class="small" style="font-size:13px">来不及思考，凭直觉画！每个词只有 5 秒，时间到强制切词。</p>
           <p class="small">连画 5 个词 → 烘干 → 凭记忆鉴定，答对有奖。跳过 -5 分。</p>
           <div class="mbtns"><button class="btn big" id="memStart">开始配题</button></div>
         </div>
@@ -424,7 +424,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <b id="memWord" class="hw" style="font-size:20px">请画：？</b>
               <span class="small" id="memIdx"></span>
               <div class="bar sketch-border timebar" style="flex:1 1 100%"><i id="memBar"></i></div>
-              <b id="memTime" style="font-size:14px">3.0</b>
+              <b id="memTime" style="font-size:14px">5.0</b>
               <button class="btn" id="memSkip">跳过(-5分)</button>
             </div>
             <div class="tool-card">
@@ -466,11 +466,15 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <div class="paper-panel sketch-border" style="flex:1;display:flex;padding:8px;min-height:0">
               <canvas id="jdCanvas" width="1024" height="768"></canvas>
             </div>
-            <span class="small">这幅画的是什么？</span>
           </div>
           <div class="jd-right">
-            <div class="opts" id="jdOpts"></div>
+            <span class="tool-label" style="margin-bottom:6px">这幅画的是什么？</span>
+            <div class="qrow">
+              <input id="jdInput" class="qinput sketch-border" style="flex:1" placeholder="输入你的答案…" maxlength="20">
+              <button class="mic-btn" data-voice="jdInput" title="语音输入" aria-label="语音输入"></button>
+            </div>
             <div id="jdFb"></div>
+            <div class="mbtns" style="margin-top:8px"><button class="btn big" id="jdSubmit">提交答案</button></div>
             <div><button class="btn blu" id="jdNext" disabled>下一幅 →</button></div>
           </div>
         </div>
@@ -1512,9 +1516,7 @@ function setupVoiceInputs(){
       var st={rec:null,on:false,final:'',btn:btn};
       voiceSt[inputId]=st;
       function stop(){st.on=false;btn.classList.remove('rec');if(st.rec){try{st.rec.abort()}catch(e){}}st.rec=null}
-      btn.addEventListener('click',function(){
-        if(!SR){toast('当前环境不支持语音输入');return}
-        if(st.on){stop();return}
+      function startRec(){ // 每次点击都新建识别器：权限开启后再次点击即可恢复语音
         var rec;
         try{rec=new SR()}catch(err){toast('当前环境不支持语音输入');return}
         st.rec=rec;st.on=true;st.final=inp.value||'';
@@ -1532,13 +1534,28 @@ function setupVoiceInputs(){
         };
         rec.onerror=function(ev){
           var er=ev&&ev.error;
-          if(er==='not-allowed'||er==='service-not-allowed')toast('麦克风权限被拒绝，无法语音输入');
+          if(er==='not-allowed'||er==='service-not-allowed')toast('麦克风权限被拒绝：请在浏览器设置中允许后，再点麦克风重试');
           else if(er==='no-speech')toast('没听到声音，再试一次～');
           else if(er!=='aborted')toast('语音识别出错了，再试一次～');
         };
         rec.onend=stop;
         try{rec.start();toast('请说话～')}
         catch(e){stop();toast('当前环境不支持语音输入')}
+      }
+      btn.addEventListener('click',function(){
+        if(!SR){toast('当前环境不支持语音输入，可在系统浏览器中打开体验');return}
+        if(st.on){stop();return}
+        // 先走一次麦克风授权探测：未授权时弹出授权提示；被拒后引导开启，再次点击会重新请求
+        if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+          navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+            try{stream.getTracks().forEach(function(t){t.stop()})}catch(e){}
+            startRec();
+          }).catch(function(){
+            toast('麦克风权限被拒绝：请在浏览器地址栏麦克风图标重新允许，再点此重试');
+          });
+          return;
+        }
+        startRec();
       });
     })(btn,inp,inputId);
   }
@@ -1547,7 +1564,7 @@ setupVoiceInputs();
 
 /* ============ 笔画回放 / 缩略图 ============ */
 function replayStrokes(canvas,strokes,ms,done){
-  var c=canvas.getContext('2d'),W=canvas.width,H=canvas.height,S=W/512;
+  var c=canvas.getContext('2d'),W=canvas.width,H=canvas.height,S=W/1024; // 笔画坐标基于画板内宽 1024
   var total=0;strokes.forEach(function(s){total+=(s.pts||s).length});
   c.fillStyle='#FFFFFF';c.fillRect(0,0,W,H);
   if(!total){if(done)done();return function(){}}
@@ -1568,7 +1585,7 @@ function replayStrokes(canvas,strokes,ms,done){
   return function(){cancelled=true;cancelAnimationFrame(raf)};
 }
 function drawStrokesScaled(c,strokes,W,H){
-  var S=W/512;c.fillStyle='#FFFFFF';c.fillRect(0,0,W,H);
+  var S=W/1024;c.fillStyle='#FFFFFF';c.fillRect(0,0,W,H); // 笔画坐标基于画板内宽 1024
   strokes.forEach(function(s){
     if(s.fill){c.drawImage(s.fillCv,0,0,W,H);return} // 油漆桶：mask 贴图缩放回放
     renderStrokeOn(c,s,S);
@@ -2621,18 +2638,61 @@ function inkSplat(el){
 function shakeEl(el){if(!el)return;el.classList.remove('shk');void el.offsetWidth;el.classList.add('shk')}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
-/* ============ 场景2：失忆画室（3 秒极限速画版） ============ */
-var CLUSTERS={
-  '海洋':['章鱼','水母','鱿鱼','墨鱼'],
-  '水果':['苹果','梨','桃子','李子'],
-  '交通':['自行车','摩托车','滑板车','三轮车'],
-  '动物':['猫','兔子','仓鼠','刺猬'],
-  '天气':['太阳','云朵','彩虹','闪电'],
-  '点心':['蛋糕','甜甜圈','冰淇淋','棒棒糖']
-};
-var memBoard=makeBoard($('memCanvas'),'3 秒！凭直觉画！');
+/* ============ 场景2：失忆画室（5 秒极限速画版） ============ */
+/* 题库：手工核心簇 + 运行时确定性组合生成（动宾/拟人/外形三类），去重后裁到 5000 词组 */
+var CLUSTERS=(function(){
+  var C={
+  '动物':['猫','兔子','仓鼠','刺猬','狗','小狗','熊猫','老虎','狮子','大象','猴子','长颈鹿','梅花鹿','狐狸','狼','熊','北极熊','袋鼠','树懒','松鼠','乌龟','青蛙','鳄鱼','蛇','蜥蜴','马','斑马','牛','奶牛','羊','山羊','猪','驴','骆驼','企鹅','海豹','河马','犀牛','猩猩','浣熊'],
+  '鸟类':['鸡','小鸡','母鸡','公鸡','鸭子','鹅','猫头鹰','老鹰','燕子','麻雀','喜鹊','鸽子','乌鸦','孔雀','鹦鹉','火烈鸟','丹顶鹤','啄木鸟','蜂鸟','鸵鸟','天鹅','海鸥','布谷鸟'],
+  '昆虫':['蝴蝶','蜻蜓','蜜蜂','蚂蚁','瓢虫','蟋蟀','螳螂','蜗牛','毛毛虫','甲虫','独角仙','蚊子','苍蝇','蜘蛛','蝎子','蝉','蝗虫','天牛'],
+  '海洋':['章鱼','水母','鱿鱼','墨鱼','金鱼','鲤鱼','鲨鱼','鲸鱼','海豚','海马','热带鱼','小丑鱼','河豚','剑鱼','灯笼鱼','海龟','螃蟹','龙虾','虾','贝壳','海星','珊瑚','海螺'],
+  '水果':['苹果','梨','桃子','李子','西瓜','葡萄','草莓','蓝莓','樱桃','柠檬','橙子','橘子','柚子','芒果','菠萝','香蕉','猕猴桃','椰子','哈密瓜','木瓜','石榴','柿子','枣','荔枝','龙眼','山竹','榴莲','杨桃','火龙果','甘蔗'],
+  '蔬菜':['白菜','青菜','萝卜','胡萝卜','番茄','西红柿','黄瓜','南瓜','冬瓜','茄子','辣椒','土豆','红薯','洋葱','大蒜','姜','蘑菇','香菇','玉米','豆角','豌豆','毛豆','菠菜','芹菜','韭菜','莲藕','竹笋','花菜','西兰花','卷心菜'],
+  '点心':['蛋糕','甜甜圈','冰淇淋','棒棒糖','饼干','曲奇','面包','吐司','泡芙','蛋挞','布丁','果冻','棉花糖','麻花','汤圆','月饼','绿豆糕','铜锣烧','马卡龙','巧克力','糖果','爆米花','薯片'],
+  '中餐':['饺子','包子','馒头','面条','拉面','馄饨','春卷','油条','豆浆','粥','米饭','炒饭','炒面','火锅','烤鸭','糖醋排骨','宫保鸡丁','麻婆豆腐','红烧肉','小笼包','煎饼','锅贴','粽子','茶叶蛋'],
+  '西餐':['汉堡包','披萨','热狗','三明治','薯条','意大利面','牛排','寿司','刺身','咖喱饭','蛋包饭','章鱼小丸子','天妇罗','玉米卷','沙拉','浓汤','芝士','培根','可颂'],
+  '饮料':['咖啡','奶茶','果汁','可乐','汽水','牛奶','酸奶','豆浆','柠檬水','冰沙','奶昔','热可可','绿茶','红茶'],
+  '交通':['自行车','摩托车','滑板车','三轮车','汽车','出租车','公交车','卡车','货车','救护车','消防车','洒水车','警车','赛车','吉普车','房车','火车','高铁','地铁','有轨电车','缆车','热气球','飞机','直升机','滑翔机','火箭','飞船','轮船','帆船','游轮','皮划艇','竹筏','雪橇','雪地摩托','坦克','挖掘机','吊车','叉车','推土机','收割机','拖拉机'],
+  '天气':['太阳','月亮','云朵','彩虹','闪电','雪花','雨滴','冰雹','龙卷风','台风','雾','露珠','霜','流星','日食','月食','极光','晚霞','星星','银河'],
+  '自然':['大树','小树苗','花朵','向日葵','玫瑰','蒲公英','仙人掌','竹子','荷叶','荷花','桃花','樱花','梅花','菊花','兰花','牵牛花','含羞草','四叶草','山','火山','岛屿','沙漠','瀑布','河流','湖泊','大海','森林','草原','石头','钻石','水晶','山洞','温泉','梯田','稻田','麦田'],
+  '建筑':['房子','高楼','城堡','灯塔','茅草屋','木屋','庙宇','宝塔','宫殿','教堂','学校','医院','商店','超市','图书馆','博物馆','电影院','游乐园','动物园','水族馆','体育馆','游泳池','火车站','机场','码头','加油站','风车','水车','磨坊','桥','拱桥','吊桥','长城','金字塔'],
+  '家具':['桌子','椅子','凳子','沙发','床','衣柜','书架','书桌','茶几','柜子','摇篮','吊床','秋千','跷跷板','滑梯','梯子','屏风','镜子','衣架','鞋柜','置物架'],
+  '家电':['电视','冰箱','洗衣机','空调','风扇','电饭煲','微波炉','烤箱','吸尘器','电水壶','榨汁机','吹风机','台灯','落地灯','手电筒','电脑','笔记本','手机','平板','相机','打印机','音箱','耳机','机器人','无人机','计算器','闹钟','手表'],
+  '文具':['铅笔','钢笔','毛笔','蜡笔','水彩笔','荧光笔','橡皮','尺子','圆规','剪刀','胶水','胶带','订书机','回形针','夹子','图钉','笔记本','课本','作业本','信纸','信封','邮票','书签','书包','文具盒','颜料盘','画板','调色板','放大镜','望远镜'],
+  '玩具':['气球','风筝','陀螺','积木','拼图','弹珠','悠悠球','毽子','皮球','足球','篮球','排球','乒乓球','羽毛球','网球','橄榄球','保龄球','台球','冰鞋','滑板','呼啦圈','跳绳','木马','不倒翁','拨浪鼓','风车','泡泡机','水枪','玩偶','布娃娃','魔方','飞盘','孔明灯'],
+  '乐器':['吉他','钢琴','小提琴','大提琴','鼓','架子鼓','喇叭','小号','长笛','短笛','萨克斯','口琴','竖琴','琵琶','古筝','二胡','笛子','唢呐','锣','木鱼','铃铛','三角铁','尤克里里','电子琴','手风琴','麦克风'],
+  '运动':['跑步','游泳','跳水','滑雪','滑冰','骑车','爬山','跳绳','踢毽子','打篮球','踢足球','打排球','打乒乓球','打羽毛球','打网球','举重','射箭','射击','击剑','拳击','体操','瑜伽','蹦床','跳高','跳远','划船','帆板','冲浪','潜水','钓鱼','放风筝','荡秋千','滑滑梯','跳房子','捉迷藏','老鹰捉小鸡'],
+  '职业':['医生','护士','老师','学生','警察','消防员','厨师','服务员','司机','飞行员','宇航员','船长','水手','农民','渔夫','园丁','工人','建筑师','画家','音乐家','歌唱家','舞蹈家','演员','导演','作家','记者','科学家','发明家','魔术师','小丑','忍者','武士','骑士','国王','王后','公主','王子','海盗','猎人','牧羊人','邮递员','售货员','理发师','裁缝','鞋匠','木匠','铁匠','矿工','裁判','教练'],
+  '童话':['龙','凤凰','麒麟','独角兽','美人鱼','精灵','仙女','巫婆','魔法师','吸血鬼','木乃伊','僵尸','骷髅','幽灵','妖怪','怪兽','哥斯拉','奥特曼','小矮人','巨人','天使','飞马','九尾狐','年兽','葫芦娃','孙悟空','猪八戒','哪吒','嫦娥','玉兔','外星人','雪人','稻草人','石狮子','貔貅','舞狮','龙舟','花轿'],
+  '表情':['大笑','大哭','生气','惊讶','害怕','害羞','得意','困了','睡觉','发呆','思考','疑惑','吐舌头','眨眼','流汗','头晕','傲娇','欢呼','鼓掌','比心','加油','鬼脸','装酷','做鬼脸'],
+  '身体':['脸','眼睛','鼻子','嘴巴','耳朵','眉毛','牙齿','舌头','头发','胡子','手','手指','脚','脚趾','胳膊','腿','膝盖','肚子','背','肩膀','脖子','心脏','骨头','大脑','影子','脚印','手印'],
+  '物品':['雨伞','扇子','镜子','梳子','牙刷','毛巾','肥皂','杯子','茶壶','碗','筷子','勺子','盘子','锅','铲子','菜刀','砧板','水壶','水桶','篮子','箱子','口袋','钥匙','锁','锤子','钉子','螺丝','扳手','锯子','斧头','锄头','扫把','拖把','簸箕','垃圾桶','蜡烛','火柴','烟囱','绳子','链条','弹簧','磁铁','电池','灯泡','指南针','沙漏','铃铛','哨子','背包','钱包','眼镜','口罩','帽子','围巾','手套','袜子','鞋子','拖鞋','靴子','裙子','裤子','衬衫','外套','毛衣','雨衣','披风','皇冠','项链','戒指','手镯','耳环','蝴蝶结','领带','腰带','纽扣','拉链','宝箱','锦旗','奖杯','奖牌','旗帜','灯笼','鞭炮','烟花','对联','红包','钱袋','金币','存钱罐']
+  };
+  // —— 程序化组合扩充（确定性生成，全部真实可画的词组结构）——
+  var seen={},push=function(k,w){if(!seen[w]){seen[w]=1;(C[k]=C[k]||[]).push(w)}};
+  Object.keys(C).forEach(function(k){C[k].forEach(function(w){seen[w]=1})});
+  // 动宾组合（动作×食物/物品/自然）
+  var V=['吃','喝','啃','抱','举','牵','推','拉','背','扛','踢','追','赶','骑','开','划','放','吹','摇','敲','弹','切','洗','烤','炸','蒸','煮','修','钓','挖','种','扫','晒','补','量','画'];
+  var N1=['苹果','西瓜','玉米','骨头','萝卜','冰淇淋','棒棒糖','面条','汉堡','披萨','蛋糕','饺子','气球','皮球','风筝','积木','吉他','喇叭','铃铛','雨伞','扫把','水桶','锤子','牙刷','手机','灯泡','铅笔','毛笔','枕头','被子','板凳','梯子','魔方','篮球','足球','跳绳','月亮','星星','彩虹','云朵','蘑菇','南瓜'];
+  V.forEach(function(v){N1.forEach(function(n){push('趣玩',v+n)})});
+  // 拟人/状态修饰 × 动物/人物
+  var A1=['大','小','胖','瘦','高高的','圆圆的','方方的','长长的','短短的','毛茸茸的','光溜溜的','皱巴巴的','笑眯眯的','气鼓鼓的','哭鼻子的','打哈欠的','眨眼睛的','伸懒腰的','打瞌睡的','蹦蹦跳跳的','摇摇摆摆的','慢吞吞的','急匆匆的','戴帽子的','戴眼镜的','戴口罩的','围围巾的','系领带的','穿裙子的','穿披风的','穿盔甲的','背书包的','打伞的','提灯笼的','举火炬的','吹喇叭的','敲鼓的','弹吉他的','跳舞的','滑滑板的'];
+  var N2=['猫','小猫','熊猫','小狗','兔子','老鼠','仓鼠','刺猬','狐狸','猴子','猩猩','老虎','狮子','大象','长颈鹿','梅花鹿','袋鼠','树懒','企鹅','鸭子','母鸡','猫头鹰','鹦鹉','孔雀','乌龟','青蛙','鳄鱼','恐龙','鲸鱼','海豚','鲨鱼','章鱼','螃蟹','龙虾','贝壳','蜗牛','蚂蚁','蜜蜂','蝴蝶','蜻蜓','瓢虫','蜘蛛','猪','牛','羊','马','驴','骆驼','河马','犀牛','雪人','机器人','外星人','小丑','巫师','海盗','厨师','宇航员','忍者','公主','国王','圣诞老人','稻草人'];
+  A1.forEach(function(a){N2.forEach(function(n){push('趣角色',a+n)})});
+  // 外形/状态修饰 × 食物/物品
+  var A2=['圆圆的','方方的','长长的','弯弯的','尖尖的','扁扁的','胖乎乎的','歪歪的','条纹的','带斑点的','闪闪发光的','冒着热气的','裂开的','融化的','开口笑的','鼓鼓的','长翅膀的','长脚的','张嘴的','戴帽子的','系蝴蝶结的','装满的','空空的','倒过来的','叠起来的','旋转的','会飞的','长眼睛的','爱笑的','害羞的'];
+  var N3=['蛋糕','甜甜圈','冰淇淋','棒棒糖','面包','月饼','汤圆','饺子','包子','汉堡','披萨','薯条','饼干','棉花糖','西瓜','南瓜','菠萝','草莓','柠檬','苹果','香蕉','橘子','桃子','茄子','玉米','蘑菇','茶壶','杯子','碗','锅','雨伞','帽子','袜子','手套','书包','钱包','闹钟','台灯','电视','冰箱','吉他','喇叭','气球','风筝','礼物盒','信封','枕头','浴缸'];
+  A2.forEach(function(a){N3.forEach(function(n){push('趣物件',a+n)})});
+  // 平铺洗牌后裁剪到恰好 5000 词组，重组回簇结构
+  var flat=[];Object.keys(C).forEach(function(k){C[k].forEach(function(w){flat.push([k,w])})});
+  flat=shuffle(flat);
+  var C2={},cnt=0;
+  for(var i=0;i<flat.length&&cnt<5000;i++){(C2[flat[i][0]]=C2[flat[i][0]]||[]).push(flat[i][1]);cnt++}
+  return C2;
+})();
+var memBoard=makeBoard($('memCanvas'),'5 秒！凭直觉画！');
 buildTools(memBoard,{tools:$('memBrushes'),sizes:$('memSizes'),actions:$('memActions'),colors:$('memColors'),layers:'memLayers',status:'memStatus',onlyBlack:true});
-var mem={words:[],arts:[],idx:0,timer:0,left:0,TOTAL:3,skips:0,
+var mem={words:[],arts:[],idx:0,timer:0,left:0,TOTAL:5,skips:0,
   jOrder:[],jIdx:0,correct:0,score:0,replayCancel:0,jTimer:0,dryRaf:0,submitted:false};
 function enterMemory(){
   showScene('scene-memory');
@@ -2646,8 +2706,14 @@ function stopMemTimers(){
   if(mem.replayCancel){mem.replayCancel();mem.replayCancel=0}
 }
 $('memStart').addEventListener('click',function(){
-  var keys=shuffle(Object.keys(CLUSTERS)).slice(0,5); // 5词两两不同簇
-  mem.words=keys.map(function(k){var ws=CLUSTERS[k];return {word:ws[rndi(0,ws.length-1)],cluster:k}});
+  var pool=[]; // 5000 词组平铺，均匀抽取 5 个两两不同簇的词
+  Object.keys(CLUSTERS).forEach(function(k){CLUSTERS[k].forEach(function(w){pool.push({word:w,cluster:k})})});
+  var p=shuffle(pool),sel=[];
+  for(var i=0;i<p.length&&sel.length<5;i++){
+    var it=p[i];
+    if(sel.every(function(s){return s.cluster!==it.cluster}))sel.push(it);
+  }
+  mem.words=sel;
   mem.arts=[];mem.idx=0;mem.skips=0;mem.correct=0;mem.score=0;mem.submitted=false;
   $('memIntro').hidden=true;$('memDraw').hidden=false;
   memBeginWord();
@@ -2718,39 +2784,41 @@ function memJudgeShow(){
   var art=mem.jOrder[mem.jIdx];
   $('jdIdx').textContent='鉴定 '+(mem.jIdx+1)+'/'+mem.jOrder.length;
   $('jdFb').textContent='';$('jdNext').disabled=true;$('jdNext').textContent=mem.jIdx<mem.jOrder.length-1?'下一幅 →':'看结算 →';
-  drawStrokesScaled($('jdCanvas').getContext('2d'),art.strokes,512,512);
-  var opts=shuffle(CLUSTERS[art.cluster]);
-  var box=$('jdOpts');box.innerHTML='';
-  opts.forEach(function(w){
-    var b=document.createElement('button');b.className='btn opt sketch-border';b.textContent=w;
-    b.onclick=function(){memAnswer(art,w,box)};
-    box.appendChild(b);
-  });
+  drawStrokesScaled($('jdCanvas').getContext('2d'),art.strokes,1024,768); // 原画板尺寸回显，不缩放不变形
+  var inp=$('jdInput');
+  inp.value='';inp.disabled=false;$('jdSubmit').disabled=false;
+  mem.jArt=art;
   var left=15;clearInterval(mem.jTimer);
   $('jdBar').style.width='100%';$('jdTime').textContent='15.0s';
   reframe();
+  setTimeout(function(){try{if(!inp.disabled)inp.focus()}catch(e){}},80); // 桌面端自动聚焦键盘
   mem.jTimer=setInterval(function(){
     left-=0.1;
-    if(left<=0){memAnswer(art,null,$('jdOpts'));return}
+    if(left<=0){memAnswer('');return}
     $('jdBar').style.width=(left/15*100)+'%';
     $('jdTime').textContent=left.toFixed(1)+'s';
   },100);
 }
-function memAnswer(art,pick,box){
+function memAnswer(txt){ // 直接输入答案：全等或双向包含（≥2字）宽松判定
+  var art=mem.jArt||mem.jOrder[mem.jIdx];
   clearInterval(mem.jTimer);
-  var ok=pick===art.word;
+  $('jdInput').disabled=true;$('jdSubmit').disabled=true;
+  txt=(txt||'').replace(/[\s。，,.、!！?？~～·]/g,'');
+  var ok=!!txt&&(txt===art.word||(txt.length>=2&&art.word.indexOf(txt)>=0)||(art.word.length>=2&&txt.indexOf(art.word)>=0));
   if(ok){mem.correct++;mem.score+=10}
-  Array.prototype.forEach.call(box.children,function(b){
-    b.disabled=true;
-    if(b.textContent===art.word)b.classList.add('sel');
-    if(pick&&b.textContent===pick&&!ok)b.classList.remove('sel');
-  });
-  $('jdFb').innerHTML=ok?'<span class="blue">答对了！回放作画过程……</span>':'<span class="accent">答错咯，正确答案是「'+art.word+'」</span>';
+  $('jdFb').innerHTML=ok?'<span class="blue">答对了！回放作画过程……</span>':'<span class="accent">'+(txt?'答错咯，正确答案是「'+art.word+'」':'时间到！正确答案是「'+art.word+'」')+'</span>';
   if(mem.replayCancel)mem.replayCancel();
   mem.replayCancel=replayStrokes($('jdCanvas'),art.strokes,1800,function(){
     $('jdNext').disabled=false;
   });
 }
+$('jdSubmit').addEventListener('click',function(){
+  if($('jdSubmit').disabled)return;
+  memAnswer($('jdInput').value);
+});
+$('jdInput').addEventListener('keydown',function(e){ // 回车直接提交
+  if(e.key==='Enter'&&$('jdSubmit').disabled!==true)memAnswer($('jdInput').value);
+});
 $('jdNext').addEventListener('click',function(){
   if(mem.jIdx<mem.jOrder.length-1){mem.jIdx++;memJudgeShow()}
   else memResultShow();
