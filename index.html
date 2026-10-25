@@ -340,6 +340,8 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 .lt-item.done .lt-seal{fill:#D9A94C}
 .lt-cap{margin-top:10px;background:#FDFBF4;color:#2B2B2B;border:2.5px solid #2B2B2B;border-radius:11px;padding:4px 18px;font-size:14px;font-weight:800;box-shadow:2px 3px 0 rgba(15,22,38,.5);white-space:nowrap}
 .lt-capsub{margin-top:7px;font-size:12px;color:#E3D9BE;font-weight:700;text-shadow:0 1px 0 rgba(20,24,33,.6)}
+#ltSolve{font-family:'Kaiti SC','KaiTi','STKaiti','FZKai-Z03S',serif}
+#ltSolve input,#ltSolve button{font-family:inherit}
 .lt-fly{animation:ltFly 1.7s ease-in forwards!important}
 @keyframes ltFly{0%{transform:none;opacity:1}25%{transform:translateY(-14%) rotate(-4deg)}55%{transform:translateY(-42%) rotate(4deg)}100%{transform:translateY(-130%) rotate(-2deg);opacity:0}}
 .lt-spark{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle,#FFE9B0,rgba(255,214,140,0));pointer-events:none;animation:ltSpark 1.2s ease-out forwards}
@@ -740,7 +742,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <h2 class="hw uw" style="font-size:20px;color:#F5E9C8">🏮 灯谜会 · 夜市</h2>
           <span class="sub small" style="color:#B9AE93">轻点灯笼看谜面 · 答对点亮一盏</span>
           <span class="sp"></span>
-          <span class="tag sketch-border small" style="background:#FBEFD8;color:#2B2B2B">本轮点亮 <b id="ltRoundN">0</b> / 3</span>
+          <button class="btn lt-back" id="ltBack" style="font-size:13px;padding:5px 14px">返回大厅 →</button>
         </div>
         <div class="lt-sky" style="flex:1;position:relative;min-height:0">
           <svg viewBox="0 0 128 56" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;opacity:.95">
@@ -758,11 +760,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <path d="M8,26 l.9,2.3 2.3,.9 -2.3,.9 -.9,2.3 -.9,-2.3 -2.3,-.9 2.3,-.9 Z"></path>
               <path d="M120,26 l1,2.6 2.6,1 -2.6,1 -1,2.6 -1,-2.6 -2.6,-1 2.6,-1 Z"></path>
             </g>
-            <!-- 云沉底角、梅枝收短：中央灯阵区不留装饰 -->
-            <g fill="#22304E" stroke="rgba(253,251,244,.5)" stroke-width="1.6" stroke-linejoin="round">
-              <path d="M4,45 q4,-5.5 10,-2.5 q3,-4 8.5,-1.5 q5.5,-1 7,3 q-13,2.5 -25.5,.5 Z" opacity=".95"></path>
-              <path d="M115,44 q3.5,-4.5 8.5,-2 q3,-3.5 7.5,-1 q4.5,-1 5.5,2.5 q-11,2 -21.5,.5 Z" opacity=".9"></path>
-            </g>
+            <!-- 蓝云已按用户要求删除、梅枝收短：中央灯阵区不留装饰 -->
             <g fill="none" stroke="#141821" stroke-width="1.1" stroke-linecap="round">
               <path d="M-1,10 C2,8 5,6 8,2"></path>
               <path d="M4,7 C5,9 5,10.5 4.4,12" stroke-width=".9"></path>
@@ -781,9 +779,8 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <div id="ltRow" style="display:flex;gap:clamp(20px,5vw,60px);align-items:flex-start;justify-content:center;width:100%;margin-top:-3px"><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">物谜</span><span class="lt-riddle">身穿绿衣裳，肚里水汪…</span></div></div><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">字谜</span><span class="lt-riddle">一口咬掉牛尾巴</span></div></div><div class="lt-item" style="width: clamp(96px, 22vw, 160px);"><svg viewBox="0 0 150 168" class="lt-svg"><path d="M75,3 q3,4 0,10" stroke="#5A5245" stroke-width="2.5" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="21" rx="19" ry="5.5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path class="lt-body" d="M75,25 C103,25 118,45 118,72 C118,99 103,116 75,116 C47,116 32,99 32,72 C32,45 47,25 75,25 Z" fill="url(#ltGR)" stroke="#2B2B2B" stroke-width="3"></path><path d="M55,28 C46,48 46,94 55,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M95,28 C104,48 104,94 95,114" stroke="rgba(43,43,43,.30)" stroke-width="1.6" fill="none"></path><path d="M33,66 C52,73 98,73 117,66" stroke="#9FBFB4" stroke-width="2.5" fill="none"></path><path d="M43,42 q-6,14 -3.5,32" stroke="rgba(255,255,255,.7)" stroke-width="4" fill="none" stroke-linecap="round"></path><ellipse cx="75" cy="118" rx="16" ry="5" fill="#B98F5E" stroke="#2B2B2B" stroke-width="2"></ellipse><path d="M75,123 v7" stroke="#2B2B2B" stroke-width="2"></path><path class="lt-tas" d="M68,130 h14 l-2.5,13 h-9 Z" fill="#9FBFB4" stroke="#2B2B2B" stroke-width="1.8"></path></svg><div class="lt-txt"><span class="lt-cat">字谜</span><span class="lt-riddle">山上有山</span></div></div></div>
             </div>
             <div style="display:flex;gap:10px;align-items:center;background:rgba(20,24,33,.55);border:2px solid #14181F;border-radius:12px;padding:6px 14px;width:min(920px,88%);justify-content:space-between;flex-wrap:wrap">
-              <button class="btn lt-back" id="ltBack" style="font-size:13px;padding:5px 14px">返回大厅 →</button>
               <span class="small" style="color:#B9AE93;font-weight:700">已点亮 <b id="ltCount">0</b> 盏 · 点亮两盏可换下一批</span>
-              <button class="btn" id="ltNext" style="font-size:13px;padding:5px 14px;background:#FBEFD8">换一批 ↓</button>
+              <button class="btn" id="ltNext" style="font-size:13px;padding:5px 14px;background:#FBEFD8;margin-right:clamp(14px,5vw,56px)">换一批 ↓</button>
             </div>
           </div>
           <div id="ltSolve" style="position:absolute;inset:0;display:flex;min-height:0" hidden="">
@@ -796,7 +793,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <div style="flex:1;display:flex;flex-direction:column;gap:12px;padding:12px 16px 12px 4px;min-width:0">
               <div style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0">
                 <div style="background:#FDFBF4;color:#2B2B2B;border:3px solid #2B2B2B;border-radius:14px;box-shadow:3px 4px 0 rgba(15,22,38,.45);padding:clamp(12px,2.4vh,20px) 22px;max-width:560px">
-                  <div style="display:flex;align-items:center;gap:10px"><span class="stamp" id="ltCat2" style="font-size:12px">字谜</span><b style="font-size:14px">谜面</b></div>
+                  <div style="display:flex;align-items:center;gap:10px"><span id="ltCat2" style="font-size:12px;background:#F2C94C;color:#2B2B2B;border:2.5px solid #2B2B2B;border-radius:10px;padding:2px 12px;font-weight:800;white-space:nowrap">字谜</span><b style="font-size:14px">谜面</b></div>
                   <div id="ltRiddle" style="font-size:clamp(16px,2.8vh,23px);font-weight:800;margin-top:12px;line-height:1.55;letter-spacing:1px">「 太阳西边下，月亮东边挂 」</div>
                   <div id="ltFb" style="min-height:18px;font-weight:700;font-size:13.5px;margin-top:8px;color:#7A7365;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
                 </div>
@@ -3498,7 +3495,6 @@ function ltNewRound(){
   ltRenderHome();
 }
 function ltRenderHome(){
-  $('ltRoundN').textContent=String(ltState.roundSolved);
   var r=$('ltRow');r.innerHTML='';
   ltState.round.forEach(function(it,i){r.appendChild(ltLampEl(it,i))});
   ltShow2('ltHome');
