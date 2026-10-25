@@ -517,11 +517,10 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <div class="tool-card">
               <div class="tool-row" id="memBrushes"></div>
               <div class="tool-row" id="memSizes"></div>
-              <div class="tool-row" id="memLayers"></div>
               <div class="tool-row" id="memColors"></div>
               <div class="tool-row" id="memActions"></div>
             </div>
-            <div class="status-line" id="memStatus">只剩黑色马克笔了，烘干机会忘掉颜色……</div>
+            <div class="status-line" id="memStatus">5 秒凭直觉画，答对 +10 分！</div>
           </aside>
         </div>
       </div>
@@ -1557,7 +1556,7 @@ function toolIcon(name){
   return '<svg class="i" viewBox="0 0 22 22" aria-hidden="true">'+(P[name]||'')+'</svg>';
 }
 function buildTools(board,o){
-  var tools=o.tools,sizes=o.sizes,actions=o.actions,colors=o.colors,status=o.status,onlyBlack=!!o.onlyBlack;
+  var tools=o.tools,sizes=o.sizes,actions=o.actions,colors=o.colors,status=o.status,onlyBlack=!!o.onlyBlack,noTools=o.noTools||null; // noTools: 排除的工具动作名（如失忆画室去掉马克笔/喷枪/填色/取色）
   var tEls={},swEls=[],rngEl=null,labEl=null;
   function say(t){if(status){var el=$(status);if(el)el.innerHTML='<i class="cdot" style="background:'+board.getColor()+'"></i>'+t}}
   function colorName(){ // 当前颜色名（失忆画室只有黑）
@@ -1600,12 +1599,13 @@ function buildTools(board,o){
     var b=mkBtn(def);b.classList.add('icobtn');b.title=def[0];
     return b;
   }
-  if(tools){ // 图标工具栏：4 笔刷一行；喷枪·填色·取色·橡皮一行（无独立操作容器时并入撤销·重做·清空）
+  if(tools){ // 图标工具栏：4 笔刷一行；其余一行（无独立操作容器时并入撤销·重做·清空）；noTools 过滤后重分行
     tools.innerHTML='';
+    var defs=BRUSH_DEFS.filter(function(d){return !noTools||noTools.indexOf(d[1])<0});
     var r1=document.createElement('div');r1.className='tool-row ico-row';tools.appendChild(r1);
-    BRUSH_DEFS.slice(0,4).forEach(function(d){var b=icoBtn(d);r1.appendChild(b);tEls[d[1]]=b});
+    defs.slice(0,4).forEach(function(d){var b=icoBtn(d);r1.appendChild(b);tEls[d[1]]=b});
     var r2=document.createElement('div');r2.className='tool-row ico-row';tools.appendChild(r2);
-    BRUSH_DEFS.slice(4).forEach(function(d){var b=icoBtn(d);r2.appendChild(b);tEls[d[1]]=b});
+    defs.slice(4).forEach(function(d){var b=icoBtn(d);r2.appendChild(b);tEls[d[1]]=b});
     if(!actions)ACT_DEFS.forEach(function(d){r2.appendChild(icoBtn(d))});
     if(!sizes){var w0=document.createElement('div');w0.className='size-slider';tools.appendChild(w0);mkSlider(w0)}
   }
@@ -2860,22 +2860,8 @@ var CLUSTERS=(function(){
   '身体':['脸','眼睛','鼻子','嘴巴','耳朵','眉毛','牙齿','舌头','头发','胡子','手','手指','脚','脚趾','胳膊','腿','膝盖','肚子','背','肩膀','脖子','心脏','骨头','大脑','影子','脚印','手印'],
   '物品':['雨伞','扇子','镜子','梳子','牙刷','毛巾','肥皂','杯子','茶壶','碗','筷子','勺子','盘子','锅','铲子','菜刀','砧板','水壶','水桶','篮子','箱子','口袋','钥匙','锁','锤子','钉子','螺丝','扳手','锯子','斧头','锄头','扫把','拖把','簸箕','垃圾桶','蜡烛','火柴','烟囱','绳子','链条','弹簧','磁铁','电池','灯泡','指南针','沙漏','铃铛','哨子','背包','钱包','眼镜','口罩','帽子','围巾','手套','袜子','鞋子','拖鞋','靴子','裙子','裤子','衬衫','外套','毛衣','雨衣','披风','皇冠','项链','戒指','手镯','耳环','蝴蝶结','领带','腰带','纽扣','拉链','宝箱','锦旗','奖杯','奖牌','旗帜','灯笼','鞭炮','烟花','对联','红包','钱袋','金币','存钱罐']
   };
-  // —— 程序化组合扩充（确定性生成，全部真实可画的词组结构）——
-  var seen={},push=function(k,w){if(!seen[w]){seen[w]=1;(C[k]=C[k]||[]).push(w)}};
-  Object.keys(C).forEach(function(k){C[k].forEach(function(w){seen[w]=1})});
-  // 动宾组合（动作×食物/物品/自然）
-  var V=['吃','喝','啃','抱','举','牵','推','拉','背','扛','踢','追','赶','骑','开','划','放','吹','摇','敲','弹','切','洗','烤','炸','蒸','煮','修','钓','挖','种','扫','晒','补','量','画'];
-  var N1=['苹果','西瓜','玉米','骨头','萝卜','冰淇淋','棒棒糖','面条','汉堡','披萨','蛋糕','饺子','气球','皮球','风筝','积木','吉他','喇叭','铃铛','雨伞','扫把','水桶','锤子','牙刷','手机','灯泡','铅笔','毛笔','枕头','被子','板凳','梯子','魔方','篮球','足球','跳绳','月亮','星星','彩虹','云朵','蘑菇','南瓜'];
-  V.forEach(function(v){N1.forEach(function(n){push('趣玩',v+n)})});
-  // 拟人/状态修饰 × 动物/人物
-  var A1=['大','小','胖','瘦','高高的','圆圆的','方方的','长长的','短短的','毛茸茸的','光溜溜的','皱巴巴的','笑眯眯的','气鼓鼓的','哭鼻子的','打哈欠的','眨眼睛的','伸懒腰的','打瞌睡的','蹦蹦跳跳的','摇摇摆摆的','慢吞吞的','急匆匆的','戴帽子的','戴眼镜的','戴口罩的','围围巾的','系领带的','穿裙子的','穿披风的','穿盔甲的','背书包的','打伞的','提灯笼的','举火炬的','吹喇叭的','敲鼓的','弹吉他的','跳舞的','滑滑板的'];
-  var N2=['猫','小猫','熊猫','小狗','兔子','老鼠','仓鼠','刺猬','狐狸','猴子','猩猩','老虎','狮子','大象','长颈鹿','梅花鹿','袋鼠','树懒','企鹅','鸭子','母鸡','猫头鹰','鹦鹉','孔雀','乌龟','青蛙','鳄鱼','恐龙','鲸鱼','海豚','鲨鱼','章鱼','螃蟹','龙虾','贝壳','蜗牛','蚂蚁','蜜蜂','蝴蝶','蜻蜓','瓢虫','蜘蛛','猪','牛','羊','马','驴','骆驼','河马','犀牛','雪人','机器人','外星人','小丑','巫师','海盗','厨师','宇航员','忍者','公主','国王','圣诞老人','稻草人'];
-  A1.forEach(function(a){N2.forEach(function(n){push('趣角色',a+n)})});
-  // 外形/状态修饰 × 食物/物品
-  var A2=['圆圆的','方方的','长长的','弯弯的','尖尖的','扁扁的','胖乎乎的','歪歪的','条纹的','带斑点的','闪闪发光的','冒着热气的','裂开的','融化的','开口笑的','鼓鼓的','长翅膀的','长脚的','张嘴的','戴帽子的','系蝴蝶结的','装满的','空空的','倒过来的','叠起来的','旋转的','会飞的','长眼睛的','爱笑的','害羞的'];
-  var N3=['蛋糕','甜甜圈','冰淇淋','棒棒糖','面包','月饼','汤圆','饺子','包子','汉堡','披萨','薯条','饼干','棉花糖','西瓜','南瓜','菠萝','草莓','柠檬','苹果','香蕉','橘子','桃子','茄子','玉米','蘑菇','茶壶','杯子','碗','锅','雨伞','帽子','袜子','手套','书包','钱包','闹钟','台灯','电视','冰箱','吉他','喇叭','气球','风筝','礼物盒','信封','枕头','浴缸'];
-  A2.forEach(function(a){N3.forEach(function(n){push('趣物件',a+n)})});
-  // 平铺洗牌后裁剪到恰好 5000 词组，重组回簇结构
+  // —— 题库只用基础簇：全部为耳熟能详、可直接落笔的实物/动作（拟人概念类「背书包的骆驼」等已被移除）——
+  // 平铺洗牌后裁剪，重组回簇结构
   var flat=[];Object.keys(C).forEach(function(k){C[k].forEach(function(w){flat.push([k,w])})});
   flat=shuffle(flat);
   var C2={},cnt=0;
@@ -2883,7 +2869,7 @@ var CLUSTERS=(function(){
   return C2;
 })();
 var memBoard=makeBoard($('memCanvas'),'5 秒！凭直觉画！');
-buildTools(memBoard,{tools:$('memBrushes'),sizes:$('memSizes'),actions:$('memActions'),colors:$('memColors'),layers:'memLayers',status:'memStatus',onlyBlack:true});
+buildTools(memBoard,{tools:$('memBrushes'),sizes:$('memSizes'),actions:$('memActions'),colors:$('memColors'),status:'memStatus',noTools:['marker','spray','fill','pick']});
 var mem={words:[],arts:[],idx:0,timer:0,left:0,TOTAL:5,skips:0,
   jOrder:[],jIdx:0,correct:0,score:0,replayCancel:0,jTimer:0,dryRaf:0,submitted:false};
 function enterMemory(){
