@@ -106,6 +106,9 @@ canvas{display:block}
 #scene-first .side-col{background:none;border:none;box-shadow:none;padding:0;overflow:visible;gap:14px}
 #scene-first .tool-card{background:none;border:none;box-shadow:none;padding:0;gap:8px}
 #scene-first .tool-card::before,#scene-first .tool-card::after{display:none}
+/* 全局去框：绘画场景右列工具卡片一律裸排，不加外框与图钉 */
+.studio-side .tool-card,.side-col .tool-card{background:none;border:none;box-shadow:none;padding:0;gap:6px}
+.studio-side .tool-card::before,.side-col .tool-card::before{display:none}
 .studio-side .ctrl-row,.side-col .ctrl-row{justify-content:flex-start;margin:0}
 .studio-side .status-line,.side-col .status-line{margin:0;text-align:left;min-height:20px}
 /* 状态行当前色小圆点 */
@@ -350,23 +353,13 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <div class="draw-top" style="flex-wrap:wrap">
             <button class="btn blu back-btn">← 返回广场</button>
             <h2 class="hw uw" id="studioTitle" style="font-size:20px">小镇画室</h2>
-            <span class="sub small" id="studioHint" style="flex-basis:100%"></span>
           </div>
           <div class="status-line" id="stStatus"></div>
-          <div class="tool-card sketch-border">
-            <span class="tool-label">画笔</span>
+          <div class="tool-card">
             <div class="tool-row" id="stBrushes"></div>
-            <span class="tool-label">粗细</span>
             <div class="tool-row" id="stSizes"></div>
-            <span class="tool-label">图层</span>
             <div class="tool-row" id="stLayers"></div>
-          </div>
-          <div class="tool-card sketch-border">
-            <span class="tool-label">颜色</span>
             <div class="tool-row" id="stColors"></div>
-          </div>
-          <div class="tool-card sketch-border">
-            <span class="tool-label">操作</span>
             <div class="tool-row" id="stActions"></div>
           </div>
           <div style="text-align:left;flex:0 0 auto"><button class="btn big" id="studioDone">保存形象</button></div>
@@ -414,11 +407,13 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <b id="memTime" style="font-size:14px">3.0</b>
               <button class="btn" id="memSkip">跳过(-5分)</button>
             </div>
-            <div class="tool-card sketch-border"><span class="tool-label">画笔</span><div class="tool-row" id="memBrushes"></div></div>
-            <div class="tool-card sketch-border"><span class="tool-label">粗细</span><div class="tool-row" id="memSizes"></div></div>
-            <div class="tool-card sketch-border"><span class="tool-label">图层</span><div class="tool-row" id="memLayers"></div></div>
-            <div class="tool-card sketch-border"><span class="tool-label">颜色</span><div class="tool-row" id="memColors"></div></div>
-            <div class="tool-card sketch-border"><span class="tool-label">操作</span><div class="tool-row" id="memActions"></div></div>
+            <div class="tool-card">
+              <div class="tool-row" id="memBrushes"></div>
+              <div class="tool-row" id="memSizes"></div>
+              <div class="tool-row" id="memLayers"></div>
+              <div class="tool-row" id="memColors"></div>
+              <div class="tool-row" id="memActions"></div>
+            </div>
             <div class="status-line" id="memStatus">只剩黑色马克笔了，烘干机会忘掉颜色……</div>
           </aside>
         </div>
@@ -535,7 +530,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <span class="tag sketch-border small" style="margin-left:auto">得分 <b id="tavScore">0</b></span>
               <span class="tag sketch-border small">连击 <b id="tavCombo">0</b></span>
             </div>
-            <div class="tool-card sketch-border">
+            <div class="tool-card">
               <span class="tool-label">答题区 · 看涂鸦写答案</span>
               <div class="bar sketch-border"><i id="tavBar"></i></div>
               <div class="qrow">
@@ -545,7 +540,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               </div>
               <div id="tavFb" style="min-height:18px;font-weight:700;font-size:14px"></div>
             </div>
-            <div class="tool-card sketch-border">
+            <div class="tool-card">
               <span class="tool-label">卡壳与互动</span>
               <div class="qrow" style="flex-wrap:wrap">
                 <button class="btn blu sketch-border" id="tavHintBtn">提示(-2)</button>
@@ -567,7 +562,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
               <h2 class="hw" style="font-size:18px">我来出题 · 投稿</h2>
               <span class="sp"></span>
             </div>
-            <div class="tool-card sketch-border">
+            <div class="tool-card">
               <span class="tool-label">类别</span>
               <div class="tool-row">
                 <span id="ctCats" style="display:flex;gap:6px;flex-wrap:wrap"></span>
@@ -584,15 +579,10 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
                 <button class="mic-btn" data-voice="ctHint" title="语音输入" aria-label="语音输入"></button>
               </div>
             </div>
-            <div class="tool-card sketch-border">
-              <span class="tool-label">画笔与粗细</span>
+            <div class="tool-card">
               <div class="tool-row" id="ctBrushes"></div>
               <div class="tool-row" id="ctSizes"></div>
-              <span class="tool-label">图层</span>
               <div class="tool-row" id="ctLayers"></div>
-            </div>
-            <div class="tool-card sketch-border">
-              <span class="tool-label">颜色与操作</span>
               <div class="tool-row" id="ctColors"></div>
               <div class="tool-row" id="ctActions"></div>
             </div>
@@ -2334,8 +2324,8 @@ buildTools(studioBoard,{tools:$('stBrushes'),sizes:$('stSizes'),actions:$('stAct
 var studioMode='avatar';
 function openStudio(mode){
   studioMode=mode;studioBoard.reset();
-  if(mode==='avatar'){$('studioTitle').textContent='小镇画室';$('studioHint').textContent='重新捏一个你';$('studioDone').textContent='保存形象'}
-  else{$('studioTitle').textContent='画室 · 投稿台';$('studioHint').textContent='为今日委托画一幅投稿';$('studioDone').textContent='交付投稿 (+30墨水)'}
+  if(mode==='avatar'){$('studioTitle').textContent='小镇画室';$('studioDone').textContent='保存形象'}
+  else{$('studioTitle').textContent='画室 · 投稿台';$('studioDone').textContent='交付投稿 (+30墨水)'}
   showScene('scene-studio');
 }
 $('studioDone').addEventListener('click',function(){
