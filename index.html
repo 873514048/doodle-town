@@ -292,7 +292,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 .apw-right .card:nth-child(1){flex:1.5 1 0}
 .apw-right .card:nth-child(2),.apw-right .card:nth-child(3){flex:1 1 0}
 .apw-au{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
-.apw-left .draw-top{padding-right:112px}
+/* 返回键与得分方块并排入流，无需右侧让位 */
 /* ── 答题页 UI 对齐设计稿：直边墨框体系 ── */
 #scene-tavern .btn.blu{background:#EAF2FA;color:#2B2B2B}
 #scene-tavern .btn.blu:hover{background:#DCE9F5;color:#2B2B2B}
@@ -667,7 +667,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
             <span class="sp"></span>
             <span class="tag" style="white-space:nowrap">得分 <b id="tavScore">0</b></span>
             <span class="tag apw-cb" style="white-space:nowrap">连击 <b id="tavCombo">0</b></span>
-            <button class="btn blu back-btn" style="font-size:15px;font-weight:700;padding:6px 14px;border-radius:10px;box-shadow:none;white-space:nowrap">返回 →</button>
+            <button class="btn blu back-btn" style="position:static;font-size:15px;font-weight:700;padding:6px 14px;border-radius:10px;box-shadow:none;white-space:nowrap">返回 →</button>
           </div>
           <div class="apw-frame"><canvas id="tavCanvas" width="1024" height="768"></canvas></div>
         </div>
