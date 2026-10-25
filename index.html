@@ -261,12 +261,23 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 .tav-frame{border:4px solid #2B2B2B;border-radius:12px;background:#fff;
   box-shadow:0 0 0 8px #FBF3E2,0 0 0 11px #2B2B2B;display:flex;flex-direction:column;align-items:center}
 .tav-rule{padding:4px 0 7px;text-align:center;color:#8a8378;flex:none;font-size:clamp(10px,1.3vh,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 10px}
-.tav-btop{padding-right:96px}
+.tav-btop{padding-right:8px;position:relative}
+.tav-homemain{flex-direction:column;gap:4px;border:3px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22)}
+#tavProps{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;width:max-content}
+.tav-cards{display:flex;gap:5px;align-items:center;flex:none}
+.tav-cards b{display:inline-block;background:#fff;border:2.5px solid #2B2B2B;border-radius:9px;padding:2px 7px;font-size:17px;font-weight:800;line-height:1.35;box-shadow:2px 2px 0 rgba(43,43,43,.18)}
+.tav-cards b:nth-child(4n+1){transform:rotate(-4deg)}
+.tav-cards b:nth-child(4n+2){transform:rotate(3deg)}
+.tav-cards b:nth-child(4n+3){transform:rotate(-2deg)}
+.tav-cards b:nth-child(4n){transform:rotate(4deg)}
+#tavProps .tag{border:2.5px solid #2B2B2B;border-radius:10px;background:#fff;font-weight:800;white-space:nowrap}
+#scene-tavern .btn{border:2px solid #2B2B2B;box-shadow:0 3px 0 rgba(43,43,43,.5)}
 @media (max-height:420px){
-  .tav-btop{padding-right:90px;gap:6px}
+  .tav-btop{gap:6px}
   .tav-btop .sub{display:none}
-  .tav-btop h2{font-size:15px!important;letter-spacing:1px!important;white-space:nowrap}
-  #tavProps .tag{padding:2px 7px;font-size:11px}
+  .tav-cards b{font-size:13px;padding:1px 5px;border-radius:7px}
+  #tavProps .tag{padding:2px 5px;font-size:10px}
+  #tavProps{max-width:60vw}
 }
 /* ── A 版答题 · 老墨的吧台（左画右答）── */
 .apw{flex:1;display:flex;gap:clamp(10px,1.4vw,16px);min-height:0;padding:6px 2px 2px}
@@ -578,14 +589,15 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         <span class="sp"></span>
       </div>
 
-      <!-- 酒馆大厅（B 版·谜题墙上挂）：顶栏 / 中央吊挂画框 / 左掌柜 / 右入口 -->
-      <div id="tavHome" class="colflow" style="align-items:stretch;justify-content:flex-start;gap:0">
-        <div class="draw-top tav-btop" style="width:100%;justify-content:flex-start">
-          <button class="btn blu back-btn">返回 →</button>
-          <h2 class="hw uw" style="font-size:21px;letter-spacing:3px">猜 谜 酒 馆</h2>
-        <span class="sub small">掌柜老墨的手绘谜题</span>
+      <!-- 酒馆大厅（B 版·谜题墙上挂）：黑墨外框 / 字牌顶栏 / 中央吊挂画框 / 左掌柜 / 右入口 -->
+      <div id="tavHome" hidden class="draw-stage">
+        <div class="draw-main tav-homemain">
+        <div class="draw-top tav-btop" style="width:100%;justify-content:flex-start;flex-wrap:nowrap;min-width:0">
+          <div class="tav-cards"><b>猜</b><b>谜</b><b>酒</b><b>馆</b></div>
+          <span class="sub small" style="margin-left:8px;white-space:nowrap">掌柜老墨的手绘谜题</span>
           <span class="sp"></span>
-          <div class="prop-row" id="tavProps"></div>
+          <button class="btn blu back-btn" style="flex:none;position:static">返回 →</button>
+          <div class="prop-row" id="tavProps" style="flex:none"></div>
         </div>
         <div style="flex:1;display:flex;align-items:stretch;min-height:0;gap:6px;padding:2px 8px 0">
           <div style="width:clamp(78px,12vw,140px);flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0">
@@ -594,11 +606,11 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           </div>
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0">
             <div class="tav-rope" style="height:clamp(22px,6vh,84px)"></div>
-            <div class="tav-frame" style="width:auto;max-width:92%;padding:clamp(8px,1.4vw,14px) clamp(10px,1.6vw,16px);transform:rotate(-.6deg)">
-              <canvas id="tavPreview" width="640" height="480" style="width:auto;height:auto;max-width:min(460px,56vw);max-height:max(110px,34vh);border:2.5px solid #2B2B2B;border-radius:8px;background:#fff"></canvas>
-              <div class="small" style="margin-top:6px;font-weight:800;font-size:clamp(11px,1.5vw,14px)">今日一幅 · 每日轮换 · 镇民投稿精选</div>
-              <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(10px,1.3vw,12px)"></div>
+            <div class="tav-frame" style="width:auto;max-width:92%;padding:clamp(8px,1.4vw,14px) clamp(18px,3vw,34px);transform:rotate(-.6deg)">
+              <canvas id="tavPreview" width="640" height="480" style="width:auto;height:auto;max-width:min(480px,58vw);max-height:max(150px,44vh);border:none;border-radius:6px;background:#fff"></canvas>
             </div>
+            <div class="small" style="margin-top:8px;font-weight:800;font-size:clamp(11px,1.5vw,14px)">今日一幅 · 每日轮换 · 镇民投稿精选</div>
+            <div id="tavFlowLine" class="small" style="margin-top:2px;color:#C4473A;font-size:clamp(10px,1.3vw,12px)"></div>
           </div>
           <div style="width:clamp(118px,16vw,200px);flex:none;display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,1.4vh,14px);min-width:0">
             <button class="btn big" id="tavStart" style="width:100%;font-size:clamp(13px,1.7vw,17px);padding:clamp(7px,1.2vh,11px) 10px">开始今日特调</button>
@@ -608,6 +620,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           </div>
         </div>
         <div class="tav-rule small">答对 +10 · 连对每击 +2 · 提示 -2 · 放弃 -5 · 1 分 = 1 墨水</div>
+        </div>
       </div>
 
       <!-- 答题（A 版·老墨的吧台）：左画右答 -->
@@ -2681,10 +2694,10 @@ function renderProps(){
   var el=$('tavProps');if(!el)return;
   var isNewDay=save.adDate!==todayStr();
   if(isNewDay){save.adDate=todayStr();save.adCount=0}
-  el.innerHTML='<span class="tag sketch-border" style="padding:3px 12px;font-size:13px">'+flowerSVG().replace('<svg','<svg width="16" height="16" style="vertical-align:-3px"')+'<b>'+save.flowers+'</b></span>'+
-    '<span class="tag sketch-border" style="padding:3px 12px;font-size:13px;margin-left:8px">'+eggSVG().replace('<svg','<svg width="16" height="16" style="vertical-align:-3px"')+'<b>'+save.eggs+'</b></span>'+
-    '<button class="tag sketch-border" id="adBtn" style="padding:3px 10px;font-size:12px;margin-left:8px;cursor:pointer">看广告 +3/+3</button>'+
-    '<button class="tag sketch-border" id="claimBtn" style="padding:3px 10px;font-size:12px;cursor:pointer">每日领取 +2/+2</button>';
+  el.innerHTML='<span class="tag" style="padding:3px 12px;font-size:13px">'+flowerSVG().replace('<svg','<svg width="16" height="16" style="vertical-align:-3px"')+'<b>'+save.flowers+'</b></span>'+
+    '<span class="tag" style="padding:3px 12px;font-size:13px;margin-left:8px">'+eggSVG().replace('<svg','<svg width="16" height="16" style="vertical-align:-3px"')+'<b>'+save.eggs+'</b></span>'+
+    '<button class="tag" id="adBtn" style="padding:3px 10px;font-size:12px;margin-left:8px;cursor:pointer">看广告 +3/+3</button>'+
+    '<button class="tag" id="claimBtn" style="padding:3px 10px;font-size:12px;cursor:pointer">每日领取 +2/+2</button>';
   $('adBtn').onclick=watchAdModal;
   $('claimBtn').onclick=function(){
     if(save.claimDate===todayStr()){toast('今天的活动奖励已经领过啦',1500);return}
