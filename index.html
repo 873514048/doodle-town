@@ -15,7 +15,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-visual">
 <title>涂鸦小镇 Doodle Town v9</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -3025,7 +3025,7 @@ function memJudgeShow(){
   var left=15;clearInterval(mem.jTimer);
   $('jdBar').style.width='100%';$('jdTime').textContent='15.0s';
   reframe();
-  setTimeout(function(){try{if(!inp.disabled)inp.focus()}catch(e){}},80); // 桌面端自动聚焦键盘
+  // 不自动聚焦：等玩家主动点击输入框再弹键盘
   mem.jTimer=setInterval(function(){
     left-=0.1;
     if(left<=0){memAnswer('');return}
@@ -3503,7 +3503,7 @@ function ltPick(i){
   $('ltBig').innerHTML='<div class="lt-item lt-solo" style="width:100%">'+ltLampSVG()+
     '<div class="lt-txt"><span class="lt-cat">'+it.p.cat+'</span></div></div>';
   ltShow2('ltSolve');
-  setTimeout(function(){try{$('ltInput').focus()}catch(e){}},80);
+  // 不自动聚焦：等玩家主动点击输入框再弹键盘
 }
 function ltChime(){ // 答对音效：三音上行风铃 + 上滑滑音
   try{
@@ -3638,7 +3638,7 @@ function tavPlayQ(){
     $('tavBar').style.width=(left/30*100)+'%';
   },100);
   reframe();
-  setTimeout(function(){if(curScene==='scene-tavern'&&!tav.locked)inp.focus()},2600);
+  // 不自动聚焦：等玩家主动点击输入框再弹键盘
 }
 function tavAccepts(q){return [q.ans].concat(q.accept||[])}
 function tavCheck(){
