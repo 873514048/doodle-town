@@ -234,12 +234,8 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 #plazaHint{position:absolute;right:16px;bottom:16px;z-index:10;pointer-events:none;font-size:12px;opacity:.7}
 
 /* 失忆画室 */
-#dryWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0}
-#dryLane{position:relative;width:86%;height:130px}
-#dryLane .th{position:absolute;top:14px;width:96px;height:96px;background:#fff}
-#dryLane .th canvas{width:100%;height:100%}
-#dryMachine{position:absolute;left:50%;top:0;transform:translateX(-50%);width:130px;height:130px;
-  display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
+#dryWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:0;width:88%}
+#dryCv{border:2px solid #2B2B2B;border-radius:14px;background:#FDFCF8}
 #jdArea{flex:1;display:flex;gap:18px;min-height:0;align-items:stretch}
 .jd-left{flex:1 1 62%;display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}
 .jd-left canvas{flex:1;min-height:0;width:100%;background:#fff;object-fit:contain}
@@ -446,11 +442,9 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <span class="sp"></span>
         </div>
         <div id="dryWrap">
-          <div class="paper-panel sketch-border" style="padding:8px 20px;font-weight:800">烘干了……也忘了……</div>
-          <div id="dryLane" class="sketch-border">
-            <div id="dryMachine" class="hatch sketch-border">烘干机</div>
-          </div>
-          <div class="small">传送带运行中……（8 秒）</div>
+          <div class="paper-panel sketch-border" style="padding:8px 20px;font-weight:800">小猫叼走了你的画，追毛线球去啦……</div>
+          <canvas id="dryCv" width="1024" height="480" style="width:100%;display:block"></canvas>
+          <div class="small">追毛线球中……（8 秒）</div>
         </div>
       </div>
 
@@ -2749,29 +2743,74 @@ function memFinishWord(){
 }
 function memDryStart(){
   $('memDraw').hidden=true;$('memDry').hidden=false;
-  var lane=$('dryLane');
-  lane.querySelectorAll('.th').forEach(function(t){t.remove()});
-  var laneW=lane.clientWidth||600;
-  var ths=mem.arts.map(function(a){
-    var d=document.createElement('div');d.className='th sketch-border';
-    d.appendChild(thumbCanvas(a.strokes,96));
-    lane.appendChild(d);return d;
-  });
-  var t0=performance.now(),dur=8000;
+  // 小猫叼画追毛线球：转移注意力的等待动画，8 秒后进鉴定
+  var cv=$('dryCv'),c=cv.getContext('2d'),W=cv.width,H=cv.height;
+  var t0=performance.now(),dur=8000,gy=H*0.74;
   reframe();
+  function ball(x,rot){ // 毛线球：橘粉主线圆+随滚动旋转的毛线弧+拖尾线头
+    var r=44,cy=gy-r-6;
+    c.strokeStyle='#2B2B2B';c.lineWidth=3.4;c.fillStyle='#E8927C';
+    c.beginPath();c.arc(x,cy,r,0,7);c.fill();c.stroke();
+    c.lineWidth=2.2;
+    for(var i=0;i<3;i++){
+      c.beginPath();c.ellipse(x,cy,r-9,r*0.4,rot+i*1.05,0,7);c.stroke();
+    }
+    c.beginPath(); // 拖在地上的毛线
+    c.moveTo(x+r*0.85,cy+r*0.55);
+    c.quadraticCurveTo(x+r+30,gy-8,x+r+18,gy+2);
+    c.stroke();
+  }
+  function cat(x,ph){ // 追逐的小猫：叼着画纸，四腿交替摆动，尾巴上翘
+    var y=gy-34+Math.sin(ph*2)*5;
+    c.strokeStyle='#2B2B2B';c.lineWidth=3.4;c.fillStyle='#F5C89A';
+    c.beginPath();c.ellipse(x,y,42,25,-0.06,0,7);c.fill();c.stroke(); // 身体前倾
+    for(var i=0;i<4;i++){ // 腿：相位差交替
+      var lx=x-27+i*19,sw=Math.sin(ph*2+i*1.6)*11;
+      c.lineWidth=3.2;
+      c.beginPath();c.moveTo(lx,y+18);c.lineTo(lx+sw,gy);c.stroke();
+    }
+    var hx=x+42,hy=y-24+Math.sin(ph*2+1)*3;
+    c.lineWidth=3.4;
+    c.beginPath();c.arc(hx,hy,19,0,7);c.fill();c.stroke(); // 头
+    c.beginPath();c.moveTo(hx-13,hy-13);c.lineTo(hx-19,hy-30);c.lineTo(hx-3,hy-19);c.closePath();c.fill();c.stroke(); // 耳
+    c.beginPath();c.moveTo(hx+2,hy-18);c.lineTo(hx+11,hy-31);c.lineTo(hx+16,hy-14);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#2B2B2B';
+    c.beginPath();c.arc(hx+7,hy-3,2.6,0,7);c.fill(); // 眼
+    c.beginPath();c.arc(hx+17,hy-3,2.6,0,7);c.fill();
+    c.save();c.translate(hx+28,hy+13);c.rotate(0.32+Math.sin(ph*2)*0.08); // 叼着的画纸
+    c.fillStyle='#FFFFFF';c.strokeStyle='#2B2B2B';c.lineWidth=2.4;
+    c.fillRect(-15,-11,30,22);c.strokeRect(-15,-11,30,22);
+    c.strokeStyle='rgba(43,43,43,.5)';c.lineWidth=1.8; // 纸上小涂鸦
+    c.beginPath();c.moveTo(-8,4);c.quadraticCurveTo(-2,-6,4,2);c.stroke();
+    c.restore();
+    c.strokeStyle='#2B2B2B';c.lineWidth=3.2;
+    c.beginPath();c.moveTo(x-38,y-6); // 尾巴
+    c.quadraticCurveTo(x-60,y-26+Math.sin(ph*3)*8,x-55,y-44+Math.sin(ph*3)*10);c.stroke();
+  }
+  function cloud(cx,cy,s){
+    c.strokeStyle='rgba(43,43,43,.35)';c.lineWidth=2.2;
+    c.beginPath();
+    c.arc(cx,cy,13*s,0,7);c.arc(cx+15*s,cy+4*s,9*s,0,7);c.arc(cx-15*s,cy+4*s,9*s,0,7);
+    c.stroke();
+  }
+  function frame(el){ // 单帧绘制：底色/地面/云/猫/球
+    c.fillStyle='#FDFCF8';c.fillRect(0,0,W,H);
+    c.strokeStyle='rgba(43,43,43,.14)';c.lineWidth=2.4;
+    c.beginPath();c.moveTo(0,gy+2);c.lineTo(W,gy+2);c.stroke();
+    cloud(W*0.18,H*0.2,1);cloud(W*0.52,H*0.12,0.8);cloud(W*0.84,H*0.24,1.15);
+    var per=2400,k=(el%per)/per,x=-150+k*(W+330);
+    cat(x-115,el/95);
+    ball(x,k*10.5);
+  }
   function anim(now){
     if(curScene!=='scene-memory'||!$('memDry')||$('memDry').hidden)return;
-    var k=Math.min(1,(now-t0)/dur);
-    var travel=laneW+160;
-    ths.forEach(function(th,i){
-      var x=-140+i*38+k*travel;
-      th.style.left=x+'px';
-      var mid=Math.abs(x+48-laneW/2)<75;
-      th.style.opacity=mid?0.12:1;
-    });
-    if(k<1)mem.dryRaf=requestAnimationFrame(anim);
-    else memJudgeStart();
+    var el=now-t0;
+    if(el>=dur){memJudgeStart();return}
+    frame(el);
+    mem.dryRaf=requestAnimationFrame(anim);
   }
+  if(mem.dryRaf)cancelAnimationFrame(mem.dryRaf);
+  frame(1200); // 先画一帧静像，rAF 未推进时（无头测试/低端机首帧）也不空屏
   mem.dryRaf=requestAnimationFrame(anim);
 }
 function soulStars(n){return n<=1?5:n<=3?4:n<=6?3:n<=10?2:1}
