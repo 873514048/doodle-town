@@ -893,6 +893,57 @@ function wobbleAll(root){
   });
 }
 
+/* ============ 圆圈式调色盘：HSV 色轮（角度=色相 半径=饱和度）+ 明度滑杆（全局单例，多场景共用） ============ */
+function hsv2hex(h,s,v){ // h 0..360，s/v 0..1 → '#rrggbb'
+  var c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c,r=0,g=0,b=0;
+  if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}
+  else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
+  return '#'+((1<<24)+(Math.round((r+m)*255)<<16)+(Math.round((g+m)*255)<<8)+Math.round((b+m)*255)).toString(16).slice(1);
+}
+function hex2hsv(hex){ // '#rrggbb' → [h,s,v]
+  var r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  var mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,h=0;
+  if(d){if(mx===r)h=60*(((g-b)/d)%6);else if(mx===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4)}
+  if(h<0)h+=360;return[h,d?d/mx:0,mx];
+}
+var cwState={h:270,s:.5,v:.6},cwCb=null;
+function cwPaint(){ // 按当前色相/饱和度摆指示点，刷新预览豆（conic 色轮：0°=正上方顺时针）
+  var w=$('cwWheel'),dot=$('cwDot');if(!w)return;
+  var R=w.clientWidth/2,a=cwState.h*Math.PI/180;
+  var hex=hsv2hex(cwState.h,cwState.s,cwState.v);
+  dot.style.left=(R+Math.sin(a)*cwState.s*R)+'px';
+  dot.style.top=(R-Math.cos(a)*cwState.s*R)+'px';
+  dot.style.background=hex;
+  $('cwPrev').style.background=hex;
+}
+function cwPick(e){ // 点/拖色轮：conic 角度→色相（上=0°顺时针），离圆心距离→饱和度
+  var w=$('cwWheel'),r=w.getBoundingClientRect();
+  var dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+  var d=Math.sqrt(dx*dx+dy*dy);
+  cwState.s=Math.min(1,d/(r.width/2));
+  if(d>4){var h=Math.atan2(dx,-dy)*180/Math.PI;if(h<0)h+=360;cwState.h=h}
+  cwPaint();
+}
+function openColorWheel(hex,cb){ // 打开色轮：hex 当前色，确定后回调 cb(选中hex)
+  cwCb=cb;
+  var hv=hex2hsv(hex||'#7B5EA7');
+  cwState.h=hv[0];cwState.s=hv[1];cwState.v=hv[2]<.3?.65:hv[2]; // 深色（如黑豆）打开时明度提到 65%，避免选亮色画出来仍近黑
+  $('cwBright').value=Math.round(cwState.v*100);
+  $('cwMask').style.display='flex';
+  cwPaint(); // 先显示再定位：隐藏时 clientWidth=0 会导致指示点错位
+}
+(function(){ // 色轮事件绑定（脚本在 body 尾执行，DOM 已就绪；全局仅绑一次）
+  var wheel=$('cwWheel'),drag=false;
+  wheel.addEventListener('pointerdown',function(e){drag=true;try{wheel.setPointerCapture(e.pointerId)}catch(err){}cwPick(e);e.preventDefault()});
+  wheel.addEventListener('pointermove',function(e){if(drag)cwPick(e)});
+  wheel.addEventListener('pointerup',function(){drag=false});
+  wheel.addEventListener('pointercancel',function(){drag=false});
+  $('cwBright').oninput=function(){cwState.v=this.value/100;cwPaint()};
+  $('cwCancel').onclick=function(){$('cwMask').style.display='none'};
+  $('cwOk').onclick=function(){$('cwMask').style.display='none';if(cwCb)cwCb(hsv2hex(cwState.h,cwState.s,cwState.v))};
+  $('cwMask').addEventListener('click',function(e){if(e.target===this)this.style.display='none'});
+})();
+
 /* ============ 画板组件（固定512内部分辨率+正确坐标换算，保留） ============ */
 var PALETTE=[['墨','#2B2B2B'],['番茄红','#E14B3B'],['牛仔蓝','#3B6EA5'],['芥黄','#F2B134'],['草绿','#4E9B5E'],['棕','#8B5A2B'],['橘','#E87A33'],['紫','#7B5EA7'],['白','#FFFFFF']];
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -1379,57 +1430,6 @@ function buildTools(board,o){
   }
   if(sizes){sizes.innerHTML='';var w1=document.createElement('div');w1.className='size-slider';sizes.appendChild(w1);mkSlider(w1)}
   if(actions){actions.innerHTML='';ACT_DEFS.forEach(function(d){actions.appendChild(icoBtn(d))})}
-  /* ---- 圆圈式调色盘：HSV 色轮（角度=色相 半径=饱和度）+ 明度滑杆，全场景共用 ---- */
-  function hsv2hex(h,s,v){ // h 0..360，s/v 0..1 → '#rrggbb'
-    var c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c,r=0,g=0,b=0;
-    if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}
-    else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
-    return '#'+((1<<24)+(Math.round((r+m)*255)<<16)+(Math.round((g+m)*255)<<8)+Math.round((b+m)*255)).toString(16).slice(1);
-  }
-  function hex2hsv(hex){ // '#rrggbb' → [h,s,v]
-    var r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
-    var mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,h=0;
-    if(d){if(mx===r)h=60*(((g-b)/d)%6);else if(mx===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4)}
-    if(h<0)h+=360;return[h,d?d/mx:0,mx];
-  }
-  var cwState={h:270,s:.5,v:.6},cwCb=null;
-  function cwPaint(){ // 按当前色相/饱和度摆指示点，刷新预览豆（conic 色轮：0°=正上方顺时针）
-    var w=$('cwWheel'),dot=$('cwDot');if(!w)return;
-    var R=w.clientWidth/2,a=cwState.h*Math.PI/180;
-    var hex=hsv2hex(cwState.h,cwState.s,cwState.v);
-    dot.style.left=(R+Math.sin(a)*cwState.s*R)+'px';
-    dot.style.top=(R-Math.cos(a)*cwState.s*R)+'px';
-    dot.style.background=hex;
-    $('cwPrev').style.background=hex;
-  }
-  function cwPick(e){ // 点/拖色轮：conic 角度→色相（上=0°顺时针），离圆心距离→饱和度
-    var w=$('cwWheel'),r=w.getBoundingClientRect();
-    var dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
-    var d=Math.sqrt(dx*dx+dy*dy);
-    cwState.s=Math.min(1,d/(r.width/2));
-    if(d>4){var h=Math.atan2(dx,-dy)*180/Math.PI;if(h<0)h+=360;cwState.h=h}
-    cwPaint();
-  }
-  function openColorWheel(hex,cb){ // 打开色轮：hex 当前色，确定后回调 cb(选中hex)
-    cwCb=cb;
-    var hv=hex2hsv(hex||'#7B5EA7');
-    cwState.h=hv[0];cwState.s=hv[1];cwState.v=hv[2]<.3?.65:hv[2]; // 深色（如黑豆）打开时明度提到 65%，避免选亮色画出来仍近黑
-    $('cwBright').value=Math.round(cwState.v*100);
-    $('cwMask').style.display='flex';
-    cwPaint(); // 先显示再定位：隐藏时 clientWidth=0 会导致指示点错位
-  }
-  (function(){ // 色轮事件绑定（防重复绑定，多场景共用一套弹层）
-    if(window.__cwBound)return;window.__cwBound=true;
-    var wheel=$('cwWheel'),drag=false;
-    wheel.addEventListener('pointerdown',function(e){drag=true;try{wheel.setPointerCapture(e.pointerId)}catch(err){}cwPick(e);e.preventDefault()});
-    wheel.addEventListener('pointermove',function(e){if(drag)cwPick(e)});
-    wheel.addEventListener('pointerup',function(){drag=false});
-    wheel.addEventListener('pointercancel',function(){drag=false});
-    $('cwBright').oninput=function(){cwState.v=this.value/100;cwPaint()};
-    $('cwCancel').onclick=function(){$('cwMask').style.display='none'};
-    $('cwOk').onclick=function(){$('cwMask').style.display='none';if(cwCb)cwCb(hsv2hex(cwState.h,cwState.s,cwState.v))};
-    $('cwMask').addEventListener('click',function(e){if(e.target===this)this.style.display='none'});
-  })();
   if(colors){
     colors.innerHTML='';
     var list=onlyBlack?[['黑','#2B2B2B']]:PALETTE;
