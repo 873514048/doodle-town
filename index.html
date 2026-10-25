@@ -1253,6 +1253,7 @@ function makeBoard(canvas,hint){
     setTool:function(m){toolMode=(m==='fill'||m==='pick')?m:'draw'},
     getTool:function(){return toolMode},
     fillAt:function(p){doFill(p)}, // 调试/测试直连
+    setOnstate:function(f){onstate=f}, // onstate 必须注入闭包变量，否则 notify 永远空转（图层/填色/撤销 UI 不刷新）
     getColor:function(){return color},
     getSize:function(){return size},
     addLayer:function(){if(layers.length>=4){toast('最多 4 个图层');return}
@@ -1491,7 +1492,7 @@ function buildTools(board,o){
     if(rngEl){rngEl.value=board.getSize();labEl.textContent=board.getSize()+'px'}
     if(o.layers){var le=$(o.layers);if(le)buildLayers(le)}
   }
-  board.onstate=function(){sync();say(stateText())}; // 画布交互（吸色/填充/图层）后自动刷 UI
+  board.setOnstate(function(){sync();say(stateText())}); // 画布交互（吸色/填充/图层/撤销）后自动刷 UI
   sync();
   if(status){var el0=$(status);if(el0&&!el0.textContent)say(stateText())} // 保留场景原有提示语，状态行原本为空才补默认状态
   return {sync:sync};
