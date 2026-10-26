@@ -552,9 +552,9 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <span class="sp"></span>
         </div>
         <div id="dryWrap">
-          <div class="paper-panel sketch-border" style="padding:8px 20px;font-weight:800;display:inline-flex;align-items:center;gap:9px"><svg width="27" height="25" viewBox="0 0 26 24" aria-hidden="true" style="flex:none"><g fill="#E88BB1" stroke="#2B2B2B" stroke-width="1.8"><ellipse cx="13" cy="16" rx="6.5" ry="5.5"></ellipse><circle cx="5.5" cy="8" r="2.8"></circle><circle cx="11" cy="4.8" r="2.8"></circle><circle cx="16.5" cy="5.2" r="2.8"></circle><circle cx="21.5" cy="9" r="2.8"></circle></g></svg>小猫叼走了你的画，追毛线球去啦……</div>
+          <div class="paper-panel sketch-border" style="padding:8px 20px;font-weight:800;display:inline-flex;align-items:center;gap:9px"><svg width="28" height="24" viewBox="0 0 30 26" aria-hidden="true" style="flex:none"><path d="M4 14 Q2 7 9 5 Q14 2 19 5 Q27 4 27 11 Q29 17 22 19 Q19 23 13 21 Q5 22 4 14 Z" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="1.8"></path><circle cx="15.5" cy="12.5" r="5.2" fill="#F2C94C" stroke="#2B2B2B" stroke-width="1.8"></circle></svg>烘干机太烫了，顺手煎个蛋吧……</div>
           <canvas id="dryCv" width="1024" height="480" style="width:100%;display:block"></canvas>
-          <div class="small">追毛线球中……（8 秒）</div>
+          <div class="small">滋滋煎蛋中……（8 秒）</div>
         </div>
       </div>
 
@@ -2911,6 +2911,7 @@ function stopMemTimers(){
   clearInterval(mem.timer);clearInterval(mem.jTimer);
   cancelAnimationFrame(mem.dryRaf);
   if(mem.replayCancel){mem.replayCancel();mem.replayCancel=0}
+  if(mem.sizzleStop){mem.sizzleStop();mem.sizzleStop=0} // 煎蛋音效同步硬停
 }
 $('memStart').addEventListener('click',function(){
   var pool=[]; // 5000 词组平铺，均匀抽取 5 个两两不同簇的词
@@ -2954,51 +2955,159 @@ function memFinishWord(){
   if(mem.idx<mem.words.length)memBeginWord();
   else memDryStart();
 }
+var memAC=null;
+function memSizzle(dur){ // 煎蛋音效：打蛋壳裂 + 蛋液落锅 + 白噪声滋滋 + 随机油爆噼啪
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
+    if(!memAC)memAC=new AC();
+    var ac=memAC;if(ac.state==='suspended')ac.resume();
+    var t=ac.currentTime;
+    var len=Math.floor(ac.sampleRate*1.2),buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);
+    for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+    var all=[];
+    function burst(dt,fType,freq,q,vol,ms){ // 一记短噪声爆发（壳裂/油爆共用）
+      var s=ac.createBufferSource();s.buffer=buf;
+      var f=ac.createBiquadFilter();f.type=fType;f.frequency.value=freq;f.Q.value=q;
+      var g=ac.createGain();
+      g.gain.setValueAtTime(vol,t+dt);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dt+ms);
+      s.connect(f);f.connect(g);g.connect(ac.destination);
+      s.start(t+dt,Math.random());s.stop(t+dt+ms+0.05);all.push(s);
+    }
+    burst(0.5,'highpass',2500,0.7,0.2,0.09); // 打蛋磕碰
+    burst(0.72,'highpass',2800,0.7,0.16,0.07); // 壳裂两半
+    var s3=ac.createBufferSource();s3.buffer=buf; // 蛋液落锅「噗」
+    var lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=850;
+    var g3=ac.createGain();
+    g3.gain.setValueAtTime(0.0001,t+0.9);
+    g3.gain.exponentialRampToValueAtTime(0.25,t+0.95);
+    g3.gain.exponentialRampToValueAtTime(0.0001,t+1.18);
+    s3.connect(lp);lp.connect(g3);g3.connect(ac.destination);
+    s3.start(t+0.9,Math.random());s3.stop(t+1.25);all.push(s3);
+    var src=ac.createBufferSource();src.buffer=buf;src.loop=true; // 主滋滋声
+    var bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=4200;bp.Q.value=0.6;
+    var g=ac.createGain();
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.085,t+0.5);
+    g.gain.setValueAtTime(0.085,t+dur-1.6);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    src.connect(bp);bp.connect(g);g.connect(ac.destination);
+    src.start(t);src.stop(t+dur+0.1);all.push(src);
+    for(var k=0;k<46;k++)burst(1.4+Math.random()*(dur-3.2),'highpass',3000+Math.random()*2500,0.8,0.05+Math.random()*0.13,0.03+Math.random()*0.05); // 随机油爆
+    return function(){ // 提前退出硬停
+      try{g.gain.cancelScheduledValues(0);g.gain.value=0.0001;}catch(e){}
+      all.forEach(function(s){try{s.stop()}catch(e){}});
+    };
+  }catch(e){return null}
+}
 function memDryStart(){
   $('memDraw').hidden=true;$('memDry').hidden=false;
-  // 小猫叼画追毛线球：转移注意力的等待动画，8 秒后进鉴定
+  // 烘干机太烫煎个蛋：转移注意力的等待动画，8 秒后进鉴定
   var cv=$('dryCv'),c=cv.getContext('2d'),W=cv.width,H=cv.height;
   var t0=performance.now(),dur=8000,gy=H*0.74;
+  if(mem.sizzleStop)mem.sizzleStop();
+  mem.sizzleStop=memSizzle(dur);
   reframe();
-  function ball(x,rot){ // 毛线球：橘粉主线圆+随滚动旋转的毛线弧+拖尾线头
-    var r=44,cy=gy-r-6;
-    c.strokeStyle='#2B2B2B';c.lineWidth=3.4;c.fillStyle='#E8927C';
-    c.beginPath();c.arc(x,cy,r,0,7);c.fill();c.stroke();
-    c.lineWidth=2.2;
-    for(var i=0;i<3;i++){
-      c.beginPath();c.ellipse(x,cy,r-9,r*0.4,rot+i*1.05,0,7);c.stroke();
+  var px=W*0.5,panY=gy-96,bubbles=[],specks=[],lastBub=0,lastSpk=0; // 锅中心与煎制粒子
+  function blob(rx,ry,seed){ // 手绘感蛋白：半径微扰闭合曲线
+    c.beginPath();
+    for(var i=0;i<=22;i++){
+      var a=i/22*Math.PI*2,rr=1+0.16*Math.sin(a*3+seed)+0.1*Math.sin(a*5+seed*2);
+      var x=px+Math.cos(a)*rx*rr,y=panY+Math.sin(a)*ry*rr;
+      if(i)c.lineTo(x,y);else c.moveTo(x,y);
     }
-    c.beginPath(); // 拖在地上的毛线
-    c.moveTo(x+r*0.85,cy+r*0.55);
-    c.quadraticCurveTo(x+r+30,gy-8,x+r+18,gy+2);
-    c.stroke();
+    c.closePath();
   }
-  function cat(x,ph){ // 追逐的小猫：叼着画纸，四腿交替摆动，尾巴上翘
-    var y=gy-34+Math.sin(ph*2)*5;
-    c.strokeStyle='#2B2B2B';c.lineWidth=3.4;c.fillStyle='#F5C89A';
-    c.beginPath();c.ellipse(x,y,42,25,-0.06,0,7);c.fill();c.stroke(); // 身体前倾
-    for(var i=0;i<4;i++){ // 腿：相位差交替
-      var lx=x-27+i*19,sw=Math.sin(ph*2+i*1.6)*11;
-      c.lineWidth=3.2;
-      c.beginPath();c.moveTo(lx,y+18);c.lineTo(lx+sw,gy);c.stroke();
+  function stove(){ // 小灶：梯形底座+双旋钮
+    c.strokeStyle='#2B2B2B';c.lineWidth=3.2;c.fillStyle='#FDFCF8';
+    c.beginPath();c.moveTo(px-122,gy);c.lineTo(px-104,panY+52);c.lineTo(px+104,panY+52);c.lineTo(px+122,gy);c.closePath();c.fill();c.stroke();
+    c.beginPath();c.arc(px-64,panY+68,6,0,7);c.stroke();
+    c.beginPath();c.arc(px+64,panY+68,6,0,7);c.stroke();
+  }
+  function flame(el){ // 火苗：几枚小三角随时间抖动
+    var fs=[-72,-32,8,48];
+    for(var i=0;i<4;i++){
+      var fx=px+fs[i],fh=13+9*Math.abs(Math.sin(el/85+i*1.7));
+      c.fillStyle=i%2?'#F2A654':'#E8734B';
+      c.strokeStyle='#2B2B2B';c.lineWidth=2.2;
+      c.beginPath();c.moveTo(fx-8,gy-44);c.quadraticCurveTo(fx,gy-44-fh*1.7,fx+8,gy-44);c.closePath();c.fill();c.stroke();
     }
-    var hx=x+42,hy=y-24+Math.sin(ph*2+1)*3;
-    c.lineWidth=3.4;
-    c.beginPath();c.arc(hx,hy,19,0,7);c.fill();c.stroke(); // 头
-    c.beginPath();c.moveTo(hx-13,hy-13);c.lineTo(hx-19,hy-30);c.lineTo(hx-3,hy-19);c.closePath();c.fill();c.stroke(); // 耳
-    c.beginPath();c.moveTo(hx+2,hy-18);c.lineTo(hx+11,hy-31);c.lineTo(hx+16,hy-14);c.closePath();c.fill();c.stroke();
-    c.fillStyle='#2B2B2B';
-    c.beginPath();c.arc(hx+7,hy-3,2.6,0,7);c.fill(); // 眼
-    c.beginPath();c.arc(hx+17,hy-3,2.6,0,7);c.fill();
-    c.save();c.translate(hx+28,hy+13);c.rotate(0.32+Math.sin(ph*2)*0.08); // 叼着的画纸
-    c.fillStyle='#FFFFFF';c.strokeStyle='#2B2B2B';c.lineWidth=2.4;
-    c.fillRect(-15,-11,30,22);c.strokeRect(-15,-11,30,22);
-    c.strokeStyle='rgba(43,43,43,.5)';c.lineWidth=1.8; // 纸上小涂鸦
-    c.beginPath();c.moveTo(-8,4);c.quadraticCurveTo(-2,-6,4,2);c.stroke();
+  }
+  function pan(){ // 平底锅：椭圆锅体+粗把手
+    c.strokeStyle='#2B2B2B';c.lineWidth=3.6;c.fillStyle='#5A5A5A';
+    c.beginPath();c.ellipse(px,panY,168,40,0,0,7);c.fill();c.stroke();
+    c.fillStyle='#454545';
+    c.beginPath();c.ellipse(px,panY,150,31,0,0,7);c.fill();
+    c.strokeStyle='#2B2B2B';c.lineWidth=9;c.lineCap='round';
+    c.beginPath();c.moveTo(px+164,panY-4);c.lineTo(px+236,panY-16);c.stroke();c.lineCap='butt';
+  }
+  function eggFall(el){ // 0~0.9s 整蛋下落：轻旋+左右小摆
+    var k=el/900,y=-40+k*(panY+80);
+    c.save();c.translate(px+Math.sin(el/70)*6,y);c.rotate(k*4.5);
+    c.fillStyle='#FFFFFF';c.strokeStyle='#2B2B2B';c.lineWidth=3;
+    c.beginPath();c.ellipse(0,0,25,33,0,0,7);c.fill();c.stroke();
     c.restore();
-    c.strokeStyle='#2B2B2B';c.lineWidth=3.2;
-    c.beginPath();c.moveTo(x-38,y-6); // 尾巴
-    c.quadraticCurveTo(x-60,y-26+Math.sin(ph*3)*8,x-55,y-44+Math.sin(ph*3)*10);c.stroke();
+  }
+  function shellPiece(sx,sy,rot,k){ // 落灶边的蛋壳两瓣
+    c.save();c.translate(sx,sy-46*(1-k));c.rotate(rot);
+    c.fillStyle='#FFFFFF';c.strokeStyle='#2B2B2B';c.lineWidth=2.4;
+    c.beginPath();c.moveTo(-12,4);c.quadraticCurveTo(-7,-10,3,-8);c.quadraticCurveTo(12,-5,10,5);c.closePath();c.fill();c.stroke();
+    c.restore();
+  }
+  function eggIn(el){ // 0.9s 后：蛋白摊开+后期金边+蛋黄颤动渐定
+    var t=(el-900)/1000,g=Math.min(1,t/3.2);
+    var rx=34+g*72,ry=19+g*25;
+    c.fillStyle='rgba(255,255,255,'+(0.78+0.22*g).toFixed(2)+')';
+    c.strokeStyle=g>0.55?'#D99A3F':'#2B2B2B'; // 后期出金边
+    c.lineWidth=g>0.55?4.4:3.2;
+    blob(rx,ry,3.1);c.fill();c.stroke();
+    var jig=el<6600?1+0.07*Math.sin(el/110):1+0.02*Math.sin(el/300);
+    c.fillStyle='#F2C94C';c.strokeStyle='#2B2B2B';c.lineWidth=3;
+    c.beginPath();c.ellipse(px-6,panY-2,24,22*jig,0,0,7);c.fill();c.stroke();
+    c.fillStyle='rgba(255,255,255,.55)';
+    c.beginPath();c.ellipse(px-13,panY-9,6.5,4.5,-0.6,0,7);c.fill();
+  }
+  function stepBub(el){ // 蛋白边缘鼓泡：先鼓大再啵地破掉
+    if(el>1300&&el<6800&&el-lastBub>160){
+      lastBub=el;
+      bubbles.push({a:Math.random()*Math.PI*2,born:el,life:900+Math.random()*700});
+    }
+    c.strokeStyle='#2B2B2B';c.lineWidth=2;
+    bubbles=bubbles.filter(function(b){
+      var k=(el-b.born)/b.life;if(k>=1)return false;
+      var g=Math.min(1,(el-900)/3200);
+      var rr=1+0.16*Math.sin(b.a*3+3.1)+0.1*Math.sin(b.a*5+6.2);
+      var bx=px+Math.cos(b.a)*(30+g*72)*rr*0.92,by=panY+Math.sin(b.a)*(19+g*25)*rr*0.92;
+      var s=k<0.6?k/0.6:1;
+      c.beginPath();c.arc(bx,by,3.5*s+2,0,7);c.stroke();
+      if(k>0.6){c.beginPath();c.arc(bx+4,by-5*s,1.6,0,7);c.stroke();}
+      return true;
+    });
+  }
+  function stepSpk(el){ // 随机跳起的小油星
+    if(el>1400&&el<6600&&el-lastSpk>420&&Math.random()<0.7){
+      lastSpk=el;
+      specks.push({x:px+(Math.random()*2-1)*150,y:panY-8,vy:2.2+Math.random()*2,born:el});
+    }
+    c.fillStyle='#2B2B2B';
+    specks=specks.filter(function(s){
+      var t=(el-s.born)/380;if(t>=1)return false;
+      c.beginPath();c.arc(s.x,s.y-s.vy*t*40+40*t*t,2,0,7);c.fill();return true;
+    });
+  }
+  function steam(el){ // 蒸汽：波浪线上飘循环
+    if(el<2200)return;
+    c.lineWidth=2.6;c.lineCap='round';
+    for(var i=0;i<3;i++){
+      var sx=px-46+i*46,ph=el/700+i*2.1,k=(el/1900+i*0.37)%1,al=(1-k)*0.5;
+      if(al<=0.02)continue;
+      var sy=panY-36-k*95;
+      c.strokeStyle='rgba(43,43,43,'+al.toFixed(2)+')';
+      c.beginPath();c.moveTo(sx+Math.sin(ph)*6,sy);
+      c.quadraticCurveTo(sx+12+Math.sin(ph+1)*8,sy-26,sx+Math.sin(ph+2)*5,sy-52);
+      c.stroke();
+    }
+    c.lineCap='butt';
   }
   function cloud(cx,cy,s){
     c.strokeStyle='rgba(43,43,43,.35)';c.lineWidth=2.2;
@@ -3006,14 +3115,23 @@ function memDryStart(){
     c.arc(cx,cy,13*s,0,7);c.arc(cx+15*s,cy+4*s,9*s,0,7);c.arc(cx-15*s,cy+4*s,9*s,0,7);
     c.stroke();
   }
-  function frame(el){ // 单帧绘制：底色/地面/云/猫/球
+  function frame(el){ // 单帧绘制：底色/地面/云/灶火/锅/煎蛋
     c.fillStyle='#FDFCF8';c.fillRect(0,0,W,H);
     c.strokeStyle='rgba(43,43,43,.14)';c.lineWidth=2.4;
     c.beginPath();c.moveTo(0,gy+2);c.lineTo(W,gy+2);c.stroke();
-    cloud(W*0.18,H*0.2,1);cloud(W*0.52,H*0.12,0.8);cloud(W*0.84,H*0.24,1.15);
-    var per=2400,k=(el%per)/per,x=-150+k*(W+330);
-    cat(x-115,el/95);
-    ball(x,k*10.5);
+    cloud(W*0.16,H*0.18,1);cloud(W*0.5,H*0.1,0.8);cloud(W*0.85,H*0.2,1.15);
+    var jy=(el>900&&el<7300)?(7300-el)/6400*1.6*Math.sin(el/55):0; // 煎制中锅体微抖
+    c.save();c.translate(0,jy);
+    stove();flame(el);pan();
+    if(el<900)eggFall(el);else eggIn(el);
+    stepBub(el);stepSpk(el);
+    c.restore();
+    steam(el);
+    if(el>=900){ // 蛋壳两瓣落地
+      var k=Math.min(1,(el-900)/500);
+      shellPiece(px-190,gy-8,-0.45,k);
+      shellPiece(px+196,gy-10,0.5,k);
+    }
   }
   function anim(now){
     if(curScene!=='scene-memory'||!$('memDry')||$('memDry').hidden)return;
