@@ -3073,7 +3073,7 @@ function memDryStart(){
   var cv=$('dryCv'),c=cv.getContext('2d'),W=cv.width,H=cv.height;
   var t0=performance.now(),dur=8000,gy=H*0.74;
   if(mem.sizzleStop)mem.sizzleStop();
-  mem.sizzleStop=memSizzle(dur);
+  mem.sizzleStop=memSizzle(dur-1200); // 音效比动画提前 1.2s 收干净，不拖进下一界面
   reframe();
   var px=W*0.5,panY=gy-108,bubbles=[],specks=[],lastBub=0,lastSpk=0; // 锅中心与煎制粒子
   function blob(rx,ry,seed){ // 手绘感蛋白：半径微扰闭合曲线
