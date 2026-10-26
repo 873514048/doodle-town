@@ -243,10 +243,22 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 #scene-memory .canvas-wrap::before,#scene-memory .canvas-wrap::after{content:'';position:absolute;width:88px;height:26px;background:rgba(242,201,76,.5);border:1.6px solid rgba(43,43,43,.28);z-index:3;pointer-events:none;border-radius:3px}
 #scene-memory .canvas-wrap::before{left:-20px;top:-9px;transform:rotate(-38deg)}
 #scene-memory .canvas-wrap::after{right:-20px;top:-9px;transform:rotate(38deg)}
-#scene-memory .jd-left .paper-panel{position:relative}
-#scene-memory .jd-left .paper-panel::before,#scene-memory .jd-left .paper-panel::after{content:'';position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#E8B04B,#C07F2A 72%);box-shadow:0 1.5px 2.5px rgba(43,43,43,.4);z-index:2}
-#scene-memory .jd-left .paper-panel::before{left:16px}
-#scene-memory .jd-left .paper-panel::after{right:16px}
+/* 判定页对齐作画页 draw-main 风格：奶油底大框 + 画布装裱白衬边 */
+#scene-memory #jdArea{gap:11px;border:2.4px solid #2B2B2B;border-radius:18px;background:#FDFBF4;box-shadow:0 4px 0 rgba(43,43,43,.22);padding:9px 11px}
+#scene-memory .jd-frame{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;min-width:0}
+#scene-memory .jd-frame canvas{flex:0 1 auto;width:auto;height:100%;max-width:100%;max-height:100%;background:#FFFFFF;border:2.4px solid #2B2B2B;border-radius:14px;box-shadow:0 0 0 7px #FFFFFF,0 0 0 8.6px rgba(43,43,43,.28),3px 10px 26px rgba(43,43,43,.15)}
+#scene-memory .jd-frame::before,#scene-memory .jd-frame::after{content:'';position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#E8B04B,#C07F2A 72%);box-shadow:0 1.5px 2.5px rgba(43,43,43,.4);z-index:2}
+#scene-memory .jd-frame::before{left:16px}
+#scene-memory .jd-frame::after{right:16px}
+#scene-memory #jdInput{background:#FFFFFF;border:2.6px solid #2B2B2B;border-radius:12px;padding:10px 14px;font-size:16px;box-shadow:inset 0 2px 0 rgba(43,43,43,.06)}
+#scene-memory #jdInput:focus{outline:none;box-shadow:0 0 0 2.2px rgba(225,75,59,.35)}
+/* 入口卡精修：蓝徽章 + 三步流程小卡 */
+#scene-memory .mem-kicker{display:inline-block;font-size:12px;font-weight:800;letter-spacing:3px;color:#3B6EA5;background:#EAF2FA;border:1.8px solid #2B2B2B;border-radius:999px;padding:3px 16px}
+#scene-memory .mem-flow{display:flex;align-items:stretch;justify-content:center;gap:8px;margin:14px 0 0}
+#scene-memory .mem-step{flex:1 1 0;max-width:148px;background:#FFFFFF;border:2.2px solid #2B2B2B;border-radius:12px;padding:10px 6px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 2.5px 0 rgba(43,43,43,.3)}
+#scene-memory .mem-step b{font-size:14.5px;letter-spacing:1px}
+#scene-memory .mem-step span{font-size:11px;color:rgba(43,43,43,.62);letter-spacing:.5px}
+#scene-memory .mem-arr{align-self:center;flex:0 0 auto;color:#E14B3B;font-weight:900;font-size:20px}
 #scene-memory #jdArea .tool-label{font-size:15px;color:#2B2B2B;letter-spacing:2px;font-weight:900}
 #scene-memory #jdArea .tool-label::before{width:8px;height:8px;background:#E14B3B}
 #scene-memory #memIntro .paper-panel{position:relative}
@@ -509,16 +521,22 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <h2 class="hw uw" style="font-size:22px">副本 · 失忆画室</h2>
           <span class="sp"></span>
         </div>
-        <div class="paper-panel sketch-border" style="max-width:580px;text-align:center">
+        <div class="paper-panel sketch-border" style="max-width:640px;width:min(94%,640px);text-align:center;padding:18px 30px 20px">
           <span class="tape" style="left:50%;margin-left:-46px;top:-12px"></span>
           <svg class="mem-doodle" style="left:-58px;top:-20px;transform:rotate(-16deg)" width="92" height="34" viewBox="0 0 92 34" aria-hidden="true"><rect x="10" y="11" width="56" height="13" rx="3" fill="#F2C94C" stroke="#2B2B2B" stroke-width="2.4"></rect><path d="M66,11 L84,17.5 66,24 Z" fill="#F7E7C8" stroke="#2B2B2B" stroke-width="2.4" stroke-linejoin="round"></path><path d="M79,15.6 L84,17.5 79,19.6 Z" fill="#2B2B2B"></path><rect x="2" y="11" width="8" height="13" rx="2.6" fill="#E88BB1" stroke="#2B2B2B" stroke-width="2.4"></rect></svg>
           <svg class="mem-doodle" style="right:-44px;bottom:-26px;transform:rotate(12deg)" width="58" height="58" viewBox="0 0 58 58" aria-hidden="true"><path d="M24,7 L28.4,20 42,20 31,28 35,41 24,33 13,41 17,28 6,20 19.6,20 Z" fill="#E14B3B" stroke="#2B2B2B" stroke-width="2.4" stroke-linejoin="round"></path><path d="M46,6 l2.4,6.6 6.6,2.4 -6.6,2.4 -2.4,6.6 -2.4,-6.6 -6.6,-2.4 6.6,-2.4 Z" fill="#5B8FD9" stroke="#2B2B2B" stroke-width="2" stroke-linejoin="round"></path></svg>
-          <p style="line-height:2;font-size:16px">画室的烘干机升级时<b class="accent">失忆</b>了……<br>
-          只有真正的神笔才能认出自己画过什么！</p>
-          <p class="hw" style="font-size:30px;margin:10px 0 4px;letter-spacing:4px"><span class="accent">5 秒！画出它！</span></p>
-          <p class="small" style="font-size:13px">来不及思考，凭直觉画！每个词只有 5 秒，时间到强制切词。</p>
-          <p class="small">连画 5 个词 → 烘干 → 凭记忆鉴定，答对有奖。跳过 -5 分。</p>
-          <div class="mbtns"><button class="btn big" id="memStart">开始配题</button></div>
+          <span class="mem-kicker">谜画副本 · 记忆挑战</span>
+          <p style="line-height:1.9;font-size:16px;margin:8px 0 0">画室的烘干机升级时<b class="accent">失忆</b>了……<br>只有真正的神笔才能认出自己画过什么！</p>
+          <p class="hw" style="font-size:32px;margin:6px 0 0;letter-spacing:5px"><span class="accent">5 秒！画出它！</span></p>
+          <div class="mem-flow">
+            <div class="mem-step"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 17.2 L14.6 7.6 L17.6 10.6 L8 20.2 L4.4 20.8 Z" fill="#F2C94C" stroke="#2B2B2B" stroke-width="1.8" stroke-linejoin="round"></path><path d="M13.2 9 L16.2 12" fill="none" stroke="#2B2B2B" stroke-width="1.6"></path></svg><b>速画 5 秒</b><span>凭直觉落笔</span></div>
+            <span class="mem-arr">→</span>
+            <div class="mem-step"><svg width="24" height="21" viewBox="0 0 30 26" aria-hidden="true"><path d="M4 14 Q2 7 9 5 Q14 2 19 5 Q27 4 27 11 Q29 17 22 19 Q19 23 13 21 Q5 22 4 14 Z" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="1.8"></path><circle cx="15.5" cy="12.5" r="5.2" fill="#F2C94C" stroke="#2B2B2B" stroke-width="1.8"></circle></svg><b>烘干 8 秒</b><span>顺手煎个蛋</span></div>
+            <span class="mem-arr">→</span>
+            <div class="mem-step"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="9.5" cy="9.5" r="5.6" fill="#EAF2FA" stroke="#2B2B2B" stroke-width="1.8"></circle><path d="M13.8 13.8 L18.6 18.6" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"></path></svg><b>灵魂鉴定</b><span>答对 +10</span></div>
+          </div>
+          <p class="small" style="margin-top:10px">连画 5 个词 · 时间到强制切词 · 跳过 -5 分 · 全对拿称号「神笔」</p>
+          <div class="mbtns" style="margin-top:6px"><button class="btn big" id="memStart">开始配题</button></div>
         </div>
       </div>
 
@@ -567,14 +585,14 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         </div>
         <div id="jdArea">
           <div class="jd-left">
-            <div class="paper-panel sketch-border" style="flex:1;display:flex;padding:8px;min-height:0">
+            <div class="jd-frame">
               <canvas id="jdCanvas" width="1024" height="768"></canvas>
             </div>
           </div>
           <div class="jd-right">
             <span class="tool-label" style="margin-bottom:6px">这幅画的是什么？</span>
             <div class="qrow">
-              <input id="jdInput" class="qinput sketch-border" style="flex:1" placeholder="输入你的答案…" maxlength="20">
+              <input id="jdInput" class="qinput" style="flex:1" placeholder="输入你的答案…" maxlength="20">
               <button class="mic-btn" data-voice="jdInput" title="语音输入" aria-label="语音输入"><svg class="i" viewBox="0 0 22 22" aria-hidden="true"><rect x="8.6" y="3.4" width="4.8" height="9.6" rx="2.4"></rect><path d="M5.8 11.4 Q5.8 16 11 16 Q16.2 16 16.2 11.4"></path><path d="M11 16 L11 19"></path><path d="M8.4 19 L13.6 19"></path></svg></button>
             </div>
             <div id="jdFb"></div>
@@ -3008,7 +3026,7 @@ function memDryStart(){
   if(mem.sizzleStop)mem.sizzleStop();
   mem.sizzleStop=memSizzle(dur);
   reframe();
-  var px=W*0.5,panY=gy-96,bubbles=[],specks=[],lastBub=0,lastSpk=0; // 锅中心与煎制粒子
+  var px=W*0.5,panY=gy-108,bubbles=[],specks=[],lastBub=0,lastSpk=0; // 锅中心与煎制粒子
   function blob(rx,ry,seed){ // 手绘感蛋白：半径微扰闭合曲线
     c.beginPath();
     for(var i=0;i<=22;i++){
@@ -3020,29 +3038,29 @@ function memDryStart(){
   }
   function stove(){ // 小灶：梯形底座+双旋钮
     c.strokeStyle='#2B2B2B';c.lineWidth=3.2;c.fillStyle='#FDFCF8';
-    c.beginPath();c.moveTo(px-122,gy);c.lineTo(px-104,panY+52);c.lineTo(px+104,panY+52);c.lineTo(px+122,gy);c.closePath();c.fill();c.stroke();
-    c.beginPath();c.arc(px-64,panY+68,6,0,7);c.stroke();
-    c.beginPath();c.arc(px+64,panY+68,6,0,7);c.stroke();
+    c.beginPath();c.moveTo(px-130,gy);c.lineTo(px-112,panY+68);c.lineTo(px+112,panY+68);c.lineTo(px+130,gy);c.closePath();c.fill();c.stroke();
+    c.beginPath();c.arc(px-64,panY+82,6,0,7);c.stroke();
+    c.beginPath();c.arc(px+64,panY+82,6,0,7);c.stroke();
   }
   function flame(el){ // 火苗：几枚小三角随时间抖动
-    var fs=[-72,-32,8,48];
+    var fs=[-76,-34,10,52];
     for(var i=0;i<4;i++){
-      var fx=px+fs[i],fh=13+9*Math.abs(Math.sin(el/85+i*1.7));
+      var fx=px+fs[i],fh=14+9*Math.abs(Math.sin(el/85+i*1.7));
       c.fillStyle=i%2?'#F2A654':'#E8734B';
       c.strokeStyle='#2B2B2B';c.lineWidth=2.2;
-      c.beginPath();c.moveTo(fx-8,gy-44);c.quadraticCurveTo(fx,gy-44-fh*1.7,fx+8,gy-44);c.closePath();c.fill();c.stroke();
+      c.beginPath();c.moveTo(fx-8,gy-38);c.quadraticCurveTo(fx,gy-38-fh*1.7,fx+8,gy-38);c.closePath();c.fill();c.stroke();
     }
   }
   function pan(){ // 平底锅：椭圆锅体+粗把手
     c.strokeStyle='#2B2B2B';c.lineWidth=3.6;c.fillStyle='#5A5A5A';
-    c.beginPath();c.ellipse(px,panY,168,40,0,0,7);c.fill();c.stroke();
+    c.beginPath();c.ellipse(px,panY,212,54,0,0,7);c.fill();c.stroke();
     c.fillStyle='#454545';
-    c.beginPath();c.ellipse(px,panY,150,31,0,0,7);c.fill();
+    c.beginPath();c.ellipse(px,panY,192,44,0,0,7);c.fill();
     c.strokeStyle='#2B2B2B';c.lineWidth=9;c.lineCap='round';
-    c.beginPath();c.moveTo(px+164,panY-4);c.lineTo(px+236,panY-16);c.stroke();c.lineCap='butt';
+    c.beginPath();c.moveTo(px+208,panY-6);c.lineTo(px+282,panY-20);c.stroke();c.lineCap='butt';
   }
   function eggFall(el){ // 0~0.9s 整蛋下落：轻旋+左右小摆
-    var k=el/900,y=-40+k*(panY+80);
+    var k=el/900,y=-40+k*(panY+50);
     c.save();c.translate(px+Math.sin(el/70)*6,y);c.rotate(k*4.5);
     c.fillStyle='#FFFFFF';c.strokeStyle='#2B2B2B';c.lineWidth=3;
     c.beginPath();c.ellipse(0,0,25,33,0,0,7);c.fill();c.stroke();
@@ -3056,7 +3074,7 @@ function memDryStart(){
   }
   function eggIn(el){ // 0.9s 后：蛋白摊开+后期金边+蛋黄颤动渐定
     var t=(el-900)/1000,g=Math.min(1,t/3.2);
-    var rx=34+g*72,ry=19+g*25;
+    var rx=30+g*64,ry=13+g*17;
     c.fillStyle='rgba(255,255,255,'+(0.78+0.22*g).toFixed(2)+')';
     c.strokeStyle=g>0.55?'#D99A3F':'#2B2B2B'; // 后期出金边
     c.lineWidth=g>0.55?4.4:3.2;
@@ -3077,7 +3095,7 @@ function memDryStart(){
       var k=(el-b.born)/b.life;if(k>=1)return false;
       var g=Math.min(1,(el-900)/3200);
       var rr=1+0.16*Math.sin(b.a*3+3.1)+0.1*Math.sin(b.a*5+6.2);
-      var bx=px+Math.cos(b.a)*(30+g*72)*rr*0.92,by=panY+Math.sin(b.a)*(19+g*25)*rr*0.92;
+      var bx=px+Math.cos(b.a)*(30+g*64)*rr*0.92,by=panY+Math.sin(b.a)*(13+g*17)*rr*0.92;
       var s=k<0.6?k/0.6:1;
       c.beginPath();c.arc(bx,by,3.5*s+2,0,7);c.stroke();
       if(k>0.6){c.beginPath();c.arc(bx+4,by-5*s,1.6,0,7);c.stroke();}
