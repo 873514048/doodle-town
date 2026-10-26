@@ -236,6 +236,23 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
 /* 失忆画室 */
 #dryWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:0;width:88%}
 #dryCv{border:2px solid #2B2B2B;border-radius:14px;background:#FDFCF8}
+/* 失忆画室视觉优化：题目词牌 / 画板纸胶带 / 判定框图钉 / 入口涂鸦装饰 */
+#scene-memory #memWord{background:#F2C94C;color:#2B2B2B;border:2.5px solid #2B2B2B;border-radius:10px;padding:3px 15px;font-size:17px;box-shadow:2px 2.5px 0 rgba(43,43,43,.35);white-space:nowrap}
+#scene-memory #memTime{font-size:16px;letter-spacing:1px}
+#scene-memory .canvas-wrap{position:relative}
+#scene-memory .canvas-wrap::before,#scene-memory .canvas-wrap::after{content:'';position:absolute;width:88px;height:26px;background:rgba(242,201,76,.5);border:1.6px solid rgba(43,43,43,.28);z-index:3;pointer-events:none;border-radius:3px}
+#scene-memory .canvas-wrap::before{left:-20px;top:-9px;transform:rotate(-38deg)}
+#scene-memory .canvas-wrap::after{right:-20px;top:-9px;transform:rotate(38deg)}
+#scene-memory .jd-left .paper-panel{position:relative}
+#scene-memory .jd-left .paper-panel::before,#scene-memory .jd-left .paper-panel::after{content:'';position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#E8B04B,#C07F2A 72%);box-shadow:0 1.5px 2.5px rgba(43,43,43,.4);z-index:2}
+#scene-memory .jd-left .paper-panel::before{left:16px}
+#scene-memory .jd-left .paper-panel::after{right:16px}
+#scene-memory #jdArea .tool-label{font-size:15px;color:#2B2B2B;letter-spacing:2px;font-weight:900}
+#scene-memory #jdArea .tool-label::before{width:8px;height:8px;background:#E14B3B}
+#scene-memory #memIntro .paper-panel{position:relative}
+#scene-memory .mem-doodle{position:absolute;pointer-events:none;z-index:2}
+#scene-memory #resBody{position:relative}
+#scene-memory #resBody::before{content:'';position:absolute;left:50%;top:-11px;margin-left:-47px;width:94px;height:22px;background:rgba(159,191,180,.55);border:1.6px solid rgba(43,43,43,.25);transform:rotate(-2deg);border-radius:3px}
 #jdArea{flex:1;display:flex;gap:18px;min-height:0;align-items:stretch}
 .jd-left{flex:1 1 62%;display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}
 .jd-left canvas{flex:1;min-height:0;width:100%;background:#fff;object-fit:contain}
@@ -494,9 +511,11 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
         </div>
         <div class="paper-panel sketch-border" style="max-width:580px;text-align:center">
           <span class="tape" style="left:50%;margin-left:-46px;top:-12px"></span>
+          <svg class="mem-doodle" style="left:-58px;top:-20px;transform:rotate(-16deg)" width="92" height="34" viewBox="0 0 92 34" aria-hidden="true"><rect x="10" y="11" width="56" height="13" rx="3" fill="#F2C94C" stroke="#2B2B2B" stroke-width="2.4"></rect><path d="M66,11 L84,17.5 66,24 Z" fill="#F7E7C8" stroke="#2B2B2B" stroke-width="2.4" stroke-linejoin="round"></path><path d="M79,15.6 L84,17.5 79,19.6 Z" fill="#2B2B2B"></path><rect x="2" y="11" width="8" height="13" rx="2.6" fill="#E88BB1" stroke="#2B2B2B" stroke-width="2.4"></rect></svg>
+          <svg class="mem-doodle" style="right:-44px;bottom:-26px;transform:rotate(12deg)" width="58" height="58" viewBox="0 0 58 58" aria-hidden="true"><path d="M24,7 L28.4,20 42,20 31,28 35,41 24,33 13,41 17,28 6,20 19.6,20 Z" fill="#E14B3B" stroke="#2B2B2B" stroke-width="2.4" stroke-linejoin="round"></path><path d="M46,6 l2.4,6.6 6.6,2.4 -6.6,2.4 -2.4,6.6 -2.4,-6.6 -6.6,-2.4 6.6,-2.4 Z" fill="#5B8FD9" stroke="#2B2B2B" stroke-width="2" stroke-linejoin="round"></path></svg>
           <p style="line-height:2;font-size:16px">画室的烘干机升级时<b class="accent">失忆</b>了……<br>
           只有真正的神笔才能认出自己画过什么！</p>
-          <p class="hw" style="font-size:24px;margin:8px 0 2px"><span class="accent">5 秒！画出它！</span></p>
+          <p class="hw" style="font-size:30px;margin:10px 0 4px;letter-spacing:4px"><span class="accent">5 秒！画出它！</span></p>
           <p class="small" style="font-size:13px">来不及思考，凭直觉画！每个词只有 5 秒，时间到强制切词。</p>
           <p class="small">连画 5 个词 → 烘干 → 凭记忆鉴定，答对有奖。跳过 -5 分。</p>
           <div class="mbtns"><button class="btn big" id="memStart">开始配题</button></div>
@@ -533,7 +552,7 @@ svg.i{width:15px;height:15px;vertical-align:-3px;margin-right:5px;fill:none;stro
           <span class="sp"></span>
         </div>
         <div id="dryWrap">
-          <div class="paper-panel sketch-border" style="padding:8px 20px;font-weight:800">小猫叼走了你的画，追毛线球去啦……</div>
+          <div class="paper-panel sketch-border" style="padding:8px 20px;font-weight:800;display:inline-flex;align-items:center;gap:9px"><svg width="27" height="25" viewBox="0 0 26 24" aria-hidden="true" style="flex:none"><g fill="#E88BB1" stroke="#2B2B2B" stroke-width="1.8"><ellipse cx="13" cy="16" rx="6.5" ry="5.5"></ellipse><circle cx="5.5" cy="8" r="2.8"></circle><circle cx="11" cy="4.8" r="2.8"></circle><circle cx="16.5" cy="5.2" r="2.8"></circle><circle cx="21.5" cy="9" r="2.8"></circle></g></svg>小猫叼走了你的画，追毛线球去啦……</div>
           <canvas id="dryCv" width="1024" height="480" style="width:100%;display:block"></canvas>
           <div class="small">追毛线球中……（8 秒）</div>
         </div>
